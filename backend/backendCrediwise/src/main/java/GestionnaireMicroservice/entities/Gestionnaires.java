@@ -34,9 +34,9 @@ public class Gestionnaires extends PanacheEntity {
     public String address;
 
     @Column(name = "password")
-    public String password;                // À hacher plus tard avec Argon2 ou BCrypt
+    public String password;
 
-    @ManyToOne(fetch = FetchType.EAGER)   // ← Très important !
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "agence_id", nullable = false)
     public Agence agence;
 
@@ -47,7 +47,6 @@ public class Gestionnaires extends PanacheEntity {
     @Column(name = "updated_at")
     public LocalDateTime updatedAt;
 
-    // Constructeur vide obligatoire pour Hibernate
     public Gestionnaires() {}
 
     // Méthode appelée automatiquement avant la sauvegarde
@@ -59,9 +58,5 @@ public class Gestionnaires extends PanacheEntity {
             this.uuid = java.util.UUID.randomUUID().toString();
         }
 
-        // HASHAGE AUTOMATIQUE DU PASSWORD (si c'est encore en clair)
-        if (this.password != null && !this.password.startsWith("$2a$") && !this.password.startsWith("$2b$")) {
-            this.password = BcryptUtil.bcryptHash(this.password);
-        }
     }
 }
