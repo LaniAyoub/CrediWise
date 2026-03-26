@@ -1,0 +1,11 @@
+package GestionnaireMicroservice.entities;
+
+public enum Role {
+    CLIENT_RELATIONSHIP_OFFICER,
+    BRANCH_DECISION_MAKER,
+    HEAD_OFFICE_DECISION_MAKER,
+    CREDIT_RISK_ANALYST,
+    FRONT_OFFICE,
+    READ_ONLY,
+    TECHNICAL_USER
+}
