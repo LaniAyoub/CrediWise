@@ -38,7 +38,7 @@ public class AuthService {
         // 3. Générer le token JWT
         return Jwt.issuer(issuer)
                 .subject(g.email)
-                .groups(Set.of(g.role.name()))   // le rôle devient une "group" JWT
+                .groups(Set.of(g.role.name()))
                 .claim("cin", g.cin)
                 .claim("agenceId", g.agence.idBranch)
                 .claim("firstName", g.firstName)
