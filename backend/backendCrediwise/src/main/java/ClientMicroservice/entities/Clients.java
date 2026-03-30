@@ -1,61 +1,106 @@
 package ClientMicroservice.entities;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "clients")
-public class Clients extends PanacheEntity {
+public class Clients extends PanacheEntityBase {
 
-    @Column(name = "id_client", nullable = false, unique = true)
-    public String idClient;           // ex: "5135"
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    public UUID id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "client_type", nullable = false)
-    public TypeClient typeClient;     // PHYSIQUE ou MORALE
+    @Column(name = "client_type")
+    public TypeClient clientType;           // PHYSIQUE ou MORALE
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    public String status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "segment_id")
     public Segment segment;
 
-    // Champs communs
-    public String agence;             // ex: "001 - Bizerte"
-    public String gestionnaire;       // nom ou code du gestionnaire
-    public String numeroCompte;
-    public String cycle;
+    public String scoring;
+    public String Cin;
 
-    // ─── Personne Physique ────────────────────────────────
-    public String nom;
-    public String prenom;
-    public String sexe;
-    public Integer age;
+    public String firstName;
+    public String lastName;
+    public String companyName;
+    public String registrationNumber;       // Matricule fiscal / registre commerce
+    public String nationalId;               // CIN ou équivalent
+    public LocalDate dateOfBirth;
 
-    // ─── Personne Morale ──────────────────────────────────
-    public String sigle;
-    @Column(name = "raison_sociale")
-    public String raisonSociale;
-    @Column(name = "nom_interlocuteur")
-    public String nomInterlocuteurPrincipal;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "nationality")
+    public Nationality nationality;
 
-    // Adresses
-    @Column(name = "adresse_activite")
-    public String adresseActivite;
+    public String taxIdentifier;
 
-    @Column(name = "adresse_domicile")
-    public String adresseDomicile;
+    public String sexe;                     // MALE / FEMALE / OTHER
 
-    @ManyToOne
-    @JoinColumn(name = "secteur_activite_id")
-    public SecteurActivite secteurActivite;
+    public String email;
+    public String primaryPhone;
+    public String secondaryPhone;
 
-    @Column(name = "created_at", updatable = false)
+    public String addressStreet;
+    public String addressCity;
+    public String addressPostal;
+    public String addressCountry;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "agency_id")
+    public Agency agency;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sector_activity_id")
+    public SectorActivity sectorActivity;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sub_activity_id")
+    public SubActivity subActivity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cycle")
+    public Cycle cycle;
+
+    @Column(name = "assigned_manager_id")
+    public String assignedManager;
+
+    @Column(name = "principal_interlocutor_id")
+    public String principalInterlocutor;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "family_situation_id")
+    public FamilySituation familySituation;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false, nullable = false)
     public LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
     public LocalDateTime updatedAt;
 
+    public int version;
+
     public Clients() {
+    }
+    @PrePersist
+    void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }
