@@ -1,0 +1,26 @@
+<svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Brain (Left side) -->
+  <g id="brain">
+    <!-- Left hemisphere (Blue) -->
+    <path d="M 80 80 Q 50 80 50 110 Q 50 140 80 140 L 90 140 Q 95 140 95 135 L 95 85 Q 95 80 90 80 Z" fill="#003D99"/>
+    
+    <!-- Right hemisphere (Green) -->
+    <path d="M 120 80 Q 150 80 150 110 Q 150 140 120 140 L 110 140 Q 105 140 105 135 L 105 85 Q 105 80 110 80 Z" fill="#00B050"/>
+    
+    <!-- Connection curves -->
+    <circle cx="70" cy="95" r="5" fill="#003D99"/>
+    <circle cx="85" cy="105" r="4" fill="#003D99"/>
+    <circle cx="100" cy="100" r="5" fill="#003D99"/>
+    <circle cx="115" cy="110" r="4" fill="#00B050"/>
+    <circle cx="130" cy="95" r="5" fill="#00B050"/>
+    
+    <!-- Arrow (Green) -->
+    <path d="M 120 120 L 140 100 L 135 85 L 145 95 L 150 110" stroke="#00B050" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Text: CrediWise -->
+  <text x="170" y="130" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#003D99">Credi<tspan fill="#00B050">Wise</tspan></text>
+  
+  <!-- Tagline -->
+  <text x="170" y="160" font-family="Arial, sans-serif" font-size="18" fill="#666666">Des décisions de crédit éclairées</text>
+</svg>
