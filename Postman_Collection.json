@@ -12,7 +12,17 @@
       "type": "string"
     },
     {
+      "key": "client_base_url",
+      "value": "http://localhost:8082",
+      "type": "string"
+    },
+    {
       "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "client_id",
       "value": "",
       "type": "string"
     }
@@ -258,6 +268,218 @@
               "path": ["api", "agences", ":id"],
               "variable": [
                 { "key": "id", "value": "999" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "CLIENTS",
+      "description": "Client microservice endpoints — port 8082. Authenticate first via AUTHENTICATION > Login (gestionnaire service port 8080) to obtain the token.",
+      "item": [
+        {
+          "name": "Create Client (Physical Person)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('client_id', jsonData.id);",
+                  "    console.log('Client ID saved: ' + jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientType\": \"PHYSICAL\",\n  \"firstName\": \"Ahmed\",\n  \"lastName\": \"Benali\",\n  \"dateOfBirth\": \"1985-03-20\",\n  \"nationalId\": \"1234567890123\",\n  \"taxIdentifier\": \"TAX-001\",\n  \"gender\": \"MALE\",\n  \"situationFamiliale\": \"MARRIED\",\n  \"nationality\": \"Tunisienne\",\n  \"monthlyIncome\": 3500.000,\n  \"email\": \"ahmed.benali@example.com\",\n  \"primaryPhone\": \"+21698000001\",\n  \"secondaryPhone\": \"+21622000001\",\n  \"addressStreet\": \"15 Rue Habib Bourguiba\",\n  \"addressCity\": \"Tunis\",\n  \"addressPostal\": \"1001\",\n  \"addressCountry\": \"Tunisie\",\n  \"segmentId\": 1,\n  \"accountTypeId\": 1,\n  \"secteurActiviteId\": 3,\n  \"agenceId\": \"100\",\n  \"assignedManagerId\": \"00000000-0000-0000-0000-000000000002\",\n  \"relationAvecClient\": \"CLIENT\",\n  \"cbsId\": \"CBS-2024-001\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{client_base_url}}/api/clients",
+              "host": ["{{client_base_url}}"],
+              "path": ["api", "clients"]
+            }
+          }
+        },
+        {
+          "name": "Create Client (Legal Entity)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('client_id', jsonData.id);",
+                  "    console.log('Client ID saved: ' + jsonData.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientType\": \"LEGAL\",\n  \"companyName\": \"Société Industrielle du Nord\",\n  \"sigle\": \"SIN\",\n  \"registrationNumber\": \"RC-2010-00456\",\n  \"taxIdentifier\": \"TVA-456789\",\n  \"principalInterlocutor\": \"Mohamed Trabelsi\",\n  \"email\": \"contact@sin.tn\",\n  \"primaryPhone\": \"+21671234567\",\n  \"addressStreet\": \"Zone Industrielle El Agba\",\n  \"addressCity\": \"Tunis\",\n  \"addressPostal\": \"1000\",\n  \"addressCountry\": \"Tunisie\",\n  \"segmentId\": 3,\n  \"accountTypeId\": 1,\n  \"secteurActiviteId\": 2,\n  \"agenceId\": \"100\",\n  \"assignedManagerId\": \"00000000-0000-0000-0000-000000000002\",\n  \"relationAvecClient\": \"CLIENT\",\n  \"cbsId\": \"CBS-2024-002\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{client_base_url}}/api/clients",
+              "host": ["{{client_base_url}}"],
+              "path": ["api", "clients"]
+            }
+          }
+        },
+        {
+          "name": "Get All Clients",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{client_base_url}}/api/clients?page=0&size=20",
+              "host": ["{{client_base_url}}"],
+              "path": ["api", "clients"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Clients by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{client_base_url}}/api/clients?status=PROSPECT&page=0&size=20",
+              "host": ["{{client_base_url}}"],
+              "path": ["api", "clients"],
+              "query": [
+                { "key": "status", "value": "PROSPECT", "description": "PROSPECT or ACTIVE" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Clients by Agence",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{client_base_url}}/api/clients?agenceId=100&page=0&size=20",
+              "host": ["{{client_base_url}}"],
+              "path": ["api", "clients"],
+              "query": [
+                { "key": "agenceId", "value": "100" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Client by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{client_base_url}}/api/clients/:id",
+              "host": ["{{client_base_url}}"],
+              "path": ["api", "clients", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{client_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Client",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\",\n  \"primaryPhone\": \"+21698111111\",\n  \"addressStreet\": \"22 Avenue de la Liberté\",\n  \"addressCity\": \"Sfax\",\n  \"monthlyIncome\": 4200.000,\n  \"scoring\": \"A\",\n  \"cycle\": \"12M\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{client_base_url}}/api/clients/:id",
+              "host": ["{{client_base_url}}"],
+              "path": ["api", "clients", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{client_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Client — Change Agence & Manager",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agenceId\": \"101\",\n  \"assignedManagerId\": \"00000000-0000-0000-0000-000000000003\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{client_base_url}}/api/clients/:id",
+              "host": ["{{client_base_url}}"],
+              "path": ["api", "clients", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{client_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Client",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{client_base_url}}/api/clients/:id",
+              "host": ["{{client_base_url}}"],
+              "path": ["api", "clients", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{client_id}}" }
               ]
             }
           }
