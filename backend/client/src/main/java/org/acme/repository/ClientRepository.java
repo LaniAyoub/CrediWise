@@ -6,6 +6,7 @@ import org.acme.entity.Client;
 import org.acme.entity.enums.ClientStatus;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -33,5 +34,12 @@ public class ClientRepository implements PanacheRepositoryBase<Client, UUID> {
 
     public List<Client> findAllPaged(int page, int size) {
         return findAll().page(page, size).list();
+    }
+     public Optional<Client> findByNationalId(String nationalId) {
+        return find("nationalId", nationalId).firstResultOptional();
+    }
+
+    public Optional<Client> findByPrimaryPhone(String primaryPhone) {
+        return find("primaryPhone", primaryPhone).firstResultOptional();
     }
 }

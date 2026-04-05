@@ -422,6 +422,49 @@
           }
         },
         {
+          "name": "Search Client",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{client_base_url}}/api/clients/search?national_id=1234567890123",
+              "host": [
+                "{{client_base_url}}"
+              ],
+              "path": [
+                "api",
+                "clients",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "national_id",
+                  "value": "1234567890123",
+                  "description": "Search by National ID"
+                },
+                {
+                  "key": "primary_phone",
+                  "value": "%2B21698000001",
+                  "description": "Search by Primary Phone (disabled by default)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Search for a client using their national ID or primary phone number. The endpoint will first search by national_id, and if not found, will then search by primary_phone."
+          },
+          "response": []
+        },
+        {
           "name": "Update Client",
           "request": {
             "method": "PUT",
