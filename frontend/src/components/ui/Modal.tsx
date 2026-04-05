@@ -5,7 +5,7 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) => {
@@ -30,6 +30,8 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) =>
     sm: 'max-w-sm',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
+    full: 'max-w-[95vw] h-[95vh]',
   };
 
   return (
@@ -42,7 +44,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) =>
 
       {/* Modal content */}
       <div
-        className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size]} animate-slide-up`}
+        className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size]} max-h-[90vh] flex flex-col animate-slide-up`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100">
@@ -58,7 +60,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) =>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5">{children}</div>
+        <div className="px-6 py-5 flex-1 overflow-y-auto min-h-0">{children}</div>
       </div>
     </div>
   );
