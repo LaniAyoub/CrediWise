@@ -1,48 +1,50 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { clientService } from '@/services/client.service';
-import type { Client, ClientCreateRequest, ClientUpdateRequest } from '@/types/client.types';
-import Table from '@/components/ui/Table';
-import Button from '@/components/ui/Button';
-import Modal from '@/components/ui/Modal';
-import Badge from '@/components/ui/Badge';
-import SearchBar from '@/components/ui/SearchBar';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import ClientForm from '@/components/forms/ClientForm';
-import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
-import { useAuth } from '@/hooks/useAuth';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect, useMemo } from "react";
+import { clientService } from "@/services/client.service";
+import type {
+  Client,
+  ClientCreateRequest,
+  ClientUpdateRequest,
+} from "@/types/client.types";
+import Table from "@/components/ui/Table";
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import Badge from "@/components/ui/Badge";
+import SearchBar from "@/components/ui/SearchBar";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import ClientForm from "@/components/forms/ClientForm";
+import LoadingSkeleton from "@/components/ui/LoadingSkeleton";
+import { useAuth } from "@/hooks/useAuth";
+import toast from "react-hot-toast";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const statusVariant = (
-  status: string
-): 'success' | 'warning' | 'neutral' => {
-  if (status === 'ACTIVE') return 'success';
-  if (status === 'PROSPECT') return 'warning';
-  return 'neutral';
+const statusVariant = (status: string): "success" | "warning" | "neutral" => {
+  if (status === "ACTIVE") return "success";
+  if (status === "PROSPECT") return "warning";
+  return "neutral";
 };
 
 const typeLabel = (clientType: string) =>
-  clientType === 'PHYSICAL' ? 'Physical' : 'Legal';
+  clientType === "PHYSICAL" ? "Physical" : "Legal";
 
 const clientDisplayName = (c: Client): string => {
-  if (c.clientType === 'PHYSICAL') {
-    return [c.firstName, c.lastName].filter(Boolean).join(' ') || '—';
+  if (c.clientType === "PHYSICAL") {
+    return [c.firstName, c.lastName].filter(Boolean).join(" ") || "—";
   }
-  return c.companyName || '—';
+  return c.companyName || "—";
 };
 
 const clientInitials = (c: Client): string => {
-  if (c.clientType === 'PHYSICAL') {
-    return `${c.firstName?.[0] ?? ''}${c.lastName?.[0] ?? ''}`.toUpperCase();
+  if (c.clientType === "PHYSICAL") {
+    return `${c.firstName?.[0] ?? ""}${c.lastName?.[0] ?? ""}`.toUpperCase();
   }
-  return (c.companyName?.[0] ?? 'L').toUpperCase();
+  return (c.companyName?.[0] ?? "L").toUpperCase();
 };
 
 // ── Search Filter ────────────────────────────────────────────────────────────
 
 interface SearchState {
-  mode: 'local' | 'national_id' | 'primary_phone';
+  mode: "local" | "national_id" | "primary_phone";
   query: string;
 }
 
@@ -52,7 +54,7 @@ const ClientsPage = () => {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -63,9 +65,13 @@ const ClientsPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Quick search by national ID or phone
-  const [searchMode, setSearchMode] = useState<'national_id' | 'primary_phone'>('national_id');
-  const [quickSearchQuery, setQuickSearchQuery] = useState('');
-  const [quickSearchResult, setQuickSearchResult] = useState<Client | null | 'not_found'>(null);
+  const [searchMode, setSearchMode] = useState<"national_id" | "primary_phone">(
+    "national_id",
+  );
+  const [quickSearchQuery, setQuickSearchQuery] = useState("");
+  const [quickSearchResult, setQuickSearchResult] = useState<
+    Client | null | "not_found"
+  >(null);
   const [isSearching, setIsSearching] = useState(false);
 
   const fetchClients = async () => {
@@ -96,7 +102,7 @@ const ClientsPage = () => {
         c.primaryPhone?.toLowerCase().includes(q) ||
         c.nationalId?.toLowerCase().includes(q) ||
         c.agenceLibelle?.toLowerCase().includes(q) ||
-        c.status?.toLowerCase().includes(q)
+        c.status?.toLowerCase().includes(q),
     );
   }, [clients, searchQuery]);
 
@@ -106,42 +112,84 @@ const ClientsPage = () => {
     setIsSubmitting(true);
     try {
       const payload: ClientCreateRequest = {
-        clientType: data.clientType as 'PHYSICAL' | 'LEGAL',
+        clientType: data.clientType as "PHYSICAL" | "LEGAL",
         ...(data.firstName && { firstName: data.firstName as string }),
         ...(data.lastName && { lastName: data.lastName as string }),
         ...(data.dateOfBirth && { dateOfBirth: data.dateOfBirth as string }),
         ...(data.nationalId && { nationalId: data.nationalId as string }),
-        ...(data.taxIdentifier && { taxIdentifier: data.taxIdentifier as string }),
-        ...(data.gender && { gender: data.gender as 'MALE' | 'FEMALE' | 'OTHER' }),
-        ...(data.situationFamiliale && { situationFamiliale: data.situationFamiliale as 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'SEPARATED' | 'WIDOWER' | 'OTHER' }),
+        ...(data.taxIdentifier && {
+          taxIdentifier: data.taxIdentifier as string,
+        }),
+        ...(data.gender && {
+          gender: data.gender as "MALE" | "FEMALE" | "OTHER",
+        }),
+        ...(data.situationFamiliale && {
+          situationFamiliale: data.situationFamiliale as
+            | "SINGLE"
+            | "MARRIED"
+            | "DIVORCED"
+            | "SEPARATED"
+            | "WIDOWER"
+            | "OTHER",
+        }),
         ...(data.nationality && { nationality: data.nationality as string }),
-        ...(data.monthlyIncome !== undefined && { monthlyIncome: Number(data.monthlyIncome) }),
+        ...(data.monthlyIncome !== undefined && {
+          monthlyIncome: Number(data.monthlyIncome),
+        }),
         ...(data.companyName && { companyName: data.companyName as string }),
         ...(data.sigle && { sigle: data.sigle as string }),
-        ...(data.registrationNumber && { registrationNumber: data.registrationNumber as string }),
-        ...(data.principalInterlocutor && { principalInterlocutor: data.principalInterlocutor as string }),
+        ...(data.registrationNumber && {
+          registrationNumber: data.registrationNumber as string,
+        }),
+        ...(data.principalInterlocutor && {
+          principalInterlocutor: data.principalInterlocutor as string,
+        }),
         ...(data.email && { email: data.email as string }),
         ...(data.primaryPhone && { primaryPhone: data.primaryPhone as string }),
-        ...(data.secondaryPhone && { secondaryPhone: data.secondaryPhone as string }),
-        ...(data.addressStreet && { addressStreet: data.addressStreet as string }),
+        ...(data.secondaryPhone && {
+          secondaryPhone: data.secondaryPhone as string,
+        }),
+        ...(data.addressStreet && {
+          addressStreet: data.addressStreet as string,
+        }),
         ...(data.addressCity && { addressCity: data.addressCity as string }),
-        ...(data.addressPostal && { addressPostal: data.addressPostal as string }),
-        ...(data.addressCountry && { addressCountry: data.addressCountry as string }),
+        ...(data.addressPostal && {
+          addressPostal: data.addressPostal as string,
+        }),
+        ...(data.addressCountry && {
+          addressCountry: data.addressCountry as string,
+        }),
         ...(data.agenceId && { agenceId: data.agenceId as string }),
+        ...(data.segmentId && { segmentId: Number(data.segmentId) }),
+        ...(data.accountTypeId && {
+          accountTypeId: Number(data.accountTypeId),
+        }),
+        ...(data.secteurActiviteId && {
+          secteurActiviteId: Number(data.secteurActiviteId),
+        }),
+        ...(data.sousActiviteId && {
+          sousActiviteId: Number(data.sousActiviteId),
+        }),
         // Auto-assign the current manager as the client's assigned manager
         ...(user?.id && { assignedManagerId: user.id }),
-        ...(data.relationAvecClient && { relationAvecClient: data.relationAvecClient as 'CLIENT' | 'SUPPLIER' | 'NEIGHBOUR' | 'OTHER' }),
+        ...(data.relationAvecClient && {
+          relationAvecClient: data.relationAvecClient as
+            | "CLIENT"
+            | "SUPPLIER"
+            | "NEIGHBOUR"
+            | "OTHER",
+        }),
         ...(data.scoring && { scoring: data.scoring as string }),
         ...(data.cycle && { cycle: data.cycle as string }),
         ...(data.cbsId && { cbsId: data.cbsId as string }),
       };
       await clientService.create(payload);
-      toast.success('Client created successfully!');
+      toast.success("Client created successfully!");
       setIsCreateModalOpen(false);
       fetchClients();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to create client');
+      toast.error(error.response?.data?.message || "Failed to create client");
     } finally {
       setIsSubmitting(false);
     }
@@ -153,39 +201,79 @@ const ClientsPage = () => {
     setIsSubmitting(true);
     try {
       const payload: ClientUpdateRequest = {
-        ...(data.status && { status: data.status as 'PROSPECT' | 'ACTIVE' }),
+        ...(data.status && { status: data.status as "PROSPECT" | "ACTIVE" }),
         ...(data.firstName && { firstName: data.firstName as string }),
         ...(data.lastName && { lastName: data.lastName as string }),
         ...(data.dateOfBirth && { dateOfBirth: data.dateOfBirth as string }),
         ...(data.nationalId && { nationalId: data.nationalId as string }),
-        ...(data.gender && { gender: data.gender as 'MALE' | 'FEMALE' | 'OTHER' }),
-        ...(data.situationFamiliale && { situationFamiliale: data.situationFamiliale as 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'SEPARATED' | 'WIDOWER' | 'OTHER' }),
+        ...(data.gender && {
+          gender: data.gender as "MALE" | "FEMALE" | "OTHER",
+        }),
+        ...(data.situationFamiliale && {
+          situationFamiliale: data.situationFamiliale as
+            | "SINGLE"
+            | "MARRIED"
+            | "DIVORCED"
+            | "SEPARATED"
+            | "WIDOWER"
+            | "OTHER",
+        }),
         ...(data.nationality && { nationality: data.nationality as string }),
-        ...(data.monthlyIncome !== undefined && { monthlyIncome: Number(data.monthlyIncome) }),
+        ...(data.monthlyIncome !== undefined && {
+          monthlyIncome: Number(data.monthlyIncome),
+        }),
         ...(data.companyName && { companyName: data.companyName as string }),
         ...(data.sigle && { sigle: data.sigle as string }),
-        ...(data.registrationNumber && { registrationNumber: data.registrationNumber as string }),
-        ...(data.principalInterlocutor && { principalInterlocutor: data.principalInterlocutor as string }),
+        ...(data.registrationNumber && {
+          registrationNumber: data.registrationNumber as string,
+        }),
+        ...(data.principalInterlocutor && {
+          principalInterlocutor: data.principalInterlocutor as string,
+        }),
         ...(data.email && { email: data.email as string }),
         ...(data.primaryPhone && { primaryPhone: data.primaryPhone as string }),
-        ...(data.secondaryPhone && { secondaryPhone: data.secondaryPhone as string }),
-        ...(data.addressStreet && { addressStreet: data.addressStreet as string }),
+        ...(data.secondaryPhone && {
+          secondaryPhone: data.secondaryPhone as string,
+        }),
+        ...(data.addressStreet && {
+          addressStreet: data.addressStreet as string,
+        }),
         ...(data.addressCity && { addressCity: data.addressCity as string }),
-        ...(data.addressPostal && { addressPostal: data.addressPostal as string }),
-        ...(data.addressCountry && { addressCountry: data.addressCountry as string }),
+        ...(data.addressPostal && {
+          addressPostal: data.addressPostal as string,
+        }),
+        ...(data.addressCountry && {
+          addressCountry: data.addressCountry as string,
+        }),
         ...(data.agenceId && { agenceId: data.agenceId as string }),
-        ...(data.relationAvecClient && { relationAvecClient: data.relationAvecClient as 'CLIENT' | 'SUPPLIER' | 'NEIGHBOUR' | 'OTHER' }),
+        ...(data.segmentId && { segmentId: Number(data.segmentId) }),
+        ...(data.accountTypeId && {
+          accountTypeId: Number(data.accountTypeId),
+        }),
+        ...(data.secteurActiviteId && {
+          secteurActiviteId: Number(data.secteurActiviteId),
+        }),
+        ...(data.sousActiviteId && {
+          sousActiviteId: Number(data.sousActiviteId),
+        }),
+        ...(data.relationAvecClient && {
+          relationAvecClient: data.relationAvecClient as
+            | "CLIENT"
+            | "SUPPLIER"
+            | "NEIGHBOUR"
+            | "OTHER",
+        }),
         ...(data.scoring && { scoring: data.scoring as string }),
         ...(data.cycle && { cycle: data.cycle as string }),
         ...(data.cbsId && { cbsId: data.cbsId as string }),
       };
       await clientService.update(editingClient.id, payload);
-      toast.success('Client updated successfully!');
+      toast.success("Client updated successfully!");
       setEditingClient(null);
       fetchClients();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to update client');
+      toast.error(error.response?.data?.message || "Failed to update client");
     } finally {
       setIsSubmitting(false);
     }
@@ -196,12 +284,12 @@ const ClientsPage = () => {
     setIsDeleting(true);
     try {
       await clientService.delete(deletingClient.id);
-      toast.success('Client deleted successfully!');
+      toast.success("Client deleted successfully!");
       setDeletingClient(null);
       fetchClients();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to delete client');
+      toast.error(error.response?.data?.message || "Failed to delete client");
     } finally {
       setIsDeleting(false);
     }
@@ -214,7 +302,7 @@ const ClientsPage = () => {
     setQuickSearchResult(null);
     try {
       const params =
-        searchMode === 'national_id'
+        searchMode === "national_id"
           ? { national_id: quickSearchQuery.trim() }
           : { primary_phone: quickSearchQuery.trim() };
       const res = await clientService.search(params);
@@ -222,9 +310,9 @@ const ClientsPage = () => {
     } catch (err: unknown) {
       const error = err as { response?: { status?: number } };
       if (error.response?.status === 404) {
-        setQuickSearchResult('not_found');
+        setQuickSearchResult("not_found");
       } else {
-        toast.error('Search failed');
+        toast.error("Search failed");
       }
     } finally {
       setIsSearching(false);
@@ -234,7 +322,6 @@ const ClientsPage = () => {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="page-container space-y-6">
-
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -246,8 +333,18 @@ const ClientsPage = () => {
         <Button
           onClick={() => setIsCreateModalOpen(true)}
           icon={
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 4v16m8-8H4"
+              />
             </svg>
           }
         >
@@ -264,7 +361,7 @@ const ClientsPage = () => {
           <select
             value={searchMode}
             onChange={(e) => {
-              setSearchMode(e.target.value as 'national_id' | 'primary_phone');
+              setSearchMode(e.target.value as "national_id" | "primary_phone");
               setQuickSearchResult(null);
             }}
             className="rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-sm text-surface-800 focus-ring"
@@ -279,9 +376,11 @@ const ClientsPage = () => {
               setQuickSearchQuery(e.target.value);
               setQuickSearchResult(null);
             }}
-            onKeyDown={(e) => e.key === 'Enter' && handleQuickSearch()}
+            onKeyDown={(e) => e.key === "Enter" && handleQuickSearch()}
             placeholder={
-              searchMode === 'national_id' ? 'Enter national ID…' : 'Enter phone number…'
+              searchMode === "national_id"
+                ? "Enter national ID…"
+                : "Enter phone number…"
             }
             className="flex-1 rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-sm text-surface-800 focus-ring placeholder:text-surface-400"
           />
@@ -295,12 +394,13 @@ const ClientsPage = () => {
         </div>
 
         {/* Search result */}
-        {quickSearchResult === 'not_found' && (
+        {quickSearchResult === "not_found" && (
           <p className="mt-3 text-sm text-amber-600 bg-amber-50 rounded-xl px-4 py-2.5">
-            ⚠️ No client found for this {searchMode === 'national_id' ? 'National ID' : 'phone number'}.
+            ⚠️ No client found for this{" "}
+            {searchMode === "national_id" ? "National ID" : "phone number"}.
           </p>
         )}
-        {quickSearchResult && quickSearchResult !== 'not_found' && (
+        {quickSearchResult && quickSearchResult !== "not_found" && (
           <div className="mt-3 flex items-center justify-between bg-brand-50 border border-brand-100 rounded-xl px-4 py-2.5">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-xs">
@@ -311,7 +411,8 @@ const ClientsPage = () => {
                   {clientDisplayName(quickSearchResult)}
                 </p>
                 <p className="text-xs text-surface-500">
-                  {quickSearchResult.primaryPhone} · {quickSearchResult.nationalId}
+                  {quickSearchResult.primaryPhone} ·{" "}
+                  {quickSearchResult.nationalId}
                 </p>
               </div>
             </div>
@@ -339,12 +440,22 @@ const ClientsPage = () => {
         <LoadingSkeleton type="table" rows={6} />
       ) : (
         <Table
-          headers={['Client', 'Type', 'Contact', 'Agence', 'Manager', 'Status', 'Actions']}
+          headers={[
+            "Client",
+            "Type",
+            "Segment",
+            "Business",
+            "Contact",
+            "Agence",
+            "Manager",
+            "Status",
+            "Actions",
+          ]}
           isEmpty={filteredClients.length === 0}
           emptyMessage={
             searchQuery
-              ? 'No clients match your search'
-              : 'No clients yet. Create the first one!'
+              ? "No clients match your search"
+              : "No clients yet. Create the first one!"
           }
         >
           {filteredClients.map((c) => (
@@ -362,7 +473,9 @@ const ClientsPage = () => {
                       {clientDisplayName(c)}
                     </p>
                     <p className="text-xs text-surface-400">
-                      {c.nationalId || c.registrationNumber || c.id.slice(0, 8) + '...'}
+                      {c.nationalId ||
+                        c.registrationNumber ||
+                        c.id.slice(0, 8) + "..."}
                     </p>
                   </div>
                 </div>
@@ -370,36 +483,58 @@ const ClientsPage = () => {
 
               {/* Type */}
               <td className="px-6 py-4 whitespace-nowrap">
-                <Badge variant={c.clientType === 'PHYSICAL' ? 'info' : 'neutral'} size="sm">
+                <Badge
+                  variant={c.clientType === "PHYSICAL" ? "info" : "neutral"}
+                  size="sm"
+                >
                   {typeLabel(c.clientType)}
                 </Badge>
               </td>
 
+              {/* Segment */}
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className="text-sm text-surface-600">
+                  {c.segmentLibelle || "—"}
+                </span>
+              </td>
+
+              {/* Business Sector & Activity */}
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div>
+                  <p className="text-sm text-surface-600">
+                    {c.secteurActiviteLibelle || "—"}
+                  </p>
+                  <p className="text-xs text-surface-400">
+                    {c.sousActiviteLibelle || "—"}
+                  </p>
+                </div>
+              </td>
+
               {/* Contact */}
               <td className="px-6 py-4 whitespace-nowrap">
-                <p className="text-sm text-surface-600">{c.email || '—'}</p>
-                <p className="text-xs text-surface-400">{c.primaryPhone || '—'}</p>
+                <p className="text-sm text-surface-600">{c.email || "—"}</p>
+                <p className="text-xs text-surface-400">
+                  {c.primaryPhone || "—"}
+                </p>
               </td>
 
               {/* Agence */}
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className="text-sm text-surface-600">
-                  {c.agenceLibelle || c.agenceId || '—'}
+                  {c.agenceLibelle || c.agenceId || "—"}
                 </span>
               </td>
 
               {/* Manager */}
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className="text-sm text-surface-600">
-                  {c.managerFullName || '—'}
+                  {c.managerFullName || "—"}
                 </span>
               </td>
 
               {/* Status */}
               <td className="px-6 py-4 whitespace-nowrap">
-                <Badge variant={statusVariant(c.status)}>
-                  {c.status}
-                </Badge>
+                <Badge variant={statusVariant(c.status)}>{c.status}</Badge>
               </td>
 
               {/* Actions */}
@@ -441,10 +576,7 @@ const ClientsPage = () => {
         onClose={() => setIsCreateModalOpen(false)}
         size="xl"
       >
-        <ClientForm
-          onSubmit={handleCreate}
-          isLoading={isSubmitting}
-        />
+        <ClientForm onSubmit={handleCreate} isLoading={isSubmitting} />
       </Modal>
 
       {/* ── Edit Modal ──────────────────────────────────────────────── */}
@@ -483,10 +615,20 @@ const ClientsPage = () => {
                   {clientDisplayName(viewingClient)}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge variant={viewingClient.clientType === 'PHYSICAL' ? 'info' : 'neutral'} size="sm">
+                  <Badge
+                    variant={
+                      viewingClient.clientType === "PHYSICAL"
+                        ? "info"
+                        : "neutral"
+                    }
+                    size="sm"
+                  >
                     {typeLabel(viewingClient.clientType)}
                   </Badge>
-                  <Badge variant={statusVariant(viewingClient.status)} size="sm">
+                  <Badge
+                    variant={statusVariant(viewingClient.status)}
+                    size="sm"
+                  >
                     {viewingClient.status}
                   </Badge>
                 </div>
@@ -495,34 +637,94 @@ const ClientsPage = () => {
 
             {/* Details grid */}
             {[
-              { label: 'ID', value: viewingClient.id },
-              { label: 'National ID', value: viewingClient.nationalId },
-              { label: 'Tax Identifier', value: viewingClient.taxIdentifier },
-              { label: 'Date of Birth', value: viewingClient.dateOfBirth?.split('T')[0] },
-              { label: 'Gender', value: viewingClient.gender },
-              { label: 'Nationality', value: viewingClient.nationality },
-              { label: 'Marital Status', value: viewingClient.situationFamiliale },
-              { label: 'Monthly Income', value: viewingClient.monthlyIncome != null ? `${viewingClient.monthlyIncome.toLocaleString()} MAD` : undefined },
-              { label: 'Company', value: viewingClient.companyName },
-              { label: 'RC', value: viewingClient.registrationNumber },
-              { label: 'Email', value: viewingClient.email },
-              { label: 'Phone', value: viewingClient.primaryPhone },
-              { label: 'Secondary Phone', value: viewingClient.secondaryPhone },
-              { label: 'Address', value: [viewingClient.addressStreet, viewingClient.addressCity, viewingClient.addressPostal, viewingClient.addressCountry].filter(Boolean).join(', ') },
-              { label: 'Agence', value: viewingClient.agenceLibelle || viewingClient.agenceId },
-              { label: 'Manager', value: viewingClient.managerFullName },
-              { label: 'Scoring', value: viewingClient.scoring },
-              { label: 'Cycle', value: viewingClient.cycle },
-              { label: 'CBS ID', value: viewingClient.cbsId },
-              { label: 'Risk Level', value: viewingClient.ifcLevelOfRiskFr || viewingClient.ifcLevelOfRisk },
-              { label: 'Created At', value: viewingClient.createdAt ? new Date(viewingClient.createdAt).toLocaleString() : undefined },
-              { label: 'Updated At', value: viewingClient.updatedAt ? new Date(viewingClient.updatedAt).toLocaleString() : undefined },
+              { label: "ID", value: viewingClient.id },
+              { label: "National ID", value: viewingClient.nationalId },
+              { label: "Tax Identifier", value: viewingClient.taxIdentifier },
+              {
+                label: "Date of Birth",
+                value: viewingClient.dateOfBirth?.split("T")[0],
+              },
+              { label: "Gender", value: viewingClient.gender },
+              { label: "Nationality", value: viewingClient.nationality },
+              {
+                label: "Marital Status",
+                value: viewingClient.situationFamiliale,
+              },
+              {
+                label: "Monthly Income",
+                value:
+                  viewingClient.monthlyIncome != null
+                    ? `${viewingClient.monthlyIncome.toLocaleString()} MAD`
+                    : undefined,
+              },
+              { label: "Company", value: viewingClient.companyName },
+              { label: "RC", value: viewingClient.registrationNumber },
+              { label: "Email", value: viewingClient.email },
+              { label: "Phone", value: viewingClient.primaryPhone },
+              { label: "Secondary Phone", value: viewingClient.secondaryPhone },
+              {
+                label: "Address",
+                value: [
+                  viewingClient.addressStreet,
+                  viewingClient.addressCity,
+                  viewingClient.addressPostal,
+                  viewingClient.addressCountry,
+                ]
+                  .filter(Boolean)
+                  .join(", "),
+              },
+              {
+                label: "Agence",
+                value: viewingClient.agenceLibelle || viewingClient.agenceId,
+              },
+              { label: "Manager", value: viewingClient.managerFullName },
+              { label: "Scoring", value: viewingClient.scoring },
+              { label: "Cycle", value: viewingClient.cycle },
+              { label: "CBS ID", value: viewingClient.cbsId },
+              { label: "Segment", value: viewingClient.segmentLibelle },
+              {
+                label: "Account Type",
+                value: viewingClient.accountTypeLibelle,
+              },
+              {
+                label: "Business Sector",
+                value: viewingClient.secteurActiviteLibelle,
+              },
+              {
+                label: "Business Activity",
+                value: viewingClient.sousActiviteLibelle,
+              },
+              {
+                label: "Risk Level",
+                value:
+                  viewingClient.ifcLevelOfRiskFr ||
+                  viewingClient.ifcLevelOfRisk,
+              },
+              {
+                label: "Created At",
+                value: viewingClient.createdAt
+                  ? new Date(viewingClient.createdAt).toLocaleString()
+                  : undefined,
+              },
+              {
+                label: "Updated At",
+                value: viewingClient.updatedAt
+                  ? new Date(viewingClient.updatedAt).toLocaleString()
+                  : undefined,
+              },
             ]
               .filter((row) => row.value)
               .map((row) => (
-                <div key={row.label} className="flex justify-between gap-4 py-1.5 border-b border-surface-50">
-                  <span className="text-surface-500 font-medium min-w-[140px]">{row.label}</span>
-                  <span className="text-surface-800 text-right break-all">{row.value}</span>
+                <div
+                  key={row.label}
+                  className="flex justify-between gap-4 py-1.5 border-b border-surface-50"
+                >
+                  <span className="text-surface-500 font-medium min-w-[140px]">
+                    {row.label}
+                  </span>
+                  <span className="text-surface-800 text-right break-all">
+                    {row.value}
+                  </span>
                 </div>
               ))}
 
@@ -547,7 +749,7 @@ const ClientsPage = () => {
         onClose={() => setDeletingClient(null)}
         onConfirm={handleDelete}
         title="Delete Client"
-        message={`Are you sure you want to delete "${deletingClient ? clientDisplayName(deletingClient) : ''}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${deletingClient ? clientDisplayName(deletingClient) : ""}"? This action cannot be undone.`}
         isLoading={isDeleting}
       />
     </div>

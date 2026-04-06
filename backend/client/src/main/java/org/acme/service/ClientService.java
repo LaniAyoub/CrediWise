@@ -201,21 +201,24 @@ public class ClientService {
         client.setAttributes(dto.getAttributes());
         client.setAgenceId(dto.getAgenceId());
         client.setAssignedManagerId(dto.getAssignedManagerId());
-
-        if (dto.getSegmentId() != null) {
-            Segment segment = Segment.findById(dto.getSegmentId());
+        if (dto.getSegmentLibelle() != null && !dto.getSegmentLibelle().isBlank()) {
+            Segment segment = clientRepository.findSegmentByLibelle(dto.getSegmentLibelle())
+                    .orElseThrow(() -> new BadRequestException("Segment not found: " + dto.getSegmentLibelle()));
             client.setSegment(segment);
         }
-        if (dto.getAccountTypeId() != null) {
-            AccountType accountType = AccountType.findById(dto.getAccountTypeId());
+        if (dto.getAccountTypeLibelle() != null && !dto.getAccountTypeLibelle().isBlank()) {
+            AccountType accountType = clientRepository.findAccountTypeByLibelle(dto.getAccountTypeLibelle())
+                    .orElseThrow(() -> new BadRequestException("Account type not found: " + dto.getAccountTypeLibelle()));
             client.setAccountType(accountType);
         }
-        if (dto.getSecteurActiviteId() != null) {
-            SecteurActivite secteur = SecteurActivite.findById(dto.getSecteurActiviteId());
+        if (dto.getSecteurActiviteLibelle() != null && !dto.getSecteurActiviteLibelle().isBlank()) {
+            SecteurActivite secteur = clientRepository.findSecteurActiviteByLibelle(dto.getSecteurActiviteLibelle())
+                    .orElseThrow(() -> new BadRequestException("Business sector not found: " + dto.getSecteurActiviteLibelle()));
             client.setSecteurActivite(secteur);
         }
-        if (dto.getSousActiviteId() != null) {
-            SousActivite sousActivite = SousActivite.findById(dto.getSousActiviteId());
+        if (dto.getSousActiviteLibelle() != null && !dto.getSousActiviteLibelle().isBlank()) {
+            SousActivite sousActivite = clientRepository.findSousActiviteByLibelle(dto.getSousActiviteLibelle())
+                    .orElseThrow(() -> new BadRequestException("Business activity not found: " + dto.getSousActiviteLibelle()));
             client.setSousActivite(sousActivite);
         }
         if (dto.getMappingRisqueActiviteId() != null) {
@@ -268,6 +271,22 @@ public class ClientService {
         }
         if (dto.getMappingRisqueActiviteId() != null) {
             client.setRiskLevel(MappingRisqueActivite.findById(dto.getMappingRisqueActiviteId()));
+        }
+        if (dto.getSegmentLibelle() != null && !dto.getSegmentLibelle().isBlank()) {
+            client.setSegment(clientRepository.findSegmentByLibelle(dto.getSegmentLibelle())
+                    .orElseThrow(() -> new BadRequestException("Segment not found: " + dto.getSegmentLibelle())));
+        }
+        if (dto.getAccountTypeLibelle() != null && !dto.getAccountTypeLibelle().isBlank()) {
+            client.setAccountType(clientRepository.findAccountTypeByLibelle(dto.getAccountTypeLibelle())
+                    .orElseThrow(() -> new BadRequestException("Account type not found: " + dto.getAccountTypeLibelle())));
+        }
+        if (dto.getSecteurActiviteLibelle() != null && !dto.getSecteurActiviteLibelle().isBlank()) {
+            client.setSecteurActivite(clientRepository.findSecteurActiviteByLibelle(dto.getSecteurActiviteLibelle())
+                    .orElseThrow(() -> new BadRequestException("Business sector not found: " + dto.getSecteurActiviteLibelle())));
+        }
+        if (dto.getSousActiviteLibelle() != null && !dto.getSousActiviteLibelle().isBlank()) {
+            client.setSousActivite(clientRepository.findSousActiviteByLibelle(dto.getSousActiviteLibelle())
+                    .orElseThrow(() -> new BadRequestException("Business activity not found: " + dto.getSousActiviteLibelle())));
         }
     }
 

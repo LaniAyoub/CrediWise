@@ -68,4 +68,23 @@ public class ClientCreateDTO {
     private String cycle;
     private String cbsId;
     private Map<String, Object> attributes;
+
+    // Change from numeric IDs to libelle strings
+    private String segmentLibelle;
+    private String accountTypeLibelle;
+    private String secteurActiviteLibelle;
+    private String sousActiviteLibelle;
+
+    // Getters/Setters
+    public String getSegmentLibelle() { return segmentLibelle; }
+    public void setSegmentLibelle(String segmentLibelle) { this.segmentLibelle = segmentLibelle; }
+
+    public String getAccountTypeLibelle() { return accountTypeLibelle; }
+    public void setAccountTypeLibelle(String accountTypeLibelle) { this.accountTypeLibelle = accountTypeLibelle; }
+
+    public String getSecteurActiviteLibelle() { return secteurActiviteLibelle; }
+    public void setSecteurActiviteLibelle(String secteurActiviteLibelle) { this.secteurActiviteLibelle = secteurActiviteLibelle; }
+
+    public String getSousActiviteLibelle() { return sousActiviteLibelle; }
+    public void setSousActiviteLibelle(String sousActiviteLibelle) { this.sousActiviteLibelle = sousActiviteLibelle; }
 }

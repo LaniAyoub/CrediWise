@@ -1,58 +1,273 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import type { Client } from '@/types/client.types';
-import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
-import { useAuth } from '@/hooks/useAuth';
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import type { Client } from "@/types/client.types";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  isAtLeast18YearsOld,
+  isValidCIN,
+  isValidTunisianPhone,
+} from "@/utils/validators";
 
 // ── Validation schema ────────────────────────────────────────────────────────
 const clientSchema = z
   .object({
-    clientType: z.enum(['PHYSICAL', 'LEGAL']),
+    clientType: z.enum(["PHYSICAL", "LEGAL"]),
 
-    // Physical
-    firstName: z.string().optional().or(z.literal('')),
-    lastName: z.string().optional().or(z.literal('')),
-    dateOfBirth: z.string().optional().or(z.literal('')),
-    nationalId: z.string().optional().or(z.literal('')),
-    taxIdentifier: z.string().optional().or(z.literal('')),
-    gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional().or(z.literal('')),
-    situationFamiliale: z
-      .enum(['OTHER', 'SINGLE', 'DIVORCED', 'MARRIED', 'SEPARATED', 'WIDOWER'])
+    // Physical - made optional, validated in superRefine
+    firstName: z.string().optional().or(z.literal("")),
+    lastName: z.string().optional().or(z.literal("")),
+    dateOfBirth: z.string().optional().or(z.literal("")),
+    nationalId: z.string().optional().or(z.literal("")),
+    taxIdentifier: z.string().optional().or(z.literal("")),
+    gender: z.string().optional().or(z.literal("")),
+    situationFamiliale: z.string().optional().or(z.literal("")),
+    nationality: z.string().optional().or(z.literal("")),
+    monthlyIncome: z.string().optional().or(z.literal("")),
+
+    // Legal - made optional, validated in superRefine
+    companyName: z.string().optional().or(z.literal("")),
+    sigle: z.string().optional().or(z.literal("")),
+    registrationNumber: z.string().optional().or(z.literal("")),
+    principalInterlocutor: z.string().optional().or(z.literal("")),
+
+    // Contact - always required
+    email: z
+      .string()
+      .min(1, "Email is required")
+      .email("Email must be a valid email address"),
+    primaryPhone: z
+      .string()
+      .min(1, "Primary phone is required")
+      .refine(
+        (val) => isValidTunisianPhone(val),
+        "Phone must be in format +216 followed by 8 digits",
+      ),
+    secondaryPhone: z
+      .string()
       .optional()
-      .or(z.literal('')),
-    nationality: z.string().optional().or(z.literal('')),
-    monthlyIncome: z.string().optional().or(z.literal('')),
+      .refine(
+        (val) => !val || isValidTunisianPhone(val),
+        "Secondary phone must be in format +216 followed by 8 digits",
+      )
+      .or(z.literal("")),
+    addressStreet: z.string().min(1, "Street is required"),
+    addressCity: z.string().min(1, "City is required"),
+    addressPostal: z.string().min(1, "Postal code is required"),
+    addressCountry: z.string().min(1, "Country is required"),
 
-    // Legal
-    companyName: z.string().optional().or(z.literal('')),
-    sigle: z.string().optional().or(z.literal('')),
-    registrationNumber: z.string().optional().or(z.literal('')),
-    principalInterlocutor: z.string().optional().or(z.literal('')),
-
-    // Contact
-    email: z.string().email('Invalid email').optional().or(z.literal('')),
-    primaryPhone: z.string().optional().or(z.literal('')),
-    secondaryPhone: z.string().optional().or(z.literal('')),
-    addressStreet: z.string().optional().or(z.literal('')),
-    addressCity: z.string().optional().or(z.literal('')),
-    addressPostal: z.string().optional().or(z.literal('')),
-    addressCountry: z.string().optional().or(z.literal('')),
-
-    // Other
+    // Other - always required
     // agenceId is auto-injected from manager's auth context — not in the form
-    relationAvecClient: z
-      .enum(['SUPPLIER', 'CLIENT', 'NEIGHBOUR', 'OTHER'])
-      .optional()
-      .or(z.literal('')),
-    scoring: z.string().optional().or(z.literal('')),
-    cycle: z.string().optional().or(z.literal('')),
-    cbsId: z.string().optional().or(z.literal('')),
+    relationAvecClient: z.string().min(1, "Relation is required"),
+    scoring: z.string().optional().or(z.literal("")),
+    cycle: z.string().min(1, "Cycle is required"),
+    cbsId: z.string().optional().or(z.literal("")),
+
+    // Reference entities (numeric IDs) - REQUIRED
+    segmentId: z.string().min(1, "Segment is required"),
+    accountTypeId: z.string().min(1, "Account type is required"),
+    secteurActiviteId: z.string().min(1, "Business sector is required"),
+    sousActiviteId: z.string().min(1, "Business activity is required"),
 
     // Update-only
-    status: z.enum(['PROSPECT', 'ACTIVE']).optional().or(z.literal('')),
+    status: z
+      .enum(["PROSPECT", "ACTIVE"], {
+        message: "Status is required",
+      })
+      .optional()
+      .or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    // Validate PHYSICAL specific fields
+    if (data.clientType === "PHYSICAL") {
+      if (!data.firstName || data.firstName.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["firstName"],
+          message: "First name is required",
+        });
+      }
+      if (!data.lastName || data.lastName.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["lastName"],
+          message: "Last name is required",
+        });
+      }
+      if (!data.dateOfBirth || data.dateOfBirth.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["dateOfBirth"],
+          message: "Date of birth is required",
+        });
+      } else if (!isAtLeast18YearsOld(data.dateOfBirth)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["dateOfBirth"],
+          message: "Client must be at least 18 years old",
+        });
+      }
+      if (!data.nationalId || data.nationalId.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["nationalId"],
+          message: "CIN is required",
+        });
+      } else if (!/^[A-Z0-9]{8}$/.test(data.nationalId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["nationalId"],
+          message: "CIN must be exactly 8 alphanumeric characters",
+        });
+      }
+      if (!data.taxIdentifier || data.taxIdentifier.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["taxIdentifier"],
+          message: "Tax identifier is required",
+        });
+      }
+      if (!data.gender) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["gender"],
+          message: "Gender is required",
+        });
+      }
+      if (!data.situationFamiliale) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["situationFamiliale"],
+          message: "Marital status is required",
+        });
+      }
+      if (!data.nationality || data.nationality.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["nationality"],
+          message: "Nationality is required",
+        });
+      }
+      if (!data.monthlyIncome || data.monthlyIncome.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["monthlyIncome"],
+          message: "Monthly income is required",
+        });
+      }
+    }
+
+    // Validate LEGAL specific fields
+    if (data.clientType === "LEGAL") {
+      if (!data.companyName || data.companyName.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["companyName"],
+          message: "Company name is required",
+        });
+      }
+      if (!data.sigle || data.sigle.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["sigle"],
+          message: "Sigle is required",
+        });
+      }
+      if (!data.registrationNumber || data.registrationNumber.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["registrationNumber"],
+          message: "Registration number is required",
+        });
+      }
+      if (
+        !data.principalInterlocutor ||
+        data.principalInterlocutor.trim() === ""
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["principalInterlocutor"],
+          message: "Principal interlocutor is required",
+        });
+      }
+    }
+
+    // Validate common fields
+    if (!data.addressStreet || data.addressStreet.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["addressStreet"],
+        message: "Street is required",
+      });
+    }
+    if (!data.addressCity || data.addressCity.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["addressCity"],
+        message: "City is required",
+      });
+    }
+    if (!data.addressPostal || data.addressPostal.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["addressPostal"],
+        message: "Postal code is required",
+      });
+    }
+    if (!data.addressCountry || data.addressCountry.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["addressCountry"],
+        message: "Country is required",
+      });
+    }
+    if (!data.cycle || data.cycle.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cycle"],
+        message: "Cycle is required",
+      });
+    }
+    if (!data.relationAvecClient) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["relationAvecClient"],
+        message: "Relation is required",
+      });
+    }
+
+    // Validate reference fields (always required)
+    if (!data.segmentId || data.segmentId.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["segmentId"],
+        message: "Segment is required",
+      });
+    }
+    if (!data.accountTypeId || data.accountTypeId.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["accountTypeId"],
+        message: "Account type is required",
+      });
+    }
+    if (!data.secteurActiviteId || data.secteurActiviteId.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["secteurActiviteId"],
+        message: "Business sector is required",
+      });
+    }
+    if (!data.sousActiviteId || data.sousActiviteId.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sousActiviteId"],
+        message: "Business activity is required",
+      });
+    }
   });
 
 type ClientFormData = z.infer<typeof clientSchema>;
@@ -78,7 +293,10 @@ const SelectField = ({
   children: React.ReactNode;
 }) => (
   <div className="mb-4">
-    <label htmlFor={id} className="block text-sm font-medium text-surface-600 mb-1.5">
+    <label
+      htmlFor={id}
+      className="block text-sm font-medium text-surface-600 mb-1.5"
+    >
       {label}
     </label>
     <select
@@ -121,52 +339,88 @@ const ClientForm = ({
       ? {
           clientType: defaultValues.clientType,
           status: defaultValues.status,
-          firstName: defaultValues.firstName || '',
-          lastName: defaultValues.lastName || '',
-          dateOfBirth: defaultValues.dateOfBirth?.split('T')[0] || '',
-          nationalId: defaultValues.nationalId || '',
-          taxIdentifier: defaultValues.taxIdentifier || '',
-          gender: defaultValues.gender ?? '',
-          situationFamiliale: defaultValues.situationFamiliale ?? '',
-          nationality: defaultValues.nationality || '',
-          monthlyIncome: defaultValues.monthlyIncome?.toString() || '',
-          companyName: defaultValues.companyName || '',
-          sigle: defaultValues.sigle || '',
-          registrationNumber: defaultValues.registrationNumber || '',
-          principalInterlocutor: defaultValues.principalInterlocutor || '',
-          email: defaultValues.email || '',
-          primaryPhone: defaultValues.primaryPhone || '',
-          secondaryPhone: defaultValues.secondaryPhone || '',
-          addressStreet: defaultValues.addressStreet || '',
-          addressCity: defaultValues.addressCity || '',
-          addressPostal: defaultValues.addressPostal || '',
-          addressCountry: defaultValues.addressCountry || '',
-          relationAvecClient: defaultValues.relationAvecClient ?? '',
-          scoring: defaultValues.scoring || '',
-          cycle: defaultValues.cycle || '',
-          cbsId: defaultValues.cbsId || '',
+          firstName: defaultValues.firstName || "",
+          lastName: defaultValues.lastName || "",
+          dateOfBirth: defaultValues.dateOfBirth?.split("T")[0] || "",
+          nationalId: defaultValues.nationalId || "",
+          taxIdentifier: defaultValues.taxIdentifier || "",
+          gender: defaultValues.gender ?? "",
+          situationFamiliale: defaultValues.situationFamiliale ?? "",
+          nationality: defaultValues.nationality || "",
+          monthlyIncome: defaultValues.monthlyIncome?.toString() || "",
+          companyName: defaultValues.companyName || "",
+          sigle: defaultValues.sigle || "",
+          registrationNumber: defaultValues.registrationNumber || "",
+          principalInterlocutor: defaultValues.principalInterlocutor || "",
+          email: defaultValues.email || "",
+          primaryPhone: defaultValues.primaryPhone || "",
+          secondaryPhone: defaultValues.secondaryPhone || "",
+          addressStreet: defaultValues.addressStreet || "",
+          addressCity: defaultValues.addressCity || "",
+          addressPostal: defaultValues.addressPostal || "",
+          addressCountry: defaultValues.addressCountry || "",
+          relationAvecClient: defaultValues.relationAvecClient ?? "",
+          scoring: defaultValues.scoring || "",
+          cycle: defaultValues.cycle || "",
+          cbsId: defaultValues.cbsId || "",
+          segmentId: defaultValues.segmentId?.toString() || "",
+          accountTypeId: defaultValues.accountTypeId?.toString() || "",
+          secteurActiviteId: defaultValues.secteurActiviteId?.toString() || "",
+          sousActiviteId: defaultValues.sousActiviteId?.toString() || "",
         }
-      : { clientType: 'PHYSICAL' },
+      : {
+          clientType: "PHYSICAL",
+          firstName: "",
+          lastName: "",
+          dateOfBirth: "",
+          nationalId: "",
+          taxIdentifier: "",
+          gender: "",
+          situationFamiliale: "",
+          nationality: "",
+          monthlyIncome: "",
+          companyName: "",
+          sigle: "",
+          registrationNumber: "",
+          principalInterlocutor: "",
+          email: "",
+          primaryPhone: "",
+          secondaryPhone: "",
+          addressStreet: "",
+          addressCity: "",
+          addressPostal: "",
+          addressCountry: "",
+          relationAvecClient: "",
+          scoring: "",
+          cycle: "",
+          cbsId: "",
+          segmentId: "",
+          accountTypeId: "",
+          secteurActiviteId: "",
+          sousActiviteId: "",
+        },
   });
 
-  const clientType = watch('clientType');
-  const isPhysical = clientType === 'PHYSICAL';
+  const clientType = watch("clientType");
+  const isPhysical = clientType === "PHYSICAL";
 
   // Wrap onSubmit to auto-inject agenceId from the logged-in manager
   const handleFormSubmit = (data: ClientFormData) => {
-    onSubmit({ ...data, agenceId: user?.agenceId || '' });
+    onSubmit({ ...data, agenceId: user?.agenceId || "" });
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-1">
-
+    <form
+      onSubmit={handleSubmit(handleFormSubmit as any)}
+      className="space-y-1"
+    >
       {/* ── Type & Status ─────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
         <SelectField
           label="Client Type"
           id="clientType"
           error={errors.clientType?.message}
-          {...register('clientType')}
+          {...register("clientType")}
         >
           <option value="PHYSICAL">👤 Physical Person</option>
           <option value="LEGAL">🏢 Legal Entity</option>
@@ -177,7 +431,7 @@ const ClientForm = ({
             label="Status"
             id="status"
             error={errors.status?.message}
-            {...register('status')}
+            {...register("status")}
           >
             <option value="">— keep current —</option>
             <option value="PROSPECT">Prospect</option>
@@ -193,29 +447,29 @@ const ClientForm = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <Input
               label="First Name"
-              {...register('firstName')}
+              {...register("firstName")}
               error={errors.firstName?.message}
-              placeholder="Mohamed"
+              placeholder="First Name"
             />
             <Input
               label="Last Name"
-              {...register('lastName')}
+              {...register("lastName")}
               error={errors.lastName?.message}
-              placeholder="Alaoui"
+              placeholder="Last Name"
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <Input
               label="Date of Birth"
               type="date"
-              {...register('dateOfBirth')}
+              {...register("dateOfBirth")}
               error={errors.dateOfBirth?.message}
             />
             <SelectField
               label="Gender"
               id="gender"
               error={errors.gender?.message}
-              {...register('gender')}
+              {...register("gender")}
             >
               <option value="">Select gender</option>
               <option value="MALE">Male</option>
@@ -226,15 +480,15 @@ const ClientForm = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <Input
               label="National ID (CIN)"
-              {...register('nationalId')}
+              {...register("nationalId")}
               error={errors.nationalId?.message}
-              placeholder="AB123456"
+              placeholder="12345678"
             />
             <Input
               label="Tax Identifier"
-              {...register('taxIdentifier')}
+              {...register("taxIdentifier")}
               error={errors.taxIdentifier?.message}
-              placeholder="ICE / IF"
+              placeholder="Tax ID"
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
@@ -242,7 +496,7 @@ const ClientForm = ({
               label="Marital Status"
               id="situationFamiliale"
               error={errors.situationFamiliale?.message}
-              {...register('situationFamiliale')}
+              {...register("situationFamiliale")}
             >
               <option value="">Select status</option>
               <option value="SINGLE">Single</option>
@@ -254,19 +508,19 @@ const ClientForm = ({
             </SelectField>
             <Input
               label="Nationality"
-              {...register('nationality')}
+              {...register("nationality")}
               error={errors.nationality?.message}
-              placeholder="Moroccan"
+              placeholder="Tunisian"
             />
           </div>
           <Input
-            label="Monthly Income (MAD)"
+            label="Monthly Income (TND)"
             type="number"
             min="0"
             step="0.01"
-            {...register('monthlyIncome')}
+            {...register("monthlyIncome")}
             error={errors.monthlyIncome?.message}
-            placeholder="5000.00"
+            placeholder="2000.00"
           />
         </>
       )}
@@ -278,29 +532,29 @@ const ClientForm = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <Input
               label="Company Name"
-              {...register('companyName')}
+              {...register("companyName")}
               error={errors.companyName?.message}
-              placeholder="Société Générale SA"
+              placeholder="Company Name"
             />
             <Input
               label="Sigle / Abbreviation"
-              {...register('sigle')}
+              {...register("sigle")}
               error={errors.sigle?.message}
-              placeholder="SG"
+              placeholder="Abbreviation"
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <Input
               label="Registration Number (RC)"
-              {...register('registrationNumber')}
+              {...register("registrationNumber")}
               error={errors.registrationNumber?.message}
-              placeholder="RC 123456"
+              placeholder="RC"
             />
             <Input
               label="Principal Interlocutor"
-              {...register('principalInterlocutor')}
+              {...register("principalInterlocutor")}
               error={errors.principalInterlocutor?.message}
-              placeholder="Mr. Jean Dupont"
+              placeholder="Contact Name"
             />
           </div>
         </>
@@ -311,22 +565,22 @@ const ClientForm = ({
       <Input
         label="Email"
         type="email"
-        {...register('email')}
+        {...register("email")}
         error={errors.email?.message}
-        placeholder="client@example.com"
+        placeholder="email@example.com"
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
         <Input
           label="Primary Phone"
-          {...register('primaryPhone')}
+          {...register("primaryPhone")}
           error={errors.primaryPhone?.message}
-          placeholder="+212 6XX XXX XXX"
+          placeholder="+216 2XXXX XXXX"
         />
         <Input
           label="Secondary Phone"
-          {...register('secondaryPhone')}
+          {...register("secondaryPhone")}
           error={errors.secondaryPhone?.message}
-          placeholder="+212 5XX XXX XXX"
+          placeholder="+216 2XXXX XXXX (optional)"
         />
       </div>
 
@@ -334,28 +588,63 @@ const ClientForm = ({
       <SectionTitle title="Address" icon="📍" />
       <Input
         label="Street"
-        {...register('addressStreet')}
+        {...register("addressStreet")}
         error={errors.addressStreet?.message}
-        placeholder="12 Rue Mohamed V"
+        placeholder="Street Address"
       />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4">
         <Input
           label="City"
-          {...register('addressCity')}
+          {...register("addressCity")}
           error={errors.addressCity?.message}
-          placeholder="Casablanca"
+          placeholder="Tunis"
         />
         <Input
           label="Postal Code"
-          {...register('addressPostal')}
+          {...register("addressPostal")}
           error={errors.addressPostal?.message}
-          placeholder="20000"
+          placeholder="1000"
         />
         <Input
           label="Country"
-          {...register('addressCountry')}
+          {...register("addressCountry")}
           error={errors.addressCountry?.message}
-          placeholder="Morocco"
+          placeholder="Tunisia"
+        />
+      </div>
+
+      {/* ── Business Classification ───────────────────────────────── */}
+      <SectionTitle title="Business Classification" icon="📊" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+        <Input
+          label="Segment ID"
+          type="number"
+          {...register("segmentId")}
+          error={errors.segmentId?.message}
+          placeholder="Enter segment ID (1-100)"
+        />
+        <Input
+          label="Account Type ID"
+          type="number"
+          {...register("accountTypeId")}
+          error={errors.accountTypeId?.message}
+          placeholder="Enter account type ID (1-100)"
+        />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+        <Input
+          label="Business Sector ID"
+          type="number"
+          {...register("secteurActiviteId")}
+          error={errors.secteurActiviteId?.message}
+          placeholder="Enter business sector ID"
+        />
+        <Input
+          label="Business Activity ID"
+          type="number"
+          {...register("sousActiviteId")}
+          error={errors.sousActiviteId?.message}
+          placeholder="Enter business activity ID"
         />
       </div>
 
@@ -380,7 +669,7 @@ const ClientForm = ({
           label="Relation avec client"
           id="relationAvecClient"
           error={errors.relationAvecClient?.message}
-          {...register('relationAvecClient')}
+          {...register("relationAvecClient")}
         >
           <option value="">Select relation</option>
           <option value="CLIENT">Client</option>
@@ -392,28 +681,28 @@ const ClientForm = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4">
         <Input
           label="CBS ID"
-          {...register('cbsId')}
+          {...register("cbsId")}
           error={errors.cbsId?.message}
-          placeholder="CBS-00001"
+          placeholder="CBS ID (optional)"
         />
         <Input
           label="Scoring"
-          {...register('scoring')}
+          {...register("scoring")}
           error={errors.scoring?.message}
-          placeholder="A+"
+          placeholder="Score (optional)"
         />
         <Input
           label="Cycle"
-          {...register('cycle')}
+          {...register("cycle")}
           error={errors.cycle?.message}
-          placeholder="C1"
+          placeholder="Cycle"
         />
       </div>
 
       {/* ── Submit ────────────────────────────────────────────────── */}
       <div className="flex justify-end gap-3 pt-4 border-t border-surface-100">
         <Button type="submit" isLoading={isLoading}>
-          {isEdit ? 'Update Client' : 'Create Client'}
+          {isEdit ? "Update Client" : "Create Client"}
         </Button>
       </div>
     </form>

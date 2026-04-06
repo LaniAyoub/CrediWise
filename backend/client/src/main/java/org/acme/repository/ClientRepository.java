@@ -2,7 +2,7 @@ package org.acme.repository;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.acme.entity.Client;
+import org.acme.entity.*;
 import org.acme.entity.enums.ClientStatus;
 
 import java.util.List;
@@ -41,5 +41,41 @@ public class ClientRepository implements PanacheRepositoryBase<Client, UUID> {
 
     public Optional<Client> findByPrimaryPhone(String primaryPhone) {
         return find("primaryPhone", primaryPhone).firstResultOptional();
+    }
+
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // NEW METHODS: Find reference entities by libelle
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public Optional<Segment> findSegmentByLibelle(String libelle) {
+        return getEntityManager().createQuery(
+                        "SELECT s FROM Segment s WHERE s.libelle = ?1", Segment.class)
+                .setParameter(1, libelle)
+                .getResultStream()
+                .findFirst();
+    }
+
+    public Optional<AccountType> findAccountTypeByLibelle(String libelle) {
+        return getEntityManager().createQuery(
+                        "SELECT a FROM AccountType a WHERE a.libelle = ?1", AccountType.class)
+                .setParameter(1, libelle)
+                .getResultStream()
+                .findFirst();
+    }
+    public Optional<SecteurActivite> findSecteurActiviteByLibelle(String libelle) {
+        return getEntityManager().createQuery(
+                        "SELECT s FROM SecteurActivite s WHERE s.libelle = ?1", SecteurActivite.class)
+                .setParameter(1, libelle)
+                .getResultStream()
+                .findFirst();
+    }
+
+    public Optional<SousActivite> findSousActiviteByLibelle(String libelle) {
+        return getEntityManager().createQuery(
+                        "SELECT s FROM SousActivite s WHERE s.libelle = ?1", SousActivite.class)
+                .setParameter(1, libelle)
+                .getResultStream()
+                .findFirst();
     }
 }

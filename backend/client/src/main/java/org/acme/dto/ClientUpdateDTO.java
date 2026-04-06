@@ -66,4 +66,9 @@ public class ClientUpdateDTO {
     private String cycle;
     private String cbsId;
     private Map<String, Object> attributes;
+
+    private String segmentLibelle;
+    private String accountTypeLibelle;
+    private String secteurActiviteLibelle;
+    private String sousActiviteLibelle;
 }
