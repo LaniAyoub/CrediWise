@@ -9,5 +9,6 @@ public class AgenceRepository implements PanacheRepositoryBase<Agence, String> {
     public boolean existsById(String idBranch) {
         return count("idBranch", idBranch) > 0;
     }
+    
 }
 

@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import RoleGuard from './components/layout/RoleGuard';
 import { Toaster } from 'react-hot-toast';
 
 // Lazy-loaded pages
@@ -9,7 +10,11 @@ const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const AgencesPage = lazy(() => import('./pages/agences/AgencesPage'));
 const GestionnairesPage = lazy(() => import('./pages/gestionnaires/GestionnairesPage'));
+const ClientsPage = lazy(() => import('./pages/clients/ClientsPage'));
 const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'));
+
+// Roles allowed to manage agences & gestionnaires
+const ADMIN_ROLES = ['SUPER_ADMIN', 'TECH_USER'];
 
 // Loading fallback
 const PageLoader = () => (
@@ -51,8 +56,23 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/agences" element={<AgencesPage />} />
-              <Route path="/gestionnaires" element={<GestionnairesPage />} />
+              <Route
+                path="/agences"
+                element={
+                  <RoleGuard allowedRoles={ADMIN_ROLES}>
+                    <AgencesPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/gestionnaires"
+                element={
+                  <RoleGuard allowedRoles={ADMIN_ROLES}>
+                    <GestionnairesPage />
+                  </RoleGuard>
+                }
+              />
+              <Route path="/clients" element={<ClientsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
