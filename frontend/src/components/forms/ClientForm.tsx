@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -6,6 +6,10 @@ import type { Client } from "@/types/client.types";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  referenceService,
+  type ReferenceItem,
+} from "@/services/reference.service";
 import {
   isAtLeast18YearsOld,
   isValidCIN,
@@ -327,6 +331,13 @@ const ClientForm = ({
 }: ClientFormProps) => {
   const { user } = useAuth();
 
+  // State for reference data
+  const [segments, setSegments] = useState<ReferenceItem[]>([]);
+  const [accountTypes, setAccountTypes] = useState<ReferenceItem[]>([]);
+  const [secteurActivites, setSecteurActivites] = useState<ReferenceItem[]>([]);
+  const [sousActivites, setSousActivites] = useState<ReferenceItem[]>([]);
+  const [loadingReferences, setLoadingReferences] = useState(true);
+
   const {
     register,
     handleSubmit,
@@ -401,12 +412,83 @@ const ClientForm = ({
         },
   });
 
+  // Load reference data on component mount
+  useEffect(() => {
+    const loadReferences = async () => {
+      try {
+        setLoadingReferences(true);
+        const [segmentsRes, accountTypesRes, secteurRes] = await Promise.all([
+          referenceService.getSegments(),
+          referenceService.getAccountTypes(),
+          referenceService.getSecteurActivites(),
+        ]);
+
+        setSegments(segmentsRes.data);
+        setAccountTypes(accountTypesRes.data);
+        setSecteurActivites(secteurRes.data);
+
+        // Load all sous-activites initially
+        const sousActivitesRes = await referenceService.getSousActivites();
+        setSousActivites(sousActivitesRes.data);
+      } catch (error) {
+        console.error("Failed to load reference data:", error);
+      } finally {
+        setLoadingReferences(false);
+      }
+    };
+
+    loadReferences();
+  }, []);
+
+  // Watch secteurActiviteId and load filtered sous-activites
+  const selectedSecteurId = watch("secteurActiviteId");
+  useEffect(() => {
+    if (selectedSecteurId && selectedSecteurId.trim() !== "") {
+      const loadSousActivites = async () => {
+        try {
+          const res = await referenceService.getSousActivitesBySecteur(
+            parseInt(selectedSecteurId),
+          );
+          setSousActivites(res.data);
+        } catch (error) {
+          console.error("Failed to load sous-activites:", error);
+        }
+      };
+
+      loadSousActivites();
+    } else {
+      // Load all sous-activites if no sector is selected
+      const loadAllSousActivites = async () => {
+        try {
+          const res = await referenceService.getSousActivites();
+          setSousActivites(res.data);
+        } catch (error) {
+          console.error("Failed to load sous-activites:", error);
+        }
+      };
+
+      loadAllSousActivites();
+    }
+  }, [selectedSecteurId]);
+
   const clientType = watch("clientType");
   const isPhysical = clientType === "PHYSICAL";
 
   // Wrap onSubmit to auto-inject agenceId from the logged-in manager
   const handleFormSubmit = (data: ClientFormData) => {
-    onSubmit({ ...data, agenceId: user?.agenceId || "" });
+    onSubmit({   ...data,
+        agenceId: user?.agenceId || "",
+        // Convertir les IDs string → number pour le backend
+        segmentId: data.segmentId ? parseInt(data.segmentId) : null,
+        accountTypeId: data.accountTypeId ? parseInt(data.accountTypeId) : null,
+        secteurActiviteId: data.secteurActiviteId ? parseInt(data.secteurActiviteId) : null,
+        sousActiviteId: data.sousActiviteId ? parseInt(data.sousActiviteId) : null,
+        // Vider les libelles pour éviter la confusion
+        segmentLibelle: null,
+        accountTypeLibelle: null,
+        secteurActiviteLibelle: null,
+        sousActiviteLibelle: null,
+    });
   };
 
   return (
@@ -616,36 +698,81 @@ const ClientForm = ({
       {/* ── Business Classification ───────────────────────────────── */}
       <SectionTitle title="Business Classification" icon="📊" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-        <Input
-          label="Segment ID"
-          type="number"
-          {...register("segmentId")}
+        <SelectField
+          label="Segment"
+          id="segmentId"
           error={errors.segmentId?.message}
-          placeholder="Enter segment ID (1-100)"
-        />
-        <Input
-          label="Account Type ID"
-          type="number"
-          {...register("accountTypeId")}
+          {...register("segmentId")}
+          disabled={loadingReferences}
+        >
+          <option value="">
+            {loadingReferences ? "Loading segments..." : "Select a segment"}
+          </option>
+          {segments.map((segment) => (
+            <option key={segment.id} value={segment.id.toString()}>
+              {segment.libelle}
+            </option>
+          ))}
+        </SelectField>
+
+        <SelectField
+          label="Account Type"
+          id="accountTypeId"
           error={errors.accountTypeId?.message}
-          placeholder="Enter account type ID (1-100)"
-        />
+          {...register("accountTypeId")}
+          disabled={loadingReferences}
+        >
+          <option value="">
+            {loadingReferences
+              ? "Loading account types..."
+              : "Select an account type"}
+          </option>
+          {accountTypes.map((type) => (
+            <option key={type.id} value={type.id.toString()}>
+              {type.libelle}
+            </option>
+          ))}
+        </SelectField>
       </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-        <Input
-          label="Business Sector ID"
-          type="number"
-          {...register("secteurActiviteId")}
+        <SelectField
+          label="Business Sector"
+          id="secteurActiviteId"
           error={errors.secteurActiviteId?.message}
-          placeholder="Enter business sector ID"
-        />
-        <Input
-          label="Business Activity ID"
-          type="number"
-          {...register("sousActiviteId")}
+          {...register("secteurActiviteId")}
+          disabled={loadingReferences}
+        >
+          <option value="">
+            {loadingReferences
+              ? "Loading sectors..."
+              : "Select a business sector"}
+          </option>
+          {secteurActivites.map((secteur) => (
+            <option key={secteur.id} value={secteur.id.toString()}>
+              {secteur.libelle}
+            </option>
+          ))}
+        </SelectField>
+
+        <SelectField
+          label="Business Activity"
+          id="sousActiviteId"
           error={errors.sousActiviteId?.message}
-          placeholder="Enter business activity ID"
-        />
+          {...register("sousActiviteId")}
+          disabled={loadingReferences}
+        >
+          <option value="">
+            {loadingReferences
+              ? "Loading activities..."
+              : "Select a business activity"}
+          </option>
+          {sousActivites.map((activity) => (
+            <option key={activity.id} value={activity.id.toString()}>
+              {activity.libelle}
+            </option>
+          ))}
+        </SelectField>
       </div>
 
       {/* ── Banking Info ──────────────────────────────────────────── */}

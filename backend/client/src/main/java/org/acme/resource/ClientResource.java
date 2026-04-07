@@ -9,6 +9,7 @@ import jakarta.ws.rs.core.Response;
 import org.acme.dto.ClientCreateDTO;
 import org.acme.dto.ClientResponseDTO;
 import org.acme.dto.ClientUpdateDTO;
+import org.acme.dto.ReferenceDTO;
 import org.acme.entity.Client;
 import org.acme.entity.enums.ClientStatus;
 import org.acme.repository.ClientRepository;
@@ -127,5 +128,37 @@ public class ClientResource {
     public Response delete(@PathParam("id") UUID id) {
         clientService.delete(id);
         return Response.noContent().build();
+    }
+
+    @GET
+    @Path("/references/segments")
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @Operation(summary = "List all segments")
+    public List<ReferenceDTO> listSegments() {
+        return clientService.listSegments();
+    }
+
+    @GET
+    @Path("/references/account-types")
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @Operation(summary = "List all account types")
+    public List<ReferenceDTO> listAccountTypes() {
+        return clientService.listAccountTypes();
+    }
+
+    @GET
+    @Path("/references/secteur-activites")
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @Operation(summary = "List all secteur activités")
+    public List<ReferenceDTO> listSecteurActivites() {
+        return clientService.listSecteurActivites();
+    }
+
+    @GET
+    @Path("/references/sous-activites")
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @Operation(summary = "List all sous-activités, optionally filtered by secteur")
+    public List<ReferenceDTO> listSousActivites(@QueryParam("secteurActiviteId") Long secteurActiviteId) {
+        return clientService.listSousActivites(secteurActiviteId);
     }
 }

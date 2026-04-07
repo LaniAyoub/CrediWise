@@ -57,4 +57,6 @@ export const clientService = {
   delete: (id: string) => {
     return api.delete(`/api/clients/${id}`, { baseURL: CLIENT_API_BASE_URL });
   },
+
+  
 };

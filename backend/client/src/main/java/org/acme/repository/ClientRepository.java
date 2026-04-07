@@ -78,4 +78,39 @@ public class ClientRepository implements PanacheRepositoryBase<Client, UUID> {
                 .getResultStream()
                 .findFirst();
     }
+// ─────────────────────────────────────────────────────────────────────────
+// Reference entity list methods
+// ─────────────────────────────────────────────────────────────────────────
+
+    public List<Segment> listAllSegments() {
+        return getEntityManager()
+                .createQuery("SELECT s FROM Segment s ORDER BY s.libelle", Segment.class)
+                .getResultList();
+    }
+
+    public List<AccountType> listAllAccountTypes() {
+        return getEntityManager()
+                .createQuery("SELECT a FROM AccountType a ORDER BY a.libelle", AccountType.class)
+                .getResultList();
+    }
+
+    public List<SecteurActivite> listAllSecteurActivites() {
+        return getEntityManager()
+                .createQuery("SELECT s FROM SecteurActivite s ORDER BY s.libelle", SecteurActivite.class)
+                .getResultList();
+    }
+
+    public List<SousActivite> listAllSousActivites() {
+        return getEntityManager()
+                .createQuery("SELECT s FROM SousActivite s ORDER BY s.libelle", SousActivite.class)
+                .getResultList();
+    }
+
+    public List<SousActivite> listSousActivitesBySecteur(Long secteurActiviteId) {
+        return getEntityManager()
+                .createQuery("SELECT s FROM SousActivite s WHERE s.secteurActivite.id = :id ORDER BY s.libelle", SousActivite.class)
+                .setParameter("id", secteurActiviteId)
+                .getResultList();
+    }
+
 }
