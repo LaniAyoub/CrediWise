@@ -6,6 +6,7 @@ import jakarta.ws.rs.BadRequestException;
 import org.acme.dto.ClientCreateDTO;
 import org.acme.dto.ClientResponseDTO;
 import org.acme.dto.ClientUpdateDTO;
+import org.acme.dto.ScoringAnalysisDTO;
 import org.acme.entity.*;
 import org.acme.entity.enums.ClientStatus;
 import org.acme.exception.ClientAlreadyExistsException;
@@ -23,10 +24,12 @@ public class ClientService {
 
     private final ClientRepository clientRepository;
     private final GestionnaireGrpcClient grpcClient;
+    private final ScoringService scoringService;
 
-    public ClientService(ClientRepository clientRepository, GestionnaireGrpcClient grpcClient) {
+    public ClientService(ClientRepository clientRepository, GestionnaireGrpcClient grpcClient, ScoringService scoringService) {
         this.clientRepository = clientRepository;
         this.grpcClient = grpcClient;
+        this.scoringService = scoringService;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -64,6 +67,12 @@ public class ClientService {
         client.setUpdatedBy(actorId);
 
         clientRepository.persist(client);
+        
+        // Calculate and assign scoring
+        String score = scoringService.calculateScoreString(client);
+        client.setScoring(score);
+        clientRepository.persist(client);
+        
         return toResponse(client, agenceLibelle, managerFullName);
     }
 
@@ -93,6 +102,23 @@ public class ClientService {
         return clientRepository.findByAgenceId(agenceId, page, size).stream()
                 .map(this::enrichAndMap)
                 .toList();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SCORING ANALYSIS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Get detailed scoring analysis for a client based on:
+     * - Sector of activity (risk level)
+     * - Age (age group assessment)
+     * - History (prospect vs established)
+     * - Income capacity
+     */
+    public ScoringAnalysisDTO getScoringAnalysis(UUID clientId) {
+        Client client = clientRepository.findByIdOptional(clientId)
+                .orElseThrow(() -> new ClientNotFoundException("Client not found: " + clientId));
+        return scoringService.analyzeScoringCriteria(client);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -133,6 +159,13 @@ public class ClientService {
 
         applyUpdateFields(client, dto);
         client.setUpdatedBy(actorId);
+
+        // Recalculate and update scoring
+        String score = scoringService.calculateScoreString(client);
+        client.setScoring(score);
+        
+        // Persist the updated client with new scoring
+        clientRepository.persist(client);
 
         return toResponse(client, agenceLibelle, managerFullName);
     }

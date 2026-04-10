@@ -9,6 +9,7 @@ import jakarta.ws.rs.core.Response;
 import org.acme.dto.ClientCreateDTO;
 import org.acme.dto.ClientResponseDTO;
 import org.acme.dto.ClientUpdateDTO;
+import org.acme.dto.ScoringAnalysisDTO;
 import org.acme.entity.Client;
 import org.acme.entity.enums.ClientStatus;
 import org.acme.repository.ClientRepository;
@@ -127,5 +128,18 @@ public class ClientResource {
     public Response delete(@PathParam("id") UUID id) {
         clientService.delete(id);
         return Response.noContent().build();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SCORING & ANALYSIS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @GET
+    @Path("/{id}/scoring-analysis")
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "READ_ONLY"})
+    @Operation(summary = "Get detailed scoring analysis for a client")
+    public Response getScoringAnalysis(@PathParam("id") UUID clientId) {
+        var analysis = clientService.getScoringAnalysis(clientId);
+        return Response.ok(analysis).build();
     }
 }

@@ -71,3 +71,4 @@ public class GestionnaireGrpcServiceImpl implements GestionnaireService {
         });
     }
 }
+
