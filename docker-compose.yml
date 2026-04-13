@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Gestionnaire DB
+  postgres-gestionnaire:
+    image: postgres:15
+    container_name: gestionnaire-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: gestionnaire_db
+    ports:
+      - "5432:5432"  
+    volumes:
+      - pgdata_gestionnaire:/var/lib/postgresql/data
+
+  # Client DB
+  postgres-client:
+    image: postgres:15
+    container_name: client-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: client_db
+    ports:
+      - "5433:5432"  
+    volumes:
+      - pgdata_client:/var/lib/postgresql/data
+  # nouvelle_demande DB
+  postgres-nouvelle_demande:
+    image: postgres:15
+    container_name: nouvelle_demande-postgres 
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: nouvelle_demande_db
+    ports:
+      - "5434:5432"  
+    volumes:
+      - pgdata_nouvelle_demande:/var/lib/postgresql/data
+
+  
+  # pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@creditwise.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8081:80"
+    depends_on:
+      - postgres-gestionnaire
+      - postgres-client
+      - postgres-nouvelle_demande
+
+volumes:
+  pgdata_gestionnaire:
+  pgdata_client:
+  pgdata_nouvelle_demande:

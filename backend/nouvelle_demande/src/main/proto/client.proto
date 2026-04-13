@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package client;
+
+option java_package = "org.acme.grpc";
+option java_outer_classname = "ClientProto";
+option java_multiple_files = true;
+
+service ClientService {
+  rpc GetClientById (ClientRequest) returns (ClientResponse);
+  rpc IncrementClientCycle (ClientRequest) returns (ClientCycleUpdateResponse);
+}
+
+message ClientRequest {
+  string id = 1;
+}
+
+message ClientResponse {
+  bool found = 1;
+  string id = 2;
+  string client_type = 3;
+
+  // Physical person
+  string first_name = 4;
+  string last_name = 5;
+  string date_of_birth = 6;
+  string national_id = 7;
+  string gender = 8;
+  string marital_status = 9;
+  string nationality = 10;
+  string monthly_income = 11;
+
+  // Legal entity
+  string company_name = 12;
+  string sigle = 13;
+  string registration_number = 14;
+  string principal_interlocutor = 15;
+
+  // Contact
+  string email = 16;
+  string primary_phone = 17;
+
+  // Resolved local labels
+  string segment = 18;
+  string account_type = 19;
+  string business_sector = 20;
+  string business_activity = 21;
+
+  // External refs
+  string branch_id = 22;
+  string assigned_manager_id = 23;
+
+  // Scoring / lifecycle
+  string scoring = 24;
+  string cycle = 25;
+  string status = 26;
+}
+
+message ClientCycleUpdateResponse {
+  bool success = 1;
+  string cycle = 2;
+}
