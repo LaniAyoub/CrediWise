@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '@/services/auth.service';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -15,6 +16,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const LoginPage = () => {
+  const { t } = useTranslation('auth');
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -41,16 +43,16 @@ const LoginPage = () => {
       const { accessToken } = response.data;
 
       login(accessToken);
-      toast.success('Welcome back!');
+      toast.success(t('login.success'));
       navigate('/dashboard', { replace: true });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string }; status?: number } };
       if (error.response?.status === 401) {
-        toast.error('Invalid email or password');
+        toast.error(t('errors.invalidCredentials'));
       } else if (error.response?.status === 403) {
-        toast.error('Your account has been deactivated');
+        toast.error(t('errors.unauthorized'));
       } else {
-        toast.error(error.response?.data?.message || 'Login failed. Please try again.');
+        toast.error(error.response?.data?.message || t('errors.invalidCredentials'));
       }
     } finally {
       setIsLoading(false);
@@ -77,7 +79,7 @@ const LoginPage = () => {
           </div>
 
           <h1 className="text-4xl font-bold text-white leading-tight mb-4">
-            Branch Management
+            {t('login.title')}
             <br />
             <span className="bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent">
               Made Simple
@@ -106,28 +108,28 @@ const LoginPage = () => {
       </div>
 
       {/* Right panel — login form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-12 bg-surface-50">
+      <div className="flex-1 flex items-center justify-center px-6 py-12 bg-surface-50 dark:bg-surface-900 transition-colors">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10 justify-center">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
               <span className="text-white font-bold">CW</span>
             </div>
-            <span className="font-bold text-xl text-surface-900">CrediWise</span>
+            <span className="font-bold text-xl text-surface-900 dark:text-surface-50">CrediWise</span>
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-surface-900">Welcome back</h2>
-            <p className="text-surface-500 mt-1">Sign in to your account to continue</p>
+            <h2 className="text-page-title text-surface-900 dark:text-surface-50">{t('login.title')}</h2>
+            <p className="text-caption text-surface-600 dark:text-surface-400 mt-2">{t('login.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-surface-600 mb-1.5">
-                Email address
+              <label htmlFor="email" className="block text-label text-surface-600 dark:text-surface-400 mb-2">
+                {t('login.email')}
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-surface-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-surface-400 dark:text-surface-500">
                   <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
@@ -137,23 +139,23 @@ const LoginPage = () => {
                   type="email"
                   autoComplete="email"
                   {...register('email')}
-                  className={`block w-full rounded-xl border bg-white pl-10 pr-4 py-3 text-sm text-surface-800 placeholder:text-surface-400 transition-all duration-200 focus-ring ${
-                    errors.email ? 'border-red-400' : 'border-surface-200 hover:border-surface-300 focus:border-brand-500'
+                  className={`block w-full rounded-lg border bg-white dark:bg-surface-800 pl-10 pr-4 py-2.5 text-sm text-surface-800 dark:text-surface-200 placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-smooth focus-ring ${
+                    errors.email ? 'border-rose-500 dark:border-rose-400' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600 focus:border-brand-500 dark:focus:border-brand-400'
                   }`}
-                  placeholder="you@example.com"
+                  placeholder={t('login.emailPlaceholder')}
                 />
               </div>
               {errors.email && (
-                <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>
+                <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">{errors.email.message}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-surface-600 mb-1.5">
-                Password
+              <label htmlFor="password" className="block text-label text-surface-600 dark:text-surface-400 mb-2">
+                {t('login.password')}
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-surface-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-surface-400 dark:text-surface-500">
                   <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
@@ -163,21 +165,21 @@ const LoginPage = () => {
                   type="password"
                   autoComplete="current-password"
                   {...register('password')}
-                  className={`block w-full rounded-xl border bg-white pl-10 pr-4 py-3 text-sm text-surface-800 placeholder:text-surface-400 transition-all duration-200 focus-ring ${
-                    errors.password ? 'border-red-400' : 'border-surface-200 hover:border-surface-300 focus:border-brand-500'
+                  className={`block w-full rounded-lg border bg-white dark:bg-surface-800 pl-10 pr-4 py-2.5 text-sm text-surface-800 dark:text-surface-200 placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-smooth focus-ring ${
+                    errors.password ? 'border-rose-500 dark:border-rose-400' : 'border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600 focus:border-brand-500 dark:focus:border-brand-400'
                   }`}
-                  placeholder="Enter your password"
+                  placeholder={t('login.passwordPlaceholder')}
                 />
               </div>
               {errors.password && (
-                <p className="mt-1.5 text-xs text-red-500">{errors.password.message}</p>
+                <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">{errors.password.message}</p>
               )}
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 bg-brand-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-brand-700 active:bg-brand-800 transition-all duration-200 focus-ring disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+              className="w-full flex items-center justify-center gap-2 bg-brand-600 dark:bg-brand-600 text-white py-2.5 rounded-lg font-500 text-sm hover:bg-brand-700 dark:hover:bg-brand-700 active:bg-brand-800 dark:active:bg-brand-800 transition-smooth focus-ring disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
             >
               {isLoading ? (
                 <>
@@ -185,15 +187,15 @@ const LoginPage = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Signing in...
+                  {t('login.loading')}
                 </>
               ) : (
-                'Sign In'
+                t('login.submit')
               )}
             </button>
           </form>
 
-          <p className="mt-8 text-center text-xs text-surface-400">
+          <p className="mt-8 text-center text-caption text-surface-500 dark:text-surface-400">
             Secured by CrediWise Banking Platform
           </p>
         </div>

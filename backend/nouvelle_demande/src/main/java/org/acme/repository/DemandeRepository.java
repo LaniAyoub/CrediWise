@@ -10,10 +10,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 @ApplicationScoped
-public class DemandeRepository implements PanacheRepositoryBase<Demande, UUID> {
+public class DemandeRepository implements PanacheRepositoryBase<Demande, Long> {
 
     /** Active (non-deleted) demande by id. */
-    public Optional<Demande> findActive(UUID id) {
+    public Optional<Demande> findActive(Long id) {
         return find("id = ?1 AND deletedAt IS NULL", id).firstResultOptional();
     }
 

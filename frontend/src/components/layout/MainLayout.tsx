@@ -9,7 +9,7 @@ const MainLayout = ({ children }: { children: ReactNode }) => {
   const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed);
 
   return (
-    <div className="min-h-screen bg-surface-50">
+    <div className="min-h-screen bg-surface-50 dark:bg-surface-900 transition-colors">
       <Sidebar isCollapsed={sidebarCollapsed} onToggle={toggleSidebar} />
 
       <div

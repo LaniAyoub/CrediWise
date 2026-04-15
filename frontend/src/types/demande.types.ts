@@ -15,7 +15,7 @@ export interface GuaranteeDto {
 }
 
 export interface Demande {
-  id: string;
+  id: number;
   clientId: string;
   clientType?: string;
   status: DemandeStatut;
@@ -34,6 +34,8 @@ export interface Demande {
   assetType?: string;
   monthlyRepaymentCapacity?: number;
   applicationChannel?: string;
+  bankingRestriction?: boolean;
+  legalIssueOrAccountBlocked?: boolean;
   consentText?: string;
 
   guarantors?: GuarantorDto[];
@@ -57,6 +59,8 @@ export interface DemandeCreateRequest {
   assetType?: string;
   monthlyRepaymentCapacity?: number;
   applicationChannel?: string;
+  bankingRestriction: boolean;
+  legalIssueOrAccountBlocked: boolean;
   consentText?: string;
   guarantors?: GuarantorDto[];
   guarantees?: GuaranteeDto[];
@@ -70,6 +74,8 @@ export interface DemandeUpdateRequest {
   assetType?: string;
   monthlyRepaymentCapacity?: number;
   applicationChannel?: string;
+  bankingRestriction?: boolean;
+  legalIssueOrAccountBlocked?: boolean;
   consentText?: string;
   guarantors?: GuarantorDto[];
   guarantees?: GuaranteeDto[];

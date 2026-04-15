@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { agenceService } from '@/services/agence.service';
 import type { Agence, AgenceCreateRequest, AgenceUpdateRequest } from '@/types/agence.types';
 import Table from '@/components/ui/Table';
@@ -11,6 +12,7 @@ import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import toast from 'react-hot-toast';
 
 const AgencesPage = () => {
+  const { t } = useTranslation('agences');
   const [agences, setAgences] = useState<Agence[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,12 +50,12 @@ const AgencesPage = () => {
     setIsSubmitting(true);
     try {
       await agenceService.create(data);
-      toast.success('Agence created successfully');
+      toast.success(t('messages.created'));
       setIsCreateModalOpen(false);
       fetchAgences();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to create agence');
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -69,12 +71,12 @@ const AgencesPage = () => {
         isActive: data.isActive,
       };
       await agenceService.update(editingAgence.idBranch, updateData);
-      toast.success('Agence updated successfully');
+      toast.success(t('messages.updated'));
       setEditingAgence(null);
       fetchAgences();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to update agence');
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -85,8 +87,8 @@ const AgencesPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900">Agences</h1>
-          <p className="text-surface-500 mt-1">Manage your banking branches</p>
+          <h1 className="text-page-title text-surface-900 dark:text-surface-50">{t('title')}</h1>
+          <p className="text-caption text-surface-600 dark:text-surface-400 mt-2">{t('subtitle')}</p>
         </div>
         <Button
           onClick={() => setIsCreateModalOpen(true)}
@@ -96,14 +98,14 @@ const AgencesPage = () => {
             </svg>
           }
         >
-          Add Agence
+          {t('buttons.add')}
         </Button>
       </div>
 
       {/* Search */}
       <div className="max-w-sm">
         <SearchBar
-          placeholder="Search by ID, name, or description..."
+          placeholder={t('searchPlaceholder')}
           onSearch={setSearchQuery}
         />
       </div>
@@ -113,28 +115,28 @@ const AgencesPage = () => {
         <LoadingSkeleton type="table" rows={5} />
       ) : (
         <Table
-          headers={['Branch ID', 'Label', 'Description', 'Status', 'Actions']}
+          headers={[t('table.branchID'), t('table.label'), t('table.description'), t('table.status'), t('table.actions')]}
           isEmpty={filteredAgences.length === 0}
-          emptyMessage={searchQuery ? 'No agences match your search' : 'No agences found. Create your first one!'}
+          emptyMessage={searchQuery ? t('messages.noSearch') : t('messages.noResults')}
         >
           {filteredAgences.map((agence) => (
-            <tr key={agence.idBranch} className="table-row-hover">
+            <tr key={agence.idBranch} className="table-row-hover min-h-12">
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className="text-sm font-mono font-semibold text-surface-800">
+                <span className="text-sm font-mono font-semibold text-surface-800 dark:text-surface-200">
                   {agence.idBranch}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className="text-sm font-medium text-surface-700">{agence.libelle}</span>
+                <span className="text-sm font-500 text-surface-900 dark:text-surface-100">{agence.libelle}</span>
               </td>
               <td className="px-6 py-4">
-                <span className="text-sm text-surface-500 line-clamp-1">
+                <span className="text-sm text-surface-600 dark:text-surface-400 line-clamp-1">
                   {agence.wording || '—'}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <Badge variant={agence.active ? 'success' : 'neutral'}>
-                  {agence.active ? 'Active' : 'Inactive'}
+                  {agence.active ? t('form.active') : t('form.inactive')}
                 </Badge>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -143,7 +145,7 @@ const AgencesPage = () => {
                   size="sm"
                   onClick={() => setEditingAgence(agence)}
                 >
-                  Edit
+                  {t('buttons.edit')}
                 </Button>
               </td>
             </tr>
@@ -153,7 +155,7 @@ const AgencesPage = () => {
 
       {/* Create Modal */}
       <Modal
-        title="Create New Agence"
+        title={t('modals.createTitle')}
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
       >
@@ -165,7 +167,7 @@ const AgencesPage = () => {
 
       {/* Edit Modal */}
       <Modal
-        title="Edit Agence"
+        title={t('modals.editTitle')}
         isOpen={!!editingAgence}
         onClose={() => setEditingAgence(null)}
       >

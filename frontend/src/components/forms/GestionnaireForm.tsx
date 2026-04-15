@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -113,6 +114,7 @@ const GestionnaireForm = ({
   isLoading,
   isEdit = false,
 }: GestionnaireFormProps) => {
+  const { t } = useTranslation('gestionnaires');
   const [agences, setAgences] = useState<Agence[]>([]);
 
   useEffect(() => {
@@ -146,13 +148,13 @@ const GestionnaireForm = ({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-1">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
         <Input
-          label="First Name"
+          label={t('form.firstName')}
           {...register('firstName')}
           error={errors.firstName?.message}
           placeholder="John"
         />
         <Input
-          label="Last Name"
+          label={t('form.lastName')}
           {...register('lastName')}
           error={errors.lastName?.message}
           placeholder="Doe"
@@ -160,7 +162,7 @@ const GestionnaireForm = ({
       </div>
 
       <Input
-        label="Email"
+        label={t('form.email')}
         type="email"
         {...register('email')}
         error={errors.email?.message}
@@ -170,14 +172,14 @@ const GestionnaireForm = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
         <Input
-          label="CIN"
+          label={t('form.cin')}
           {...register('cin')}
           error={errors.cin?.message}
-          placeholder="National ID"
+          placeholder={t('form.nationalId')}
           disabled={isEdit}
         />
         <Input
-          label="Phone Number"
+          label={t('form.phone')}
           {...register('numTelephone')}
           error={errors.numTelephone?.message}
           placeholder=" XX XXX XXX"
@@ -186,63 +188,63 @@ const GestionnaireForm = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
         <Input
-          label="Date of Birth"
+          label={t('form.dateOfBirth')}
           type="date"
           {...register('dateOfBirth')}
           error={errors.dateOfBirth?.message}
         />
         <Input
-          label="Address"
+          label={t('form.address')}
           {...register('address')}
           error={errors.address?.message}
-          placeholder="Street address"
+          placeholder={t('form.streetAddress')}
         />
       </div>
 
       {!isEdit && (
         <Input
-          label="Password"
+          label={t('form.password')}
           type="password"
           {...register('password')}
           error={errors.password?.message}
-          placeholder="Initial password"
+          placeholder={t('form.initialPassword')}
         />
       )}
 
-      <div className="mb-4">
-        <label htmlFor="role" className="block text-sm font-medium text-surface-600 mb-1.5">
-          Role
+      <div className="mb-6">
+        <label htmlFor="role" className="block text-label text-surface-600 dark:text-surface-400 mb-2">
+          {t('form.role')}
         </label>
         <select
           id="role"
           {...register('role')}
-          className="block w-full rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-sm text-surface-800 focus-ring hover:border-surface-300 focus:border-brand-500 transition-all duration-200"
+          className="block w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus-ring hover:border-surface-300 dark:hover:border-surface-600 focus:border-brand-500 dark:focus:border-brand-400 transition-all duration-200"
         >
-          <option value="">Select a role</option>
-          <option value="CRO">Client Relationship Officer</option>
-          <option value="BRANCH_DM">Branch Decision Maker</option>
-          <option value="HEAD_OFFICE_DM">Head Office Decision Maker</option>
-          <option value="RISK_ANALYST">Credit Risk Analyst</option>
-          <option value="FRONT_OFFICE">Front Office</option>
-          <option value="READ_ONLY">Read Only User</option>
-          <option value="SUPER_ADMIN">Super Administrator</option>
-          <option value="TECH_USER">Tech User</option>
+          <option value="">{t('form.selectRole')}</option>
+          <option value="CRO">{t('roles.CRO')}</option>
+          <option value="BRANCH_DM">{t('roles.BRANCH_DM')}</option>
+          <option value="HEAD_OFFICE_DM">{t('roles.HEAD_OFFICE_DM')}</option>
+          <option value="RISK_ANALYST">{t('roles.RISK_ANALYST')}</option>
+          <option value="FRONT_OFFICE">{t('roles.FRONT_OFFICE')}</option>
+          <option value="READ_ONLY">{t('roles.READ_ONLY')}</option>
+          <option value="SUPER_ADMIN">{t('roles.SUPER_ADMIN')}</option>
+          <option value="TECH_USER">{t('roles.TECH_USER')}</option>
         </select>
         {errors.role && (
-          <p className="mt-1.5 text-xs text-red-500">{errors.role.message}</p>
+          <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">{errors.role.message}</p>
         )}
       </div>
 
-      <div className="mb-4">
-        <label htmlFor="agenceId" className="block text-sm font-medium text-surface-600 mb-1.5">
-          Agence
+      <div className="mb-6">
+        <label htmlFor="agenceId" className="block text-label text-surface-600 dark:text-surface-400 mb-2">
+          {t('form.agence')}
         </label>
         <select
           id="agenceId"
           {...register('agenceId')}
-          className="block w-full rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-sm text-surface-800 focus-ring hover:border-surface-300 focus:border-brand-500 transition-all duration-200"
+          className="block w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus-ring hover:border-surface-300 dark:hover:border-surface-600 focus:border-brand-500 dark:focus:border-brand-400 transition-all duration-200"
         >
-          <option value="">Select an agence</option>
+          <option value="">{t('form.selectAgence')}</option>
           {agences.map((a) => (
             <option key={a.idBranch} value={a.idBranch}>
               {a.libelle} ({a.idBranch})
@@ -250,15 +252,15 @@ const GestionnaireForm = ({
           ))}
         </select>
         {errors.agenceId && (
-          <p className="mt-1.5 text-xs text-red-500">{errors.agenceId.message}</p>
+          <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">{errors.agenceId.message}</p>
         )}
       </div>
 
       {isEdit && (
-        <div className="flex items-center justify-between py-3 px-4 rounded-xl border border-surface-200 bg-surface-50">
+        <div className="flex items-center justify-between py-4 px-4 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 transition-colors">
           <div>
-            <p className="text-sm font-medium text-surface-800">Account Status</p>
-            <p className="text-xs text-surface-500">Enable or disable this manager's access</p>
+            <p className="text-sm font-medium text-surface-800 dark:text-surface-100">{t('form.accountStatus')}</p>
+            <p className="text-xs text-surface-500 dark:text-surface-400">{t('form.enableDisableAccess')}</p>
           </div>
           <Controller
             name="active"
@@ -268,7 +270,7 @@ const GestionnaireForm = ({
                 type="button"
                 onClick={() => field.onChange(!field.value)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-                  field.value ? 'bg-brand-500' : 'bg-surface-300'
+                  field.value ? 'bg-brand-500 dark:bg-brand-600' : 'bg-surface-300 dark:bg-surface-600'
                 }`}
               >
                 <span
@@ -282,9 +284,9 @@ const GestionnaireForm = ({
         </div>
       )}
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-surface-100">
+      <div className="flex justify-end gap-3 pt-4 border-t border-surface-200 dark:border-surface-700">
         <Button type="submit" isLoading={isLoading}>
-          {isEdit ? 'Update Manager' : 'Create Manager'}
+          {isEdit ? t('buttons.update') : t('buttons.create')}
         </Button>
       </div>
     </form>

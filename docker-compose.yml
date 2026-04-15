@@ -38,6 +38,18 @@ services:
       - "5434:5432"  
     volumes:
       - pgdata_nouvelle_demande:/var/lib/postgresql/data
+  # analyse DB
+  postgres-analyse:
+    image: postgres:15
+    container_name: analyse-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: analyse_db
+    ports:
+      - "5435:5432"  
+    volumes:
+      - pgdata_analyse:/var/lib/postgresql/data
 
   
   # pgAdmin
@@ -53,8 +65,10 @@ services:
       - postgres-gestionnaire
       - postgres-client
       - postgres-nouvelle_demande
+      - postgres-analyse
 
 volumes:
   pgdata_gestionnaire:
   pgdata_client:
   pgdata_nouvelle_demande:
+  pgdata_analyse:

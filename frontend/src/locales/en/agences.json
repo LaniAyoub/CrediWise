@@ -1,0 +1,57 @@
+{
+  "title": "Branches",
+  "subtitle": "Manage your branches",
+  "addNew": "Add New Branch",
+  "editBranch": "Edit Branch",
+  "deleteBranch": "Delete Branch",
+  "confirmDelete": "Are you sure you want to delete this branch?",
+  "form": {
+    "branchId": "Branch ID",
+    "label": "Label (Libellé)",
+    "description": "Description (Wording)",
+    "branchNamePlaceholder": "Branch name",
+    "descriptionPlaceholder": "Optional description",
+    "active": "Active",
+    "name": "Branch Name",
+    "code": "Branch Code",
+    "address": "Address",
+    "city": "City",
+    "postalCode": "Postal Code",
+    "phone": "Phone",
+    "email": "Email",
+    "manager": "Manager",
+    "status": "Status",
+    "inactive": "Inactive"
+  },
+  "table": {
+    "name": "Name",
+    "code": "Code",
+    "city": "City",
+    "manager": "Manager",
+    "status": "Status",
+    "actions": "Actions",
+    "branchID": "Branch ID",
+    "label": "Label",
+    "description": "Description"
+  },
+  "searchPlaceholder": "Search by ID, name, or description...",
+  "buttons": {
+    "add": "Add Agence",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create Agence",
+    "update": "Update Agence"
+  },
+  "modals": {
+    "createTitle": "Create New Agence",
+    "editTitle": "Edit Agence"
+  },
+  "messages": {
+    "created": "Branch created successfully",
+    "updated": "Branch updated successfully",
+    "deleted": "Branch deleted successfully",
+    "loadError": "Failed to load branches",
+    "noResults": "No agences found. Create your first one!",
+    "noSearch": "No agences match your search"
+  }
+}

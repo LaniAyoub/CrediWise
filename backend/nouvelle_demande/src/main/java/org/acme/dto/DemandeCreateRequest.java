@@ -36,6 +36,12 @@ public class DemandeCreateRequest {
     public String applicationChannel;
     public String consentText;
 
+    @NotNull(message = "bankingRestriction is required")
+    public Boolean bankingRestriction;
+
+    @NotNull(message = "legalIssueOrAccountBlocked is required")
+    public Boolean legalIssueOrAccountBlocked;
+
     public List<GuarantorDto> guarantors;
     public List<GuaranteeDto> guarantees;
 }

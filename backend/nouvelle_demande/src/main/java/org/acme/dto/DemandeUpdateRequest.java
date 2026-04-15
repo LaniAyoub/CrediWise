@@ -28,6 +28,9 @@ public class DemandeUpdateRequest {
     public String applicationChannel;
     public String consentText;
 
+    public Boolean bankingRestriction;
+    public Boolean legalIssueOrAccountBlocked;
+
     public List<GuarantorDto> guarantors;
     public List<GuaranteeDto> guarantees;
 }

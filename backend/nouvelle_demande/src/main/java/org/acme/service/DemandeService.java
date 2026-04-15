@@ -92,6 +92,8 @@ public class DemandeService {
         demande.monthlyRepaymentCapacity = req.getMonthlyRepaymentCapacity();
         demande.applicationChannel = req.getApplicationChannel();
         demande.consentText = req.getConsentText();
+        demande.bankingRestriction = req.getBankingRestriction();
+        demande.legalIssueOrAccountBlocked = req.getLegalIssueOrAccountBlocked();
         // Guarantors
         if (req.getGuarantors() != null) {
             for (GuarantorDto g : req.getGuarantors()) {
@@ -122,7 +124,7 @@ public class DemandeService {
     // READ
     // ─────────────────────────────────────────────────────────────────────────
 
-    public DemandeResponse getById(UUID id) {
+    public DemandeResponse getById(Long id) {
         Demande demande = demandeRepository.findByIdOptional(id)
                 .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
         return toResponse(demande);
@@ -151,7 +153,7 @@ public class DemandeService {
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
-    public DemandeResponse updateStatut(UUID id, DemandeStatut newStatut) {
+    public DemandeResponse updateStatut(Long id, DemandeStatut newStatut) {
         Demande demande = demandeRepository.findByIdOptional(id)
                 .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
         DemandeStatut previousStatut = demande.status;
@@ -168,7 +170,7 @@ public class DemandeService {
     }
 
     @Transactional
-    public DemandeResponse submit(UUID id) {
+    public DemandeResponse submit(Long id) {
         return updateStatut(id, DemandeStatut.SUBMITTED);
     }
 
@@ -176,7 +178,7 @@ public class DemandeService {
     // UPDATE (DRAFT only)
     // ─────────────────────────────────────────────────────────────────────────
     @Transactional
-    public DemandeResponse update(UUID id, DemandeUpdateRequest req) {
+    public DemandeResponse update(Long id, DemandeUpdateRequest req) {
         Demande demande = demandeRepository.findByIdOptional(id)
                 .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
         if (demande.status != DemandeStatut.DRAFT) {
@@ -191,6 +193,8 @@ public class DemandeService {
         if (req.monthlyRepaymentCapacity != null) demande.monthlyRepaymentCapacity = req.monthlyRepaymentCapacity;
         if (req.applicationChannel != null) demande.applicationChannel = req.applicationChannel;
         if (req.consentText != null) demande.consentText = req.consentText;
+        if (req.bankingRestriction != null) demande.bankingRestriction = req.bankingRestriction;
+        if (req.legalIssueOrAccountBlocked != null) demande.legalIssueOrAccountBlocked = req.legalIssueOrAccountBlocked;
         // Guarantors and guarantees update logic can be added as needed
         return toResponse(demande);
     }
@@ -200,7 +204,7 @@ public class DemandeService {
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
-    public void delete(UUID id) {
+    public void delete(Long id) {
         Demande demande = demandeRepository.findByIdOptional(id)
                 .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
         if (demande.status != DemandeStatut.DRAFT) {
@@ -283,6 +287,8 @@ public class DemandeService {
                 .assetType(d.assetType)
                 .monthlyRepaymentCapacity(d.monthlyRepaymentCapacity)
                 .applicationChannel(d.applicationChannel)
+                .bankingRestriction(d.bankingRestriction)
+                .legalIssueOrAccountBlocked(d.legalIssueOrAccountBlocked)
                 .consentText(d.consentText)
                 .signatories(d.signatories)
                 .guarantors(guarantorDtos)

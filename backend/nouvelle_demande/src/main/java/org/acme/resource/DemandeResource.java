@@ -46,7 +46,7 @@ public class DemandeResource {
     @Path("/{id}")
     @RolesAllowed({"SUPER_ADMIN", "CRO", "FRONT_OFFICE"})
     @Operation(summary = "Update a DRAFT demande (blocked once submitted)")
-    public DemandeResponse update(@PathParam("id") UUID id, @Valid DemandeUpdateRequest req) {
+    public DemandeResponse update(@PathParam("id") Long id, @Valid DemandeUpdateRequest req) {
         return demandeService.update(id, req);
     }
 
@@ -76,7 +76,7 @@ public class DemandeResource {
     @Path("/{id}")
     @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
     @Operation(summary = "Get demande by ID")
-    public DemandeResponse getById(@PathParam("id") UUID id) {
+    public DemandeResponse getById(@PathParam("id") Long id) {
         return demandeService.getById(id);
     }
 
@@ -88,7 +88,7 @@ public class DemandeResource {
     @Path("/{id}/submit")
     @RolesAllowed({"SUPER_ADMIN", "CRO", "FRONT_OFFICE"})
     @Operation(summary = "Submit a DRAFT demande — locks editing, ready for PDF print")
-    public DemandeResponse submit(@PathParam("id") UUID id) {
+    public DemandeResponse submit(@PathParam("id") Long id) {
         return demandeService.submit(id);
     }
 
@@ -100,7 +100,7 @@ public class DemandeResource {
     @Path("/{id}/statut")
     @RolesAllowed({"SUPER_ADMIN", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST"})
     @Operation(summary = "Validate or reject a SUBMITTED demande")
-    public DemandeResponse updateStatut(@PathParam("id") UUID id, @Valid StatutUpdateRequest req) {
+    public DemandeResponse updateStatut(@PathParam("id") Long id, @Valid StatutUpdateRequest req) {
         return demandeService.updateStatut(id, req.getStatus());
     }
 
@@ -112,7 +112,7 @@ public class DemandeResource {
     @Path("/{id}")
     @RolesAllowed({"SUPER_ADMIN", "CRO", "FRONT_OFFICE"})
     @Operation(summary = "Soft-delete a DRAFT demande")
-    public Response delete(@PathParam("id") UUID id) {
+    public Response delete(@PathParam("id") Long id) {
         demandeService.delete(id);
         return Response.noContent().build();
     }

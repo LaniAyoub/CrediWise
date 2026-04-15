@@ -1,0 +1,57 @@
+{
+  "title": "Agences",
+  "subtitle": "Gérer vos agences",
+  "addNew": "Ajouter une Nouvelle Agence",
+  "editBranch": "Modifier Agence",
+  "deleteBranch": "Supprimer Agence",
+  "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette agence?",
+  "form": {
+    "branchId": "ID Agence",
+    "label": "Libellé",
+    "description": "Description",
+    "branchNamePlaceholder": "Nom de l'agence",
+    "descriptionPlaceholder": "Description optionnelle",
+    "active": "Actif",
+    "name": "Nom de l'Agence",
+    "code": "Code Agence",
+    "address": "Adresse",
+    "city": "Ville",
+    "postalCode": "Code Postal",
+    "phone": "Téléphone",
+    "email": "Email",
+    "manager": "Gestionnaire",
+    "status": "Statut",
+    "inactive": "Inactif"
+  },
+  "table": {
+    "name": "Nom",
+    "code": "Code",
+    "city": "Ville",
+    "manager": "Gestionnaire",
+    "status": "Statut",
+    "actions": "Actions",
+    "branchID": "ID Agence",
+    "label": "Libellé",
+    "description": "Description"
+  },
+  "searchPlaceholder": "Rechercher par ID, nom ou description...",
+  "buttons": {
+    "add": "Ajouter Agence",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "create": "Créer Agence",
+    "update": "Mettre à Jour Agence"
+  },
+  "modals": {
+    "createTitle": "Créer une Nouvelle Agence",
+    "editTitle": "Modifier Agence"
+  },
+  "messages": {
+    "created": "Agence créée avec succès",
+    "updated": "Agence mise à jour avec succès",
+    "deleted": "Agence supprimée avec succès",
+    "loadError": "Erreur lors du chargement des agences",
+    "noResults": "Aucune agence trouvée. Créez la vôtre!",
+    "noSearch": "Aucune agence ne correspond à votre recherche"
+  }
+}

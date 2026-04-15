@@ -1,0 +1,50 @@
+{
+  "title": "Tableau de bord",
+  "welcome": "Bienvenue, {{name}}! 👋",
+  "adminOverview": "Voici un aperçu de votre système de gestion des agences",
+  "userOverview": "Voici un aperçu de votre portefeuille clients",
+  "stats": {
+    "totalClients": "Total des Clients",
+    "totalRequests": "Total des Demandes",
+    "activeRequests": "Demandes Actives",
+    "completedRequests": "Demandes Complétées",
+    "totalBranches": "Total des Agences",
+    "totalManagers": "Total des Gestionnaires",
+    "myClients": "Mes Clients",
+    "myClientsSubtitle": "Assigné à {{name}}",
+    "draftDemandes": "Demandes en Brouillon",
+    "activeManagers": "Gestionnaires Actifs",
+    "activeManagersSubtitle": "Actuellement actif",
+    "inactiveManagers": "Gestionnaires Inactifs",
+    "inactiveManagersSubtitle": "Désactivé"
+  },
+  "recentActivity": "Activité Récente",
+  "noActivity": "Aucune activité récente",
+  "quickActions": "Actions Rapides",
+  "viewAll": "Voir tout →",
+  "sections": {
+    "recentClients": "Clients Récents",
+    "recentDemandes": "Demandes Récentes",
+    "recentGestionnaires": "Gestionnaires Récents",
+    "myPortfolio": "Résumé de Mon Portefeuille",
+    "recentAgences": "Agences Récentes",
+    "noClients": "Pas encore de clients",
+    "noDemandes": "Pas encore de demandes",
+    "noAgences": "Aucune agence trouvée",
+    "noGestionnaires": "Aucun gestionnaire trouvé"
+  },
+  "portfolio": {
+    "agence": "Agence",
+    "myAssignedClients": "Mes clients assignés",
+    "percentOfTotal": "% du total des clients",
+    "active": "Actif",
+    "prospects": "Prospects",
+    "viewDetails": "Voir les détails"
+  },
+  "subtitles": {
+    "clients": "{{active}} actif · {{prospects}} prospect",
+    "requests": "{{submitted}} soumis · {{validated}} approuvé",
+    "managerStats": "Tous les gestionnaires",
+    "draftStats": "{{rejected}} rejeté"
+  }
+}

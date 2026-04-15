@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 
 // Roles that can manage agences & gestionnaires
 const ADMIN_ROLES = ['SUPER_ADMIN', 'TECH_USER'];
@@ -79,16 +80,52 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
+  const { t } = useTranslation('common');
   const { user } = useAuth();
   const userRole = user?.role || '';
 
-  // Filter nav items based on user role
+  // Get translated nav items
   const navItems = useMemo(() => {
-    return allNavItems.filter((item) => {
-      if (!item.roles) return true; // visible to all
+    const navItemsWithLabels = [
+      {
+        path: '/dashboard',
+        label: t('navigation.dashboard'),
+        icon: allNavItems[0].icon,
+      },
+      {
+        path: '/agences',
+        label: t('navigation.agences'),
+        roles: ADMIN_ROLES,
+        icon: allNavItems[1].icon,
+      },
+      {
+        path: '/gestionnaires',
+        label: t('navigation.gestionnaires'),
+        roles: ADMIN_ROLES,
+        icon: allNavItems[2].icon,
+      },
+      {
+        path: '/clients',
+        label: t('navigation.clients'),
+        icon: allNavItems[3].icon,
+      },
+      {
+        path: '/demandes',
+        label: t('navigation.demandes'),
+        icon: allNavItems[4].icon,
+      },
+      {
+        path: '/profile',
+        label: t('navigation.profile'),
+        icon: allNavItems[5].icon,
+      },
+    ];
+
+    return navItemsWithLabels.filter((item) => {
+      if (!item.roles) return true;
       return item.roles.includes(userRole);
     });
-  }, [userRole]);
+  }, [userRole, t]);
 
   return (
     <>
@@ -104,10 +141,11 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
         className={`
           fixed top-0 left-0 z-40 h-screen
           bg-gradient-to-b from-navy-950 via-navy-950 to-surface-900
-          border-r border-white/5 shadow-sidebar
+          dark:from-surface-900 dark:via-surface-900 dark:to-surface-800
+          border-r border-white/5 dark:border-surface-700 shadow-sidebar
           transition-all duration-300 ease-in-out
           flex flex-col
-          ${isCollapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'translate-x-0 w-64'}
+          ${isCollapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'translate-x-0 w-60'}
         `}
       >
         {/* Logo */}
@@ -129,13 +167,13 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-500 transition-smooth
                 ${
                   isActive
-                    ? 'bg-brand-600/20 text-brand-400 shadow-sm'
-                    : 'text-surface-400 hover:text-white hover:bg-white/5'
+                    ? 'border-l-4 border-brand-500 bg-brand-500/15 text-brand-300'
+                    : 'text-surface-400 hover:text-white hover:bg-white/5 dark:hover:bg-surface-800'
                 }
-                ${isCollapsed ? 'justify-center lg:px-0' : ''}
+                ${isCollapsed ? 'justify-center lg:px-0 lg:border-l-0 lg:border-t-2 lg:border-t-brand-500' : ''}
                 `
               }
               title={isCollapsed ? item.label : undefined}
@@ -152,7 +190,7 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
         <div className="hidden lg:block px-3 py-4 border-t border-white/10">
           <button
             onClick={onToggle}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-surface-400 hover:text-white hover:bg-white/5 transition-colors text-sm"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-surface-400 dark:text-surface-500 hover:text-white dark:hover:text-surface-300 hover:bg-white/5 dark:hover:bg-white/10 transition-colors text-sm"
           >
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}

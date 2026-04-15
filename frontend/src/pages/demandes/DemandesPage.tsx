@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { clientService } from "@/services/client.service";
 import { demandeService } from "@/services/demande.service";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,10 +33,10 @@ const statusVariant = (status: DemandeStatut): "warning" | "info" | "success" | 
   return "danger";
 };
 
-const generateDemandePdf = (demande: Demande) => {
+const generateDemandePdf = (demande: Demande, popUpMessage?: string, noGuarantorsMsg?: string, noGuaranteesMsg?: string) => {
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
-    alert("Please allow pop-ups to download PDF");
+    alert(popUpMessage || "Please allow pop-ups to download PDF");
     return;
   }
 
@@ -50,7 +51,7 @@ const generateDemandePdf = (demande: Demande) => {
             </tr>`
         )
         .join("")
-    : `<tr><td colspan="3" style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">No guarantors</td></tr>`;
+    : `<tr><td colspan="3" style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${noGuarantorsMsg || "No guarantors"}</td></tr>`;
 
   const guaranteesHtml = (demande.guarantees && demande.guarantees.length > 0)
     ? demande.guarantees
@@ -63,14 +64,14 @@ const generateDemandePdf = (demande: Demande) => {
             </tr>`
         )
         .join("")
-    : `<tr><td colspan="3" style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">No guarantees</td></tr>`;
+    : `<tr><td colspan="3" style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${noGuaranteesMsg || "No guarantees"}</td></tr>`;
 
   const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Demande ${demande.id.slice(0, 8)}</title>
+      <title>Demande ${demande.id}</title>
       <style>
         @media print {
           body { margin: 0; padding: 0; }
@@ -194,7 +195,7 @@ const generateDemandePdf = (demande: Demande) => {
       <div class="header">
         <h1>Demande de Financement</h1>
         <div class="header-info">
-          <span><strong>Reference:</strong> ${demande.id.slice(0, 8).toUpperCase()}</span>
+          <span><strong>Reference:</strong> #${demande.id}</span>
           <span><strong>Date:</strong> ${new Date(demande.createdAt || new Date()).toLocaleDateString()}</span>
           <span><strong>Status:</strong> ${demande.status}</span>
         </div>
@@ -298,6 +299,7 @@ const formatAmount = (value?: number) =>
   value != null ? `${Number(value).toLocaleString()} MAD` : "—";
 
 const DemandesPage = () => {
+  const { t } = useTranslation('demandes');
   const { user } = useAuth();
   const [demandes, setDemandes] = useState<Demande[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -349,7 +351,7 @@ const DemandesPage = () => {
         d.loanPurpose?.toLowerCase().includes(q) ||
         d.managerName?.toLowerCase().includes(q) ||
         d.branchName?.toLowerCase().includes(q) ||
-        d.id.toLowerCase().includes(q)
+        d.id.toString().includes(q)
     );
   }, [demandes, searchQuery]);
 
@@ -370,6 +372,8 @@ const DemandesPage = () => {
     assetType?: string;
     monthlyRepaymentCapacity?: number;
     applicationChannel?: string;
+    bankingRestriction: boolean;
+    legalIssueOrAccountBlocked: boolean;
     consentText?: string;
     guarantors?: Array<{ name?: string; amplitudeId?: string; clientRelationship?: string }>;
     guarantees?: Array<{ owner?: string; type?: string; estimatedValue?: number }>;
@@ -381,6 +385,8 @@ const DemandesPage = () => {
         loanPurpose: data.loanPurpose,
         requestedAmount: Number(data.requestedAmount),
         durationMonths: Number(data.durationMonths),
+        bankingRestriction: data.bankingRestriction,
+        legalIssueOrAccountBlocked: data.legalIssueOrAccountBlocked,
         ...(data.productId && { productId: data.productId }),
         ...(data.assetType && { assetType: data.assetType }),
         ...(Number.isFinite(data.monthlyRepaymentCapacity) && {
@@ -393,12 +399,12 @@ const DemandesPage = () => {
       };
 
       await demandeService.create(payload);
-      toast.success("Demande created in DRAFT");
+      toast.success(t('messages.created'));
       setIsCreateOpen(false);
       fetchDemandes();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to create demande");
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -413,6 +419,8 @@ const DemandesPage = () => {
     assetType?: string;
     monthlyRepaymentCapacity?: number;
     applicationChannel?: string;
+    bankingRestriction?: boolean;
+    legalIssueOrAccountBlocked?: boolean;
     consentText?: string;
     guarantors?: Array<{ name?: string; amplitudeId?: string; clientRelationship?: string }>;
     guarantees?: Array<{ owner?: string; type?: string; estimatedValue?: number }>;
@@ -430,18 +438,20 @@ const DemandesPage = () => {
           monthlyRepaymentCapacity: Number(data.monthlyRepaymentCapacity),
         }),
         ...(data.applicationChannel && { applicationChannel: data.applicationChannel }),
+        ...(data.bankingRestriction !== undefined && { bankingRestriction: data.bankingRestriction }),
+        ...(data.legalIssueOrAccountBlocked !== undefined && { legalIssueOrAccountBlocked: data.legalIssueOrAccountBlocked }),
         ...(data.consentText && { consentText: data.consentText }),
         ...(data.guarantors && data.guarantors.length > 0 && { guarantors: data.guarantors }),
         ...(data.guarantees && data.guarantees.length > 0 && { guarantees: data.guarantees }),
       };
 
       await demandeService.update(editingDemande.id, payload);
-      toast.success("Demande updated");
+      toast.success(t('messages.updated'));
       setEditingDemande(null);
       fetchDemandes();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to update demande");
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -450,22 +460,22 @@ const DemandesPage = () => {
   const handleSubmitDemande = async (demande: Demande) => {
     try {
       await demandeService.submit(demande.id);
-      toast.success("Demande submitted");
+      toast.success(t('messages.submitted'));
       fetchDemandes();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Submit failed");
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     }
   };
 
   const handleDecision = async (demande: Demande, status: "VALIDATED" | "REJECTED") => {
     try {
       await demandeService.updateStatus(demande.id, status);
-      toast.success(`Demande ${status.toLowerCase()}`);
+      toast.success(status === "VALIDATED" ? t('messages.validated') : t('messages.rejected'));
       fetchDemandes();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Status update failed");
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     }
   };
 
@@ -474,12 +484,12 @@ const DemandesPage = () => {
     setIsDeleting(true);
     try {
       await demandeService.remove(deletingDemande.id);
-      toast.success("Demande deleted");
+      toast.success(t('messages.deleted'));
       setDeletingDemande(null);
       fetchDemandes();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Delete failed");
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsDeleting(false);
     }
@@ -494,8 +504,8 @@ const DemandesPage = () => {
     <div className="page-container space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900">Demandes</h1>
-          <p className="text-surface-500 mt-1">Manage the full lifecycle of credit requests</p>
+          <h1 className="text-page-title text-surface-900 dark:text-surface-50">{t('title')}</h1>
+          <p className="text-caption text-surface-600 dark:text-surface-400 mt-2">{t('subtitle')}</p>
         </div>
         {canCreate && (
           <Button
@@ -506,7 +516,7 @@ const DemandesPage = () => {
               </svg>
             }
           >
-            New Demande
+            {t('buttons.newDemande')}
           </Button>
         )}
       </div>
@@ -514,39 +524,39 @@ const DemandesPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="md:col-span-2">
           <SearchBar
-            placeholder="Search by client, purpose, manager, branch, or id..."
+            placeholder={t('searchPlaceholder')}
             onSearch={setSearchQuery}
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as "" | DemandeStatut)}
-          className="rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-sm text-surface-800 focus-ring"
+          className="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-800 dark:text-surface-200 focus-ring transition-colors"
         >
-          <option value="">All statuses</option>
-          <option value="DRAFT">DRAFT</option>
-          <option value="SUBMITTED">SUBMITTED</option>
-          <option value="VALIDATED">VALIDATED</option>
-          <option value="REJECTED">REJECTED</option>
+          <option value="">{t('statusOptions.allStatuses')}</option>
+          <option value="DRAFT">{t('statusOptions.draft')}</option>
+          <option value="SUBMITTED">{t('statusOptions.submitted')}</option>
+          <option value="VALIDATED">{t('statusOptions.validated')}</option>
+          <option value="REJECTED">{t('statusOptions.rejected')}</option>
         </select>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-surface-200 bg-white px-4 py-3">
-          <p className="text-xs text-surface-500 uppercase tracking-wide">Total</p>
-          <p className="text-xl font-semibold text-surface-900 mt-1">{demandeStats.total}</p>
+        <div className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 transition-colors">
+          <p className="text-label text-surface-600 dark:text-surface-400">{t('table.total')}</p>
+          <p className="text-xl font-bold text-surface-900 dark:text-surface-50 mt-2">{demandeStats.total}</p>
         </div>
-        <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3">
-          <p className="text-xs text-amber-700 uppercase tracking-wide">Draft</p>
-          <p className="text-xl font-semibold text-amber-800 mt-1">{demandeStats.draft}</p>
+        <div className="rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 transition-colors">
+          <p className="text-label text-amber-700 dark:text-amber-300">{t('status.draft')}</p>
+          <p className="text-xl font-bold text-amber-900 dark:text-amber-200 mt-2">{demandeStats.draft}</p>
         </div>
-        <div className="rounded-xl border border-brand-200 bg-brand-50/70 px-4 py-3">
-          <p className="text-xs text-brand-700 uppercase tracking-wide">Submitted</p>
-          <p className="text-xl font-semibold text-brand-800 mt-1">{demandeStats.submitted}</p>
+        <div className="rounded-xl border border-brand-200 dark:border-brand-900/40 bg-brand-50 dark:bg-brand-900/20 px-4 py-3 transition-colors">
+          <p className="text-label text-brand-700 dark:text-brand-300">{t('status.submitted')}</p>
+          <p className="text-xl font-bold text-brand-900 dark:text-brand-200 mt-2">{demandeStats.submitted}</p>
         </div>
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
-          <p className="text-xs text-emerald-700 uppercase tracking-wide">Validated</p>
-          <p className="text-xl font-semibold text-emerald-800 mt-1">{demandeStats.validated}</p>
+        <div className="rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 transition-colors">
+          <p className="text-label text-emerald-700 dark:text-emerald-300">{t('status.validated')}</p>
+          <p className="text-xl font-bold text-emerald-900 dark:text-emerald-200 mt-2">{demandeStats.validated}</p>
         </div>
       </div>
 
@@ -554,9 +564,9 @@ const DemandesPage = () => {
         <LoadingSkeleton type="table" rows={6} />
       ) : (
         <Table
-          headers={["Client", "Status", "Financial", "Assignment", "Timeline", "Actions"]}
+          headers={[t('table.client'), t('table.status'), "Financial", "Assignment", "Timeline", t('table.actions')]}
           isEmpty={filteredDemandes.length === 0}
-          emptyMessage="No demandes found"
+          emptyMessage={t('messages.noResults')}
         >
           {filteredDemandes.map((d) => {
             const canEditThisDemande = d.status === "DRAFT" && canEdit;
@@ -568,7 +578,7 @@ const DemandesPage = () => {
               <tr key={d.id} className="table-row-hover">
                 <td className="px-4 py-3 align-top">
                   <p className="text-sm font-medium text-surface-800">{displayClient(d)}</p>
-                  <p className="text-xs text-surface-400">{d.id.slice(0, 8)}...</p>
+                  <p className="text-xs text-surface-400">#{d.id}</p>
                 </td>
                 <td className="px-4 py-3 align-top">
                   <Badge variant={statusVariant(d.status)}>{d.status}</Badge>
@@ -595,25 +605,25 @@ const DemandesPage = () => {
                 <td className="px-4 py-3 align-top">
                   <div className="flex flex-wrap items-center gap-2">
                     <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => setViewingDemande(d)}>
-                      View
+                      {t('buttons.view')}
                     </Button>
                     {canEditThisDemande && (
                       <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => setEditingDemande(d)}>
-                        Edit
+                        {t('buttons.edit')}
                       </Button>
                     )}
                     {canSubmitThisDemande && (
                       <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => handleSubmitDemande(d)}>
-                        Submit
+                        {t('buttons.submit')}
                       </Button>
                     )}
                     {canDecideThisDemande && (
                       <>
                         <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => handleDecision(d, "VALIDATED")}>
-                          Approve
+                          {t('buttons.approve')}
                         </Button>
                         <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => handleDecision(d, "REJECTED")}>
-                          Reject
+                          {t('buttons.reject')}
                         </Button>
                       </>
                     )}
@@ -624,7 +634,7 @@ const DemandesPage = () => {
                         className="min-w-[78px] text-red-500 hover:text-red-700 hover:bg-red-50"
                         onClick={() => setDeletingDemande(d)}
                       >
-                        Delete
+                        {t('buttons.delete')}
                       </Button>
                     )}
                   </div>
@@ -649,7 +659,7 @@ const DemandesPage = () => {
       </Modal>
 
       <Modal
-        title="Edit Demande (DRAFT only)"
+        title={t('modal.editDraftOnly')}
         isOpen={!!editingDemande}
         onClose={() => setEditingDemande(null)}
         size="xl"
@@ -666,7 +676,7 @@ const DemandesPage = () => {
       </Modal>
 
       <Modal
-        title="Demande Details"
+        title={t('modal.details')}
         isOpen={!!viewingDemande}
         onClose={() => setViewingDemande(null)}
         size="xl"
@@ -713,7 +723,7 @@ const DemandesPage = () => {
             {/* Consent Text - Arabic Display */}
             {viewingDemande.consentText && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-xs font-semibold text-amber-800 uppercase mb-2">Declaration of Consent</p>
+                <p className="text-xs font-semibold text-amber-800 uppercase mb-2">{t('modal.declarationOfConsent')}</p>
                 <div dir="rtl" className="text-xs text-surface-700 whitespace-pre-wrap leading-relaxed text-justify">
                   {viewingDemande.consentText}
                 </div>
@@ -723,14 +733,14 @@ const DemandesPage = () => {
             {/* Guarantors Table */}
             {viewingDemande.guarantors && viewingDemande.guarantors.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-surface-800 mb-2">Guarantors</p>
+                <p className="text-sm font-semibold text-surface-800 mb-2">{t('modal.guarantors')}</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="bg-surface-100 border-b border-surface-200">
-                        <th className="px-3 py-2 text-left text-surface-700">Name</th>
-                        <th className="px-3 py-2 text-left text-surface-700">Amplitude ID</th>
-                        <th className="px-3 py-2 text-left text-surface-700">Relationship</th>
+                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guarantorName')}</th>
+                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guarantorAmplitudeId')}</th>
+                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guarantorRelationship')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -750,14 +760,14 @@ const DemandesPage = () => {
             {/* Guarantees Table */}
             {viewingDemande.guarantees && viewingDemande.guarantees.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-surface-800 mb-2">Guarantees / Collateral</p>
+                <p className="text-sm font-semibold text-surface-800 mb-2">{t('modal.guarantees')}</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="bg-surface-100 border-b border-surface-200">
-                        <th className="px-3 py-2 text-left text-surface-700">Owner</th>
-                        <th className="px-3 py-2 text-left text-surface-700">Type</th>
-                        <th className="px-3 py-2 text-right text-surface-700">Estimated Value</th>
+                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guaranteeOwner')}</th>
+                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guaranteeType')}</th>
+                        <th className="px-3 py-2 text-right text-surface-700">{t('modal.guaranteeValue')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -778,14 +788,14 @@ const DemandesPage = () => {
             <div className="flex justify-end pt-4 border-t border-surface-100">
               <Button
                 variant="outline"
-                onClick={() => generateDemandePdf(viewingDemande)}
+                onClick={() => generateDemandePdf(viewingDemande, t('messages.allowPopUps'), t('messages.noGuarantors'), t('messages.noGuarantees'))}
                 icon={
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8m0 8l-4-2m4 2l4-2" />
                   </svg>
                 }
               >
-                Download PDF
+                {t('modal.downloadPdf')}
               </Button>
             </div>
           </div>
@@ -796,8 +806,8 @@ const DemandesPage = () => {
         isOpen={!!deletingDemande}
         onClose={() => setDeletingDemande(null)}
         onConfirm={handleDelete}
-        title="Delete Demande"
-        message={`Delete demande "${deletingDemande?.id.slice(0, 8)}..."? Only DRAFT demandes can be deleted.`}
+        title={t('confirm.deleteTitle')}
+        message={t('confirm.deleteMessage', { id: deletingDemande?.id.toString() || '' })}
         isLoading={isDeleting}
       />
     </div>

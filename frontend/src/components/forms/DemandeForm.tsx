@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -43,6 +44,8 @@ const demandeSchema = z.object({
   ),
   applicationChannel: z.string().optional().or(z.literal("")),
   applicationChannelOther: z.string().optional().or(z.literal("")),
+  bankingRestriction: z.boolean(),
+  legalIssueOrAccountBlocked: z.boolean(),
   guarantors: z.array(z.object({
     name: z.string().optional().or(z.literal("")),
     amplitudeId: z.string().optional().or(z.literal("")),
@@ -56,6 +59,7 @@ const demandeSchema = z.object({
       z.coerce.number().min(0).optional()
     ),
   })).optional(),
+  consentText: z.string().optional(),
 });
 
 type DemandeFormData = z.infer<typeof demandeSchema>;
@@ -82,6 +86,7 @@ const DemandeForm = ({
   defaultValues,
   isEdit = false,
 }: DemandeFormProps) => {
+  const { t } = useTranslation('demandes');
   const { user } = useAuth();
   const [clientQuery, setClientQuery] = useState("");
   const [hoveredField, setHoveredField] = useState<string | null>(null);
@@ -112,6 +117,8 @@ const DemandeForm = ({
           applicationChannelOther: defaultValues.applicationChannel?.includes("OTHER:")
             ? defaultValues.applicationChannel.split("OTHER:")?.[1]?.trim() || ""
             : "",
+          bankingRestriction: defaultValues.bankingRestriction ?? false,
+          legalIssueOrAccountBlocked: defaultValues.legalIssueOrAccountBlocked ?? false,
           guarantors: defaultValues.guarantors || [],
           guarantees: defaultValues.guarantees || [],
         }
@@ -125,6 +132,8 @@ const DemandeForm = ({
           monthlyRepaymentCapacity: undefined,
           applicationChannel: "",
           applicationChannelOther: "",
+          bankingRestriction: false,
+          legalIssueOrAccountBlocked: false,
           guarantors: [],
           guarantees: [],
         },
@@ -198,34 +207,34 @@ const DemandeForm = ({
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-1">
-      <div className="mb-4 rounded-xl border border-surface-200 bg-surface-50 p-3">
-        <label htmlFor="client-search" className="block text-sm font-medium text-surface-700 mb-1.5">
-          Search Client
+      <div className="mb-6 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-4 transition-colors">
+        <label htmlFor="client-search" className="block text-label text-surface-700 dark:text-surface-300 mb-2">
+          {t('form.searchClient')}
         </label>
         <input
           id="client-search"
           value={clientQuery}
           onChange={(e) => setClientQuery(e.target.value)}
-          placeholder="Search by name, national ID, phone, or email"
-          className="block w-full rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-sm text-surface-800 focus-ring"
+          placeholder={t('form.searchClientPlaceholder')}
+          className="block w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-700 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus-ring placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-colors"
         />
-        <p className="mt-1 text-xs text-surface-500">{filteredClients.length} client(s) found</p>
+        <p className="mt-2 text-xs text-surface-600 dark:text-surface-400">{filteredClients.length} {t('form.clientsFound')}</p>
       </div>
 
       {!isEdit && clientQuery.trim() && filteredClients.length > 0 && (
-        <div className="mb-4 rounded-xl border border-surface-200 bg-white p-2 max-h-44 overflow-y-auto">
+        <div className="mb-4 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 p-2 max-h-44 overflow-y-auto transition-colors">
           {filteredClients.slice(0, 8).map((client) => (
             <button
               key={client.id}
               type="button"
-              className="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-50 transition-colors"
+              className="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
               onClick={() => {
                 setClientQuery(clientLabel(client));
                 setValue("clientId", client.id, { shouldValidate: true });
               }}
             >
-              <p className="text-sm text-surface-800">{clientLabel(client)}</p>
-              <p className="text-xs text-surface-500">{client.nationalId || client.primaryPhone || client.email || client.id}</p>
+              <p className="text-sm text-surface-900 dark:text-surface-100">{clientLabel(client)}</p>
+              <p className="text-xs text-surface-500 dark:text-surface-400">{client.nationalId || client.primaryPhone || client.email || client.id}</p>
             </button>
           ))}
         </div>
@@ -242,15 +251,15 @@ const DemandeForm = ({
               setValue("clientId", only.id, { shouldValidate: true });
             }}
           >
-            Use the matched client
+            {t('form.useMatchedClient')}
           </Button>
         </div>
       )}
 
       {selectedClient && (
-        <div className="mb-4 rounded-xl bg-brand-50 border border-brand-100 p-3">
-          <p className="text-xs font-semibold text-brand-600 uppercase mb-1">Selected Client</p>
-          <p className="text-sm font-medium text-surface-800">{clientLabel(selectedClient)}</p>
+        <div className="mb-4 rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 p-4 transition-colors">
+          <p className="text-xs font-semibold text-brand-700 dark:text-brand-300 uppercase mb-2">Selected Client</p>
+          <p className="text-sm font-medium text-surface-900 dark:text-surface-100">{clientLabel(selectedClient)}</p>
           <p className="text-xs text-surface-500 mt-1">
             {selectedClient.nationalId || selectedClient.primaryPhone || selectedClient.email}
           </p>
@@ -267,9 +276,9 @@ const DemandeForm = ({
       )}
 
       {selectedClient && (
-        <div className="mb-4 rounded-xl border border-brand-100 bg-brand-50 p-4">
-          <p className="text-sm font-semibold text-brand-700 mb-2">Client Snapshot (Auto-filled from database)</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-surface-700">
+        <div className="mb-4 rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/20 p-4 transition-colors">
+          <p className="text-sm font-semibold text-brand-700 dark:text-brand-300 mb-2">Client Snapshot (Auto-filled from database)</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-surface-700 dark:text-surface-300">
             <p><span className="font-semibold">First Name:</span> {selectedClient.firstName || "—"}</p>
             <p><span className="font-semibold">Last Name:</span> {selectedClient.lastName || "—"}</p>
             <p><span className="font-semibold">Gender:</span> {selectedClient.gender || "—"}</p>
@@ -326,14 +335,14 @@ const DemandeForm = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
         <div className="mb-4">
           <label htmlFor="productId" className="block text-sm font-medium text-surface-600 mb-1.5">
-            Product
+            {t('form.product')}
           </label>
           <select
             id="productId"
-            className="block w-full rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-sm text-surface-800 focus-ring hover:border-surface-300 focus:border-brand-500 transition-all duration-200"
+            className="block w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus-ring hover:border-surface-300 dark:hover:border-surface-600 focus:border-brand-500 dark:focus:border-brand-400 transition-all duration-200"
             {...register("productId")}
           >
-            <option value="">Select product</option>
+            <option value="">{t('form.selectProduct')}</option>
             {PRODUCT_OPTIONS.map((product) => (
               <option key={product.id} value={product.id}>
                 {product.label}
@@ -342,46 +351,46 @@ const DemandeForm = ({
           </select>
         </div>
         <Input
-          label="Asset Type"
+          label={t('form.assetType')}
           {...register("assetType")}
           error={errors.assetType?.message}
-          placeholder="Optional"
+          placeholder={t('form.assetTypePlaceholder')}
         />
       </div>
 
-      <div className="mb-4 rounded-xl border border-brand-100 bg-brand-50 p-3">
-        <p className="text-sm font-semibold text-brand-700">Manager Assignment</p>
-        <p className="text-xs text-surface-600 mt-1">
-          The manager is assigned automatically from the logged-in account.
+      <div className="mb-4 rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/20 p-3 transition-colors">
+        <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">{t('form.managerAssignment')}</p>
+        <p className="text-xs text-surface-600 dark:text-surface-400 mt-1">
+          {t('form.managerAutoAssigned')}
         </p>
-        <p className="text-xs text-surface-700 mt-1">
-          Current user: {user?.firstName || "—"} {user?.lastName || ""} ({user?.role || "—"})
+        <p className="text-xs text-surface-700 dark:text-surface-300 mt-1">
+          {t('form.currentUser')} {user?.firstName || "—"} {user?.lastName || ""} ({user?.role || "—"})
         </p>
       </div>
 
       <div className="mb-4">
         <Input
-          label="Monthly Repayment Capacity"
+          label={t('form.monthlyRepaymentCapacity')}
           type="number"
           min="0"
           step="0.01"
           {...register("monthlyRepaymentCapacity")}
           error={errors.monthlyRepaymentCapacity?.message}
-          placeholder="Optional"
+          placeholder={t('form.monthlyRepaymentCapacityPlaceholder')}
         />
       </div>
 
       {/* Application Channel Select */}
       <div className="mb-4">
         <label htmlFor="applicationChannel" className="block text-sm font-medium text-surface-600 mb-1.5">
-          Application Channel
+          {t('form.applicationChannel')}
         </label>
         <select
           id="applicationChannel"
-          className="block w-full rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-sm text-surface-800 focus-ring hover:border-surface-300 focus:border-brand-500 transition-all duration-200"
+          className="block w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus-ring hover:border-surface-300 dark:hover:border-surface-600 focus:border-brand-500 dark:focus:border-brand-400 transition-all duration-200"
           {...register("applicationChannel")}
         >
-          <option value="">Select channel</option>
+          <option value="">{t('form.selectChannel')}</option>
           {APPLICATION_CHANNELS.map((channel) => (
             <option key={channel.value} value={channel.value}>
               {channel.label}
@@ -397,58 +406,125 @@ const DemandeForm = ({
       {watchApplicationChannel === "OTHER" && (
         <div className="mb-4">
           <Input
-            label="Specify Channel"
+            label={t('form.specifyChannel')}
             {...register("applicationChannelOther")}
             error={errors.applicationChannelOther?.message}
-            placeholder="e.g., Phone banking, ATM, Partner..."
+            placeholder={t('form.specifyChannelPlaceholder')}
           />
         </div>
       )}
 
+      {/* Risk Assessment Section */}
+      <div className="mb-6 rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 transition-colors">
+        <h3 className="text-sm font-semibold text-rose-800 dark:text-rose-300 mb-4">{t('form.riskAssessment')}</h3>
+
+        {/* Banking Restriction */}
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">
+            {t('form.bankingRestriction')}
+            <span className="text-rose-600 dark:text-rose-400 ml-1">*</span>
+          </label>
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                checked={watch("bankingRestriction") === true}
+                onChange={() => setValue("bankingRestriction", true)}
+                className="w-4 h-4 border-surface-300 dark:border-surface-600"
+              />
+              <span className="text-sm text-surface-700 dark:text-surface-300">{t('form.yes')}</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                checked={watch("bankingRestriction") === false}
+                onChange={() => setValue("bankingRestriction", false)}
+                className="w-4 h-4 border-surface-300 dark:border-surface-600"
+              />
+              <span className="text-sm text-surface-700 dark:text-surface-300">{t('form.no')}</span>
+            </label>
+          </div>
+          {errors.bankingRestriction && (
+            <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">{errors.bankingRestriction.message}</p>
+          )}
+        </div>
+
+        {/* Legal Issue or Account Blocked */}
+        <div>
+          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">
+            {t('form.legalIssueOrAccountBlocked')}
+            <span className="text-rose-600 dark:text-rose-400 ml-1">*</span>
+          </label>
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                checked={watch("legalIssueOrAccountBlocked") === true}
+                onChange={() => setValue("legalIssueOrAccountBlocked", true)}
+                className="w-4 h-4 border-surface-300 dark:border-surface-600"
+              />
+              <span className="text-sm text-surface-700 dark:text-surface-300">{t('form.yes')}</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                checked={watch("legalIssueOrAccountBlocked") === false}
+                onChange={() => setValue("legalIssueOrAccountBlocked", false)}
+                className="w-4 h-4 border-surface-300 dark:border-surface-600"
+              />
+              <span className="text-sm text-surface-700 dark:text-surface-300">{t('form.no')}</span>
+            </label>
+          </div>
+          {errors.legalIssueOrAccountBlocked && (
+            <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">{errors.legalIssueOrAccountBlocked.message}</p>
+          )}
+        </div>
+      </div>
+
       {/* Consent Text - Read-only Display */}
-      <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
-        <p className="text-sm font-semibold text-amber-800 mb-3">Declaration of Consent</p>
-        <div dir="rtl" className="text-sm text-surface-700 whitespace-pre-wrap leading-relaxed text-justify">
+      <div className="mb-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 transition-colors">
+        <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-3">{t('form.declarationOfConsent')}</p>
+        <div dir="rtl" className="text-sm text-surface-700 dark:text-surface-300 whitespace-pre-wrap leading-relaxed text-justify">
           {CONSENT_TEXT}
         </div>
       </div>
 
       {/* Guarantors Section */}
-      <div className="mb-6 rounded-xl border border-surface-200 bg-surface-50 p-4">
+      <div className="mb-6 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-4 transition-colors">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-surface-800">Guarantors</h3>
+          <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-100">{t('form.guarantorsSection')}</h3>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => appendGuarantor({ name: "", amplitudeId: "", clientRelationship: "" })}
           >
-            + Add Guarantor
+            {t('form.addGuarantor')}
           </Button>
         </div>
 
         {guarantorFields.length > 0 ? (
           <div className="space-y-3">
             {guarantorFields.map((field, idx) => (
-              <div key={field.id} className="bg-white rounded-lg p-3 border border-surface-200">
+              <div key={field.id} className="bg-white dark:bg-surface-800 rounded-lg p-3 border border-surface-200 dark:border-surface-700 transition-colors">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Input
-                    label="Name"
+                    label={t('form.guarantorName')}
                     {...register(`guarantors.${idx}.name`)}
                     error={errors.guarantors?.[idx]?.name?.message}
-                    placeholder="Full name"
+                    placeholder={t('form.guarantorNamePlaceholder')}
                   />
                   <Input
-                    label="Amplitude ID"
+                    label={t('form.guarantorAmplitudeId')}
                     {...register(`guarantors.${idx}.amplitudeId`)}
                     error={errors.guarantors?.[idx]?.amplitudeId?.message}
-                    placeholder="ID reference"
+                    placeholder={t('form.guarantorAmplitudeIdPlaceholder')}
                   />
                   <Input
-                    label="Relationship"
+                    label={t('form.guarantorRelationship')}
                     {...register(`guarantors.${idx}.clientRelationship`)}
                     error={errors.guarantors?.[idx]?.clientRelationship?.message}
-                    placeholder="e.g. Spouse, Partner"
+                    placeholder={t('form.guarantorRelationshipPlaceholder')}
                   />
                 </div>
                 <div className="mt-2 flex justify-end">
@@ -459,56 +535,56 @@ const DemandeForm = ({
                     className="text-red-500 hover:text-red-700 hover:bg-red-50"
                     onClick={() => removeGuarantor(idx)}
                   >
-                    Remove
+                    {t('form.removeGuarantor')}
                   </Button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-xs text-surface-500 italic">No guarantors added yet</p>
+          <p className="text-xs text-surface-500 italic">{t('form.noGuarantorsAdded')}</p>
         )}
       </div>
 
       {/* Guarantees Section */}
-      <div className="mb-6 rounded-xl border border-surface-200 bg-surface-50 p-4">
+      <div className="mb-6 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-4 transition-colors">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-surface-800">Guarantees / Collateral</h3>
+          <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-100">{t('form.guaranteesSection')}</h3>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => appendGuarantee({ owner: "", type: "", estimatedValue: undefined })}
           >
-            + Add Guarantee
+            {t('form.addGuarantee')}
           </Button>
         </div>
 
         {guaranteeFields.length > 0 ? (
           <div className="space-y-3">
             {guaranteeFields.map((field, idx) => (
-              <div key={field.id} className="bg-white rounded-lg p-3 border border-surface-200">
+              <div key={field.id} className="bg-white dark:bg-surface-800 rounded-lg p-3 border border-surface-200 dark:border-surface-700 transition-colors">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Input
-                    label="Owner"
+                    label={t('form.guaranteeOwner')}
                     {...register(`guarantees.${idx}.owner`)}
                     error={errors.guarantees?.[idx]?.owner?.message}
-                    placeholder="Owner name"
+                    placeholder={t('form.guaranteeOwnerPlaceholder')}
                   />
                   <Input
-                    label="Type"
+                    label={t('form.guaranteeType')}
                     {...register(`guarantees.${idx}.type`)}
                     error={errors.guarantees?.[idx]?.type?.message}
-                    placeholder="e.g. Vehicle, Real estate"
+                    placeholder={t('form.guaranteeTypePlaceholder')}
                   />
                   <Input
-                    label="Estimated Value"
+                    label={t('form.guaranteeValue')}
                     type="number"
                     min="0"
                     step="0.01"
                     {...register(`guarantees.${idx}.estimatedValue`)}
                     error={errors.guarantees?.[idx]?.estimatedValue?.message}
-                    placeholder="Value in MAD"
+                    placeholder={t('form.guaranteeValuePlaceholder')}
                   />
                 </div>
                 <div className="mt-2 flex justify-end">
@@ -519,20 +595,20 @@ const DemandeForm = ({
                     className="text-red-500 hover:text-red-700 hover:bg-red-50"
                     onClick={() => removeGuarantee(idx)}
                   >
-                    Remove
+                    {t('form.removeGuarantee')}
                   </Button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-xs text-surface-500 italic">No guarantees added yet</p>
+          <p className="text-xs text-surface-500 italic">{t('form.noGuaranteesAdded')}</p>
         )}
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-surface-100">
         <Button type="submit" isLoading={isLoading}>
-          {isEdit ? "Update Demande" : "Create Demande"}
+          {isEdit ? t('buttons.update') : t('buttons.create')}
         </Button>
       </div>
     </form>

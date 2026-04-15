@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { agenceService } from '@/services/agence.service';
 import { gestionnaireService } from '@/services/gestionnaire.service';
 import { clientService } from '@/services/client.service';
@@ -16,6 +17,8 @@ import type { Demande } from '@/types/demande.types';
 const ADMIN_ROLES = ['SUPER_ADMIN', 'TECH_USER'];
 
 const DashboardPage = () => {
+  const { t } = useTranslation('dashboard');
+  const commonT = useTranslation('common').t;
   const { user } = useAuth();
   const navigate = useNavigate();
   const isAdmin = ADMIN_ROLES.includes(user?.role || '');
@@ -102,16 +105,14 @@ const DashboardPage = () => {
 
   return (
     <div className="page-container space-y-6">
-      {/* Welcome */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Welcome - Modern Design System */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900">
-            Welcome back, {user?.firstName || 'User'} 👋
+          <h1 className="text-page-title">
+            {t('welcome', { name: user?.firstName || 'User' })}
           </h1>
-          <p className="text-surface-500 mt-1">
-            {isAdmin
-              ? "Here's an overview of your branch management system"
-              : "Here's an overview of your client portfolio"}
+          <p className="text-caption mt-2">
+            {isAdmin ? t('adminOverview') : t('userOverview')}
           </p>
         </div>
         <div className="flex gap-3">
@@ -127,7 +128,7 @@ const DashboardPage = () => {
                   </svg>
                 }
               >
-                New Agence
+                {commonT('common.add')} {commonT('navigation.agences')}
               </Button>
               <Button
                 size="sm"
@@ -138,7 +139,7 @@ const DashboardPage = () => {
                   </svg>
                 }
               >
-                New Manager
+                {commonT('common.add')} {commonT('navigation.gestionnaires')}
               </Button>
             </>
           )}
@@ -152,7 +153,7 @@ const DashboardPage = () => {
               </svg>
             }
           >
-            View Clients
+            {commonT('navigation.clients')}
           </Button>
         </div>
       </div>
@@ -165,7 +166,7 @@ const DashboardPage = () => {
           {/* ── Client stats (visible to ALL roles) ───────────────────────── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <Card
-              title="Total Clients"
+              title={t('stats.totalClients')}
               value={totalClients}
               subtitle={`${activeClients} active · ${prospectClients} prospects`}
               color="brand"
@@ -176,7 +177,7 @@ const DashboardPage = () => {
               }
             />
             <Card
-              title="Total Demandes"
+              title={t('stats.totalRequests')}
               value={totalDemandes}
               subtitle={`${submittedDemandes} submitted · ${validatedDemandes} approved`}
               color="brand"
@@ -187,9 +188,9 @@ const DashboardPage = () => {
               }
             />
             <Card
-              title="My Clients"
+              title={t('stats.myClients')}
               value={myClients.length}
-              subtitle={`Assigned to ${user?.firstName || 'you'}`}
+              subtitle={t('stats.myClientsSubtitle', { name: user?.firstName || 'you' })}
               color="violet"
               icon={
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -198,9 +199,9 @@ const DashboardPage = () => {
               }
             />
             <Card
-              title="Draft Demandes"
+              title={t('stats.draftDemandes')}
               value={draftDemandes}
-              subtitle={`${rejectedDemandes} rejected`}
+              subtitle={t('subtitles.draftStats', { rejected: rejectedDemandes })}
               color="amber"
               icon={
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -214,7 +215,7 @@ const DashboardPage = () => {
           {isAdmin && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               <Card
-                title="Total Agences"
+                title={t('stats.totalBranches')}
                 value={agences.length}
                 subtitle={`${activeAgences} active`}
                 color="brand"
@@ -225,7 +226,7 @@ const DashboardPage = () => {
                 }
               />
               <Card
-                title="Total Gestionnaires"
+                title={t('stats.totalManagers')}
                 value={gestionnaires.length}
                 subtitle="All managers"
                 color="violet"
@@ -236,9 +237,9 @@ const DashboardPage = () => {
                 }
               />
               <Card
-                title="Active Managers"
+                title={t('stats.activeManagers')}
                 value={activeManagers}
-                subtitle="Currently active"
+                subtitle={t('stats.activeManagersSubtitle')}
                 color="emerald"
                 icon={
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -247,9 +248,9 @@ const DashboardPage = () => {
                 }
               />
               <Card
-                title="Inactive Managers"
+                title={t('stats.inactiveManagers')}
                 value={inactiveManagers}
-                subtitle="Deactivated"
+                subtitle={t('stats.inactiveManagersSubtitle')}
                 color="rose"
                 icon={
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -266,44 +267,44 @@ const DashboardPage = () => {
       <div className={`grid grid-cols-1 ${isAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-6`}>
 
         {/* Recent Clients — visible to all */}
-        <div className="bg-white rounded-2xl border border-surface-200 shadow-card overflow-hidden lg:col-span-1">
-          <div className="px-6 py-4 border-b border-surface-100 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-surface-800">Recent Clients</h3>
+        <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm dark:shadow-md overflow-hidden lg:col-span-1 transition-colors">
+          <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-700 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-100">{t('sections.recentClients')}</h3>
             <button
               onClick={() => navigate('/clients')}
-              className="text-xs font-medium text-brand-600 hover:text-brand-700"
+              className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300"
             >
-              View all →
+              {t('viewAll')}
             </button>
           </div>
-          <div className="divide-y divide-surface-100">
+          <div className="divide-y divide-surface-100 dark:divide-surface-700">
             {loading ? (
               <div className="p-6">
                 <LoadingSkeleton type="text" rows={3} />
               </div>
             ) : recentClients.length === 0 ? (
-              <div className="px-6 py-8 text-center text-sm text-surface-400">
-                No clients yet
+              <div className="px-6 py-8 text-center text-sm text-surface-400 dark:text-surface-500">
+                {t('sections.noClients')}
               </div>
             ) : (
               recentClients.map((c) => (
                 <div
                   key={c.id}
-                  className="px-6 py-3.5 flex items-center justify-between hover:bg-surface-50 transition-colors"
+                  className="px-6 py-3.5 flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center">
-                      <span className="text-brand-700 text-xs font-bold">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/40 dark:to-brand-800/40 flex items-center justify-center">
+                      <span className="text-brand-700 dark:text-brand-300 text-xs font-bold">
                         {c.clientType === 'PHYSICAL'
                           ? `${c.firstName?.[0] ?? ''}${c.lastName?.[0] ?? ''}`.toUpperCase()
                           : (c.companyName?.[0] ?? 'C').toUpperCase()}
                       </span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-surface-800">
+                      <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                         {clientDisplayName(c)}
                       </p>
-                      <p className="text-xs text-surface-400">
+                      <p className="text-xs text-surface-400 dark:text-surface-500">
                         {c.primaryPhone || c.email || '—'}
                       </p>
                     </div>
@@ -311,8 +312,8 @@ const DashboardPage = () => {
                   <span
                     className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${
                       c.status === 'ACTIVE'
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'bg-amber-50 text-amber-700'
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                        : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                     }`}
                   >
                     {c.status}
@@ -324,37 +325,37 @@ const DashboardPage = () => {
         </div>
 
         {/* Recent Demandes — visible to all */}
-        <div className="bg-white rounded-2xl border border-surface-200 shadow-card overflow-hidden lg:col-span-1">
-          <div className="px-6 py-4 border-b border-surface-100 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-surface-800">Recent Demandes</h3>
+        <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm dark:shadow-md overflow-hidden lg:col-span-1 transition-colors">
+          <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-700 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-100">{t('sections.recentDemandes')}</h3>
             <button
               onClick={() => navigate('/demandes')}
-              className="text-xs font-medium text-brand-600 hover:text-brand-700"
+              className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300"
             >
-              View all →
+              {t('viewAll')}
             </button>
           </div>
-          <div className="divide-y divide-surface-100">
+          <div className="divide-y divide-surface-100 dark:divide-surface-700">
             {loading ? (
               <div className="p-6">
                 <LoadingSkeleton type="text" rows={3} />
               </div>
             ) : recentDemandes.length === 0 ? (
-              <div className="px-6 py-8 text-center text-sm text-surface-400">
-                No demandes yet
+              <div className="px-6 py-8 text-center text-sm text-surface-400 dark:text-surface-500">
+                {t('sections.noDemandes')}
               </div>
             ) : (
               recentDemandes.map((d) => (
                 <div
                   key={d.id}
-                  className="px-6 py-3.5 flex items-center justify-between hover:bg-surface-50 transition-colors group"
+                  className="px-6 py-3.5 flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors group"
                 >
                   <div className="flex items-center gap-3 flex-1">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-100 to-sky-200 flex items-center justify-center">
-                      <span className="text-sky-700 text-xs font-bold">📋</span>
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-100 to-sky-200 dark:from-sky-900/40 dark:to-sky-800/40 flex items-center justify-center">
+                      <span className="text-sky-700 dark:text-sky-300 text-xs font-bold">📋</span>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-surface-800 truncate">
+                      <p className="text-sm font-medium text-surface-800 dark:text-surface-200 truncate">
                         {d.firstName && d.lastName
                           ? `${d.firstName} ${d.lastName}`
                           : d.companyName || '—'}
@@ -368,20 +369,20 @@ const DashboardPage = () => {
                     <span
                       className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${
                         d.status === 'VALIDATED'
-                          ? 'bg-emerald-50 text-emerald-700'
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                           : d.status === 'SUBMITTED'
-                            ? 'bg-sky-50 text-sky-700'
+                            ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
                             : d.status === 'DRAFT'
-                              ? 'bg-amber-50 text-amber-700'
-                              : 'bg-rose-50 text-rose-700'
+                              ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                              : 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
                       }`}
                     >
                       {d.status}
                     </span>
                     <button
                       onClick={() => navigate(`/demandes/${d.id}`)}
-                      className="text-xs text-brand-600 hover:text-brand-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="View details"
+                      className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title={t('portfolio.viewDetails')}
                     >
                       →
                     </button>
@@ -394,21 +395,21 @@ const DashboardPage = () => {
 
         {/* My Client Portfolio — visible to non-admin managers */}
         {!isAdmin && (
-          <div className="bg-white rounded-2xl border border-surface-200 shadow-card overflow-hidden lg:col-span-1">
-            <div className="px-6 py-4 border-b border-surface-100">
-              <h3 className="text-sm font-semibold text-surface-800">My Portfolio Summary</h3>
+          <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm dark:shadow-md overflow-hidden lg:col-span-1 transition-colors">
+            <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-700">
+              <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-100">{t('sections.myPortfolio')}</h3>
             </div>
             <div className="p-6 space-y-5">
               {/* Manager info card */}
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-surface-50 border border-surface-100">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
                   {user?.firstName?.[0] || ''}{user?.lastName?.[0] || ''}
                 </div>
                 <div>
-                  <p className="font-semibold text-surface-900">{user?.firstName} {user?.lastName}</p>
-                  <p className="text-xs text-surface-400">{user?.email} · {user?.role}</p>
+                  <p className="font-semibold text-surface-900 dark:text-surface-50">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-xs text-surface-400 dark:text-surface-500">{user?.email} · {user?.role}</p>
                   {user?.agenceId && (
-                    <p className="text-xs text-brand-600 font-medium mt-0.5">Agence: {user.agenceId}</p>
+                    <p className="text-xs text-brand-600 dark:text-brand-400 font-medium mt-0.5">{t('portfolio.agence')}: {user.agenceId}</p>
                   )}
                 </div>
               </div>
@@ -416,33 +417,33 @@ const DashboardPage = () => {
               {/* Portfolio breakdown */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-surface-500">My assigned clients</span>
-                  <span className="text-sm font-bold text-surface-800">{myClients.length}</span>
+                  <span className="text-sm text-surface-500 dark:text-surface-400">{t('portfolio.myAssignedClients')}</span>
+                  <span className="text-sm font-bold text-surface-800 dark:text-surface-100">{myClients.length}</span>
                 </div>
-                <div className="w-full bg-surface-100 rounded-full h-2">
+                <div className="w-full bg-surface-100 dark:bg-surface-700 rounded-full h-2">
                   <div
                     className="bg-gradient-to-r from-brand-500 to-brand-600 h-2 rounded-full transition-all duration-500"
                     style={{ width: totalClients ? `${(myClients.length / totalClients) * 100}%` : '0%' }}
                   />
                 </div>
-                <p className="text-xs text-surface-400">
-                  {totalClients ? Math.round((myClients.length / totalClients) * 100) : 0}% of total clients
+                <p className="text-xs text-surface-400 dark:text-surface-500">
+                  {totalClients ? Math.round((myClients.length / totalClients) * 100) : 0}{t('portfolio.percentOfTotal')}
                 </p>
               </div>
 
               {/* Quick stats */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3 text-center">
-                  <p className="text-lg font-bold text-emerald-700">
+                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 p-3 text-center">
+                  <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
                     {myClients.filter((c) => c.status === 'ACTIVE').length}
                   </p>
-                  <p className="text-xs text-emerald-600">Active</p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">{t('portfolio.active')}</p>
                 </div>
-                <div className="rounded-xl bg-amber-50 border border-amber-100 p-3 text-center">
-                  <p className="text-lg font-bold text-amber-700">
+                <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 p-3 text-center">
+                  <p className="text-lg font-bold text-amber-700 dark:text-amber-300">
                     {myClients.filter((c) => c.status === 'PROSPECT').length}
                   </p>
-                  <p className="text-xs text-amber-600">Prospects</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400">{t('portfolio.prospects')}</p>
                 </div>
               </div>
             </div>
@@ -451,43 +452,43 @@ const DashboardPage = () => {
 
         {/* Admin: Recent Agences */}
         {isAdmin && (
-          <div className="bg-white rounded-2xl border border-surface-200 shadow-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-surface-100 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-surface-800">Recent Agences</h3>
+          <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm dark:shadow-md overflow-hidden transition-colors">
+            <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-700 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-100">{t('sections.recentAgences')}</h3>
               <button
                 onClick={() => navigate('/agences')}
-                className="text-xs font-medium text-brand-600 hover:text-brand-700"
+                className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300"
               >
-                View all →
+                {t('viewAll')}
               </button>
             </div>
-            <div className="divide-y divide-surface-100">
+            <div className="divide-y divide-surface-100 dark:divide-surface-700">
               {loading ? (
                 <div className="p-6">
                   <LoadingSkeleton type="text" rows={3} />
                 </div>
               ) : agences.length === 0 ? (
                 <div className="px-6 py-8 text-center text-sm text-surface-400">
-                  No agences found
+                  {t('sections.noAgences')}
                 </div>
               ) : (
                 agences.slice(0, 5).map((agence) => (
                   <div
                     key={agence.idBranch}
-                    className="px-6 py-3.5 flex items-center justify-between hover:bg-surface-50 transition-colors"
+                    className="px-6 py-3.5 flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors"
                   >
                     <div>
-                      <p className="text-sm font-medium text-surface-800">{agence.libelle}</p>
-                      <p className="text-xs text-surface-400">{agence.idBranch}</p>
+                      <p className="text-sm font-medium text-surface-800 dark:text-surface-200">{agence.libelle}</p>
+                      <p className="text-xs text-surface-400 dark:text-surface-500">{agence.idBranch}</p>
                     </div>
                     <span
                       className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${
                         agence.active
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-surface-100 text-surface-500'
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                          : 'bg-surface-100 text-surface-500 dark:bg-surface-700 dark:text-surface-400'
                       }`}
                     >
-                      {agence.active ? 'Active' : 'Inactive'}
+                      {agence.active ? commonT('common.active') : commonT('common.inactive')}
                     </span>
                   </div>
                 ))
@@ -498,49 +499,49 @@ const DashboardPage = () => {
 
         {/* Admin: Recent Gestionnaires */}
         {isAdmin && (
-          <div className="bg-white rounded-2xl border border-surface-200 shadow-card overflow-hidden">
-            <div className="px-6 py-4 border-b border-surface-100 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-surface-800">Recent Gestionnaires</h3>
+          <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm dark:shadow-md overflow-hidden transition-colors">
+            <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-700 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-100">{t('sections.recentGestionnaires')}</h3>
               <button
                 onClick={() => navigate('/gestionnaires')}
-                className="text-xs font-medium text-brand-600 hover:text-brand-700"
+                className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300"
               >
-                View all →
+                {t('viewAll')}
               </button>
             </div>
-            <div className="divide-y divide-surface-100">
+            <div className="divide-y divide-surface-100 dark:divide-surface-700">
               {loading ? (
                 <div className="p-6">
                   <LoadingSkeleton type="text" rows={3} />
                 </div>
               ) : gestionnaires.length === 0 ? (
                 <div className="px-6 py-8 text-center text-sm text-surface-400">
-                  No gestionnaires found
+                  {t('sections.noGestionnaires')}
                 </div>
               ) : (
                 gestionnaires.slice(0, 5).map((g) => (
                   <div
                     key={g.id}
-                    className="px-6 py-3.5 flex items-center justify-between hover:bg-surface-50 transition-colors"
+                    className="px-6 py-3.5 flex items-center justify-between hover:bg-surface-50 dark:hover:bg-surface-700/50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center">
-                        <span className="text-brand-700 text-xs font-bold">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/40 dark:to-brand-800/40 flex items-center justify-center">
+                        <span className="text-brand-700 dark:text-brand-300 text-xs font-bold">
                           {g.firstName?.[0]}{g.lastName?.[0]}
                         </span>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-surface-800">
+                        <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                           {g.firstName} {g.lastName}
                         </p>
-                        <p className="text-xs text-surface-400">{g.email}</p>
+                        <p className="text-xs text-surface-400 dark:text-surface-500">{g.email}</p>
                       </div>
                     </div>
                     <span
                       className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${
                         g.active
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-surface-100 text-surface-500'
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                          : 'bg-surface-100 text-surface-500 dark:bg-surface-700 dark:text-surface-400'
                       }`}
                     >
                       {g.role}

@@ -1,0 +1,50 @@
+{
+  "title": "Dashboard",
+  "welcome": "Welcome back, {{name}}! 👋",
+  "adminOverview": "Here's an overview of your branch management system",
+  "userOverview": "Here's an overview of your client portfolio",
+  "stats": {
+    "totalClients": "Total Clients",
+    "totalRequests": "Total Requests",
+    "activeRequests": "Active Requests",
+    "completedRequests": "Completed Requests",
+    "totalBranches": "Total Branches",
+    "totalManagers": "Total Managers",
+    "myClients": "My Clients",
+    "myClientsSubtitle": "Assigned to {{name}}",
+    "draftDemandes": "Draft Demandes",
+    "activeManagers": "Active Managers",
+    "activeManagersSubtitle": "Currently active",
+    "inactiveManagers": "Inactive Managers",
+    "inactiveManagersSubtitle": "Deactivated"
+  },
+  "recentActivity": "Recent Activity",
+  "noActivity": "No recent activity",
+  "quickActions": "Quick Actions",
+  "viewAll": "View all →",
+  "sections": {
+    "recentClients": "Recent Clients",
+    "recentDemandes": "Recent Demandes",
+    "recentGestionnaires": "Recent Gestionnaires",
+    "myPortfolio": "My Portfolio Summary",
+    "recentAgences": "Recent Agences",
+    "noClients": "No clients yet",
+    "noDemandes": "No demandes yet",
+    "noAgences": "No agences found",
+    "noGestionnaires": "No gestionnaires found"
+  },
+  "portfolio": {
+    "agence": "Agence",
+    "myAssignedClients": "My assigned clients",
+    "percentOfTotal": "% of total clients",
+    "active": "Active",
+    "prospects": "Prospects",
+    "viewDetails": "View details"
+  },
+  "subtitles": {
+    "clients": "{{active}} active · {{prospects}} prospects",
+    "requests": "{{submitted}} submitted · {{validated}} approved",
+    "managerStats": "All managers",
+    "draftStats": "{{rejected}} rejected"
+  }
+}

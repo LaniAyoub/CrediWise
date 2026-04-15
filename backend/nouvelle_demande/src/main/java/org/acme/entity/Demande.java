@@ -18,8 +18,8 @@ import java.util.UUID;
 public class Demande extends PanacheEntityBase {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    public UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public Long id;
 
     // ─────────────────────────────────────────────
     // Client reference (logical key — external microservice)
@@ -134,6 +134,15 @@ public class Demande extends PanacheEntityBase {
 
     @Column(name = "application_channel", length = 100)
     public String applicationChannel;
+
+    // ─────────────────────────────────────────────
+    // Risk assessment
+    // ─────────────────────────────────────────────
+    @Column(name = "banking_restriction", nullable = false)
+    public Boolean bankingRestriction;
+
+    @Column(name = "legal_issue_or_account_blocked", nullable = false)
+    public Boolean legalIssueOrAccountBlocked;
 
     // ─────────────────────────────────────────────
     // Consent & signatories

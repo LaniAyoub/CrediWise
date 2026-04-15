@@ -1,19 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 
 interface HeaderProps {
   onMenuToggle: () => void;
 }
 
-const breadcrumbLabels: Record<string, string> = {
-  dashboard: 'Dashboard',
-  agences: 'Agences',
-  gestionnaires: 'Gestionnaires',
-  profile: 'Profile',
+// Note: breadcrumb labels are translated dynamically now
+const getBreadcrumbLabel = (t: any, segment: string): string => {
+  const labelMap: Record<string, string> = {
+    dashboard: t('navigation.dashboard'),
+    agences: t('navigation.agences'),
+    gestionnaires: t('navigation.gestionnaires'),
+    clients: t('navigation.clients'),
+    demandes: t('navigation.demandes'),
+    profile: t('navigation.profile'),
+  };
+  return labelMap[segment] || segment;
 };
 
 const Header = ({ onMenuToggle }: HeaderProps) => {
+  const { t } = useTranslation('common');
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,7 +53,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
     : '?';
 
   return (
-    <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-surface-200">
+    <header className="sticky top-0 z-20 bg-white dark:bg-surface-900 border-b border-surface-200 dark:border-surface-700 backdrop-blur-sm transition-colors">
       <div className="flex items-center justify-between h-16 px-4 lg:px-6">
         {/* Left: Menu button + Breadcrumbs */}
         <div className="flex items-center gap-4">
@@ -71,30 +80,32 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
                 </svg>
                 <span
                   className={`font-medium ${
-                    i === segments.length - 1 ? 'text-surface-800' : 'text-surface-400'
+                    i === segments.length - 1 ? 'text-surface-800 dark:text-surface-100' : 'text-surface-400 dark:text-surface-500'
                   }`}
                 >
-                  {breadcrumbLabels[seg] || seg}
+                  {getBreadcrumbLabel(t, seg)}
                 </span>
               </React.Fragment>
             ))}
           </nav>
         </div>
 
-        {/* Right: User menu */}
-        <div className="relative" ref={dropdownRef}>
+        {/* Right: Language Switcher + User menu */}
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="flex items-center gap-3 p-1.5 pr-3 rounded-xl hover:bg-surface-50 transition-colors"
+            className="flex items-center gap-3 p-1.5 pr-3 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
           >
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
               <span className="text-white text-xs font-bold">{initials}</span>
             </div>
             <div className="hidden sm:block text-left">
-              <p className="text-sm font-semibold text-surface-800 leading-tight">
+              <p className="text-sm font-semibold text-surface-800 dark:text-surface-50 leading-tight">
                 {user?.firstName} {user?.lastName}
               </p>
-              <p className="text-xs text-surface-400">{user?.role}</p>
+              <p className="text-xs text-surface-400 dark:text-surface-500">{user?.role}</p>
             </div>
             <svg
               className={`w-4 h-4 text-surface-400 transition-transform ${showDropdown ? 'rotate-180' : ''}`}
@@ -109,37 +120,38 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
 
           {/* Dropdown */}
           {showDropdown && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-surface-200 shadow-lg py-1.5 animate-slide-up">
-              <div className="px-4 py-2.5 border-b border-surface-100">
-                <p className="text-sm font-semibold text-surface-800">
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 shadow-lg dark:shadow-xl py-1.5 animate-slide-up transition-colors">
+              <div className="px-4 py-2.5 border-b border-surface-100 dark:border-surface-700">
+                <p className="text-sm font-semibold text-surface-800 dark:text-surface-50">
                   {user?.firstName} {user?.lastName}
                 </p>
-                <p className="text-xs text-surface-400 truncate">{user?.email}</p>
+                <p className="text-xs text-surface-400 dark:text-surface-500 truncate">{user?.email}</p>
               </div>
               <button
                 onClick={() => {
                   setShowDropdown(false);
                   navigate('/profile');
                 }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-surface-600 hover:bg-surface-50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                My Profile
+                {t('navigation.profile')}
               </button>
-              <hr className="my-1 border-surface-100" />
+              <hr className="my-1 border-surface-100 dark:border-surface-700" />
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                Sign Out
+                {t('navigation.logout')}
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
     </header>

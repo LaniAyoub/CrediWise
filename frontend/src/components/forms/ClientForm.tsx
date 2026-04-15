@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -314,11 +315,11 @@ const SelectField = ({
   children: React.ReactNode;
   disabled?: boolean;
 }) => (
-  <div className="mb-4">
+  <div className="mb-6">
     <label
       htmlFor={id}
-      className={`block text-sm font-medium mb-1.5 ${
-        disabled ? "text-surface-400" : "text-surface-600"
+      className={`block text-label mb-2 transition-colors ${
+        disabled ? "text-surface-400 dark:text-surface-500" : "text-surface-600 dark:text-surface-400"
       }`}
     >
       {label}
@@ -326,24 +327,24 @@ const SelectField = ({
     <select
       id={id}
       disabled={disabled}
-      className={`block w-full rounded-xl border px-4 py-2.5 text-sm transition-all duration-200 ${
+      className={`block w-full rounded-lg border px-4 py-2.5 text-sm transition-all duration-200 focus-ring ${
         disabled
-          ? "border-surface-200 bg-surface-50 text-surface-400 cursor-not-allowed"
-          : "border-surface-200 bg-white text-surface-800 hover:border-surface-300 focus:border-brand-500 focus-ring"
+          ? "border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-surface-400 dark:text-surface-500 cursor-not-allowed"
+          : "border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 hover:border-surface-300 dark:hover:border-surface-600 focus:border-brand-500 dark:focus:border-brand-400"
       }`}
       {...rest}
     >
       {children}
     </select>
-    {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
+    {error && <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">{error}</p>}
   </div>
 );
 
 // ── Section header component ─────────────────────────────────────────────────
 const SectionTitle = ({ title, icon }: { title: string; icon: string }) => (
-  <div className="flex items-center gap-2 pt-2 pb-1 border-b border-surface-100 mb-3">
-    <span className="text-base">{icon}</span>
-    <h3 className="text-sm font-semibold text-surface-700">{title}</h3>
+  <div className="flex items-center gap-2 pt-4 pb-2 border-b border-surface-200 dark:border-surface-700 mb-4">
+    <span className="text-lg">{icon}</span>
+    <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-200">{title}</h3>
   </div>
 );
 
@@ -354,6 +355,7 @@ const ClientForm = ({
   isLoading,
   isEdit = false,
 }: ClientFormProps) => {
+  const { t } = useTranslation('clients');
   const { user } = useAuth();
 
   // ── Reference data state ──────────────────────────────────────────────────
@@ -538,25 +540,25 @@ const ClientForm = ({
       {/* ── Type & Status ─────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
         <SelectField
-          label="Client Type"
+          label={t('form.clientType')}
           id="clientType"
           error={errors.clientType?.message}
           {...register("clientType")}
         >
-          <option value="PHYSICAL">👤 Physical Person</option>
-          <option value="LEGAL">🏢 Legal Entity</option>
+          <option value="PHYSICAL">{t('form.physicalPerson')}</option>
+          <option value="LEGAL">{t('form.legalEntity')}</option>
         </SelectField>
 
         {isEdit && (
           <SelectField
-            label="Status"
+            label={t('form.status')}
             id="status"
             error={errors.status?.message}
             {...register("status")}
           >
-            <option value="">— keep current —</option>
-            <option value="PROSPECT">Prospect</option>
-            <option value="ACTIVE">Active</option>
+            <option value="">{t('form.keepCurrent')}</option>
+            <option value="PROSPECT">{t('form.prospect')}</option>
+            <option value="ACTIVE">{t('form.active')}</option>
           </SelectField>
         )}
       </div>
@@ -564,78 +566,78 @@ const ClientForm = ({
       {/* ── Physical Person Fields ────────────────────────────────── */}
       {isPhysical && (
         <>
-          <SectionTitle title="Identity" icon="🪪" />
+          <SectionTitle title={t('sections.identity')} icon="🪪" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <Input
-              label="First Name"
+              label={t('form.firstName')}
               {...register("firstName")}
               error={errors.firstName?.message}
-              placeholder="First Name"
+              placeholder={t('placeholders.firstName')}
             />
             <Input
-              label="Last Name"
+              label={t('form.lastName')}
               {...register("lastName")}
               error={errors.lastName?.message}
-              placeholder="Last Name"
+              placeholder={t('placeholders.lastName')}
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <Input
-              label="Date of Birth"
+              label={t('form.dateOfBirth')}
               type="date"
               {...register("dateOfBirth")}
               error={errors.dateOfBirth?.message}
             />
             <SelectField
-              label="Gender"
+              label={t('form.gender')}
               id="gender"
               error={errors.gender?.message}
               {...register("gender")}
             >
-              <option value="">Select gender</option>
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-              <option value="OTHER">Other</option>
+              <option value="">{t('form.selectGender')}</option>
+              <option value="MALE">{t('form.male')}</option>
+              <option value="FEMALE">{t('form.female')}</option>
+              <option value="OTHER">{t('form.other')}</option>
             </SelectField>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <Input
-              label="National ID (CIN)"
+              label={t('form.nationalId')}
               {...register("nationalId")}
               error={errors.nationalId?.message}
-              placeholder="12345678"
+              placeholder={t('placeholders.cin')}
             />
             <Input
-              label="Tax Identifier"
+              label={t('form.taxIdentifier')}
               {...register("taxIdentifier")}
               error={errors.taxIdentifier?.message}
-              placeholder="Tax ID"
+              placeholder={t('placeholders.taxId')}
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <SelectField
-              label="Marital Status"
+              label={t('form.maritalStatus')}
               id="situationFamiliale"
               error={errors.situationFamiliale?.message}
               {...register("situationFamiliale")}
             >
-              <option value="">Select status</option>
-              <option value="SINGLE">Single</option>
-              <option value="MARRIED">Married</option>
-              <option value="DIVORCED">Divorced</option>
-              <option value="SEPARATED">Separated</option>
-              <option value="WIDOWER">Widower</option>
-              <option value="OTHER">Other</option>
+              <option value="">{t('form.selectStatus')}</option>
+              <option value="SINGLE">{t('form.single')}</option>
+              <option value="MARRIED">{t('form.married')}</option>
+              <option value="DIVORCED">{t('form.divorced')}</option>
+              <option value="SEPARATED">{t('form.separated')}</option>
+              <option value="WIDOWER">{t('form.widower')}</option>
+              <option value="OTHER">{t('form.other')}</option>
             </SelectField>
             <Input
-              label="Nationality"
+              label={t('form.nationality')}
               {...register("nationality")}
               error={errors.nationality?.message}
-              placeholder="Tunisian"
+              placeholder={t('placeholders.nationality')}
             />
           </div>
           <Input
-            label="Monthly Income (TND)"
+            label={t('form.monthlyIncome')}
             type="number"
             min="0"
             step="0.01"
@@ -649,100 +651,100 @@ const ClientForm = ({
       {/* ── Legal Entity Fields ───────────────────────────────────── */}
       {!isPhysical && (
         <>
-          <SectionTitle title="Company Information" icon="🏢" />
+          <SectionTitle title={t('sections.company')} icon="🏢" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <Input
-              label="Company Name"
+              label={t('form.companyName')}
               {...register("companyName")}
               error={errors.companyName?.message}
-              placeholder="Company Name"
+              placeholder={t('placeholders.companyName')}
             />
             <Input
-              label="Sigle / Abbreviation"
+              label={t('form.sigle')}
               {...register("sigle")}
               error={errors.sigle?.message}
-              placeholder="Abbreviation"
+              placeholder={t('placeholders.abbreviation')}
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
             <Input
-              label="Registration Number (RC)"
+              label={t('form.registrationNumber')}
               {...register("registrationNumber")}
               error={errors.registrationNumber?.message}
-              placeholder="RC"
+              placeholder={t('placeholders.rc')}
             />
             <Input
-              label="Principal Interlocutor"
+              label={t('form.principalInterlocutor')}
               {...register("principalInterlocutor")}
               error={errors.principalInterlocutor?.message}
-              placeholder="Contact Name"
+              placeholder={t('placeholders.contactName')}
             />
           </div>
         </>
       )}
 
       {/* ── Contact ───────────────────────────────────────────────── */}
-      <SectionTitle title="Contact" icon="📞" />
+      <SectionTitle title={t('sections.contact')} icon="📞" />
       <Input
-        label="Email"
+        label={t('form.email')}
         type="email"
         {...register("email")}
         error={errors.email?.message}
-        placeholder="email@example.com"
+        placeholder={t('placeholders.email')}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
         <Input
-          label="Primary Phone"
+          label={t('form.primaryPhone')}
           {...register("primaryPhone")}
           error={errors.primaryPhone?.message}
-          placeholder="XX XXXX XXXX"
+          placeholder={t('placeholders.primaryPhone')}
         />
         <Input
-          label="Secondary Phone"
+          label={t('form.secondaryPhone')}
           {...register("secondaryPhone")}
           error={errors.secondaryPhone?.message}
-          placeholder="XX XXXX XXXX (optional)"
+          placeholder={t('placeholders.secondaryPhone')}
         />
       </div>
 
       {/* ── Address ───────────────────────────────────────────────── */}
-      <SectionTitle title="Address" icon="📍" />
+      <SectionTitle title={t('sections.address')} icon="📍" />
       <Input
-        label="Street"
+        label={t('form.street')}
         {...register("addressStreet")}
         error={errors.addressStreet?.message}
-        placeholder="Street Address"
+        placeholder={t('placeholders.street')}
       />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4">
         <Input
-          label="City"
+          label={t('form.city')}
           {...register("addressCity")}
           error={errors.addressCity?.message}
-          placeholder="Tunis"
+          placeholder={t('placeholders.city')}
         />
         <Input
-          label="Postal Code"
+          label={t('form.postalCode')}
           {...register("addressPostal")}
           error={errors.addressPostal?.message}
-          placeholder="1000"
+          placeholder={t('placeholders.postalCode')}
         />
         <Input
-          label="Country"
+          label={t('form.country')}
           {...register("addressCountry")}
           error={errors.addressCountry?.message}
-          placeholder="Tunisia"
+          placeholder={t('placeholders.country')}
         />
       </div>
-      <SectionTitle title="Business Classification" icon="📊" />
+      <SectionTitle title={t('sections.businessClassification')} icon="📊" />
       {/* ── Business Classification ───────────────────────────────── */}
-      <div className="rounded-2xl border border-brand-100 bg-brand-50/40 p-5 sm:p-6">
+      <div className="rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50/40 dark:bg-brand-900/10 p-5 sm:p-6 transition-colors">
         
 
         {loadingRef ? (
           <div className="space-y-3">
             <div className="animate-pulse">
-              <div className="h-10 bg-surface-200 rounded-xl mb-3"></div>
-              <div className="h-10 bg-surface-200 rounded-xl"></div>
+              <div className="h-10 bg-surface-200 dark:bg-surface-700 rounded-xl mb-3"></div>
+              <div className="h-10 bg-surface-200 dark:bg-surface-700 rounded-xl"></div>
             </div>
           </div>
         ) : (
@@ -750,15 +752,15 @@ const ClientForm = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Segment */}
               <div>
-                <label htmlFor="segmentId" className="block text-sm font-semibold text-surface-700 mb-2">
-                  Client Segment
+                <label htmlFor="segmentId" className="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">
+                  {t('form.clientSegment')}
                 </label>
                 <select
                   id="segmentId"
-                  className="w-full rounded-xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-800 hover:border-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
+                  className="w-full rounded-lg border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-3 text-sm text-surface-900 dark:text-surface-100 hover:border-surface-400 dark:hover:border-surface-500 focus:border-brand-500 dark:focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900/50 transition-all"
                   {...register("segmentId")}
                 >
-                  <option value="">Choose a segment</option>
+                  <option value="">{t('form.chooseSegment')}</option>
                   {segments.length > 0 ? (
                     segments.map((seg) => (
                       <option key={seg.id} value={seg.id}>
@@ -766,23 +768,23 @@ const ClientForm = ({
                       </option>
                     ))
                   ) : (
-                    <option disabled>No segments available</option>
+                    <option disabled>{t('form.noSegments')}</option>
                   )}
                 </select>
-                {errors.segmentId && <p className="mt-1 text-xs text-red-500">{errors.segmentId.message}</p>}
+                {errors.segmentId && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.segmentId.message}</p>}
               </div>
 
               {/* Account Type */}
               <div>
-                <label htmlFor="accountTypeId" className="block text-sm font-semibold text-surface-700 mb-2">
-                  Account Type
+                <label htmlFor="accountTypeId" className="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">
+                  {t('form.accountType')}
                 </label>
                 <select
                   id="accountTypeId"
-                  className="w-full rounded-xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-800 hover:border-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
+                  className="w-full rounded-lg border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-3 text-sm text-surface-900 dark:text-surface-100 hover:border-surface-400 dark:hover:border-surface-500 focus:border-brand-500 dark:focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900/50 transition-all"
                   {...register("accountTypeId")}
                 >
-                  <option value="">Choose an account type</option>
+                  <option value="">{t('form.chooseAccountType')}</option>
                   {accountTypes.length > 0 ? (
                     accountTypes.map((acc) => (
                       <option key={acc.id} value={acc.id}>
@@ -790,47 +792,47 @@ const ClientForm = ({
                       </option>
                     ))
                   ) : (
-                    <option disabled>No account types available</option>
+                    <option disabled>{t('form.noAccountTypes')}</option>
                   )}
                 </select>
-                {errors.accountTypeId && <p className="mt-1 text-xs text-red-500">{errors.accountTypeId.message}</p>}
+                {errors.accountTypeId && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.accountTypeId.message}</p>}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Account Number"
+                label={t('form.accountNumber')}
                 {...register("accountNumber")}
                 error={errors.accountNumber?.message}
-                placeholder="20 digits (e.g. 12345678901234567890)"
+                placeholder={t('placeholders.accountNumber')}
                 maxLength={20}
               />
               {selectedAccountTypeId === "4" ? (
                 <Input
-                  label="Specify Account Type"
+                  label={t('form.specifyAccountType')}
                   {...register("accountTypeCustomName")}
                   error={errors.accountTypeCustomName?.message}
-                  placeholder="Write custom account type name"
+                  placeholder={t('placeholders.customAccountType')}
                 />
               ) : (
                 <div />
               )}
             </div>
 
-            <div className="h-px bg-brand-100" />
+            <div className="h-px bg-brand-200 dark:bg-brand-800" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Business Sector */}
               <div>
-                <label htmlFor="secteurActiviteId" className="block text-sm font-semibold text-surface-700 mb-2">
-                  Business Sector
+                <label htmlFor="secteurActiviteId" className="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">
+                  {t('form.businessSector')}
                 </label>
                 <select
                   id="secteurActiviteId"
-                  className="w-full rounded-xl border border-surface-300 bg-white px-4 py-3 text-sm text-surface-800 hover:border-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 transition-all"
+                  className="w-full rounded-lg border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 px-4 py-3 text-sm text-surface-900 dark:text-surface-100 hover:border-surface-400 dark:hover:border-surface-500 focus:border-brand-500 dark:focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900/50 transition-all"
                   {...register("secteurActiviteId")}
                 >
-                  <option value="">Choose a business sector</option>
+                  <option value="">{t('form.chooseSector')}</option>
                   {secteurActivites.length > 0 ? (
                     secteurActivites.map((sec) => (
                       <option key={sec.id} value={sec.id}>
@@ -838,31 +840,31 @@ const ClientForm = ({
                       </option>
                     ))
                   ) : (
-                    <option disabled>No sectors available</option>
+                    <option disabled>{t('form.noSectors')}</option>
                   )}
                 </select>
-                {errors.secteurActiviteId && <p className="mt-1 text-xs text-red-500">{errors.secteurActiviteId.message}</p>}
+                {errors.secteurActiviteId && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.secteurActiviteId.message}</p>}
               </div>
 
               {/* Business Activity */}
               <div>
-                <label htmlFor="sousActiviteId" className="block text-sm font-semibold text-surface-700 mb-2">
-                  Business Activity
+                <label htmlFor="sousActiviteId" className="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">
+                  {t('form.businessActivity')}
                 </label>
                 <select
                   id="sousActiviteId"
                   disabled={!selectedSecteurId || selectedSecteurId.trim() === ""}
-                  className={`w-full rounded-xl border px-4 py-3 text-sm transition-all ${
+                  className={`w-full rounded-lg border px-4 py-3 text-sm transition-all ${
                     !selectedSecteurId || selectedSecteurId.trim() === ""
-                      ? "border-surface-200 bg-surface-50 text-surface-400 cursor-not-allowed"
-                      : "border-surface-300 bg-white text-surface-800 hover:border-surface-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                      ? "border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-surface-400 dark:text-surface-500 cursor-not-allowed"
+                      : "border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 hover:border-surface-400 dark:hover:border-surface-500 focus:border-brand-500 dark:focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900/50"
                   }`}
                   {...register("sousActiviteId")}
                 >
                   <option value="">
                     {selectedSecteurId && selectedSecteurId.trim()
-                      ? "Choose an activity..."
-                      : "Select sector first"}
+                      ? t('form.chooseActivity')
+                      : t('form.selectSectorFirst')}
                   </option>
                   {selectedSecteurId && selectedSecteurId.trim() && sousActivites.length > 0 ? (
                     sousActivites.map((sous) => (
@@ -871,15 +873,15 @@ const ClientForm = ({
                       </option>
                     ))
                   ) : selectedSecteurId && selectedSecteurId.trim() ? (
-                    <option disabled>No activities available for this sector</option>
+                    <option disabled>{t('form.noActivities')}</option>
                   ) : null}
                 </select>
-                {errors.sousActiviteId && <p className="mt-1 text-xs text-red-500">{errors.sousActiviteId.message}</p>}
+                {errors.sousActiviteId && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.sousActiviteId.message}</p>}
                 {!errors.sousActiviteId && (
                   <p className="mt-1 text-xs text-surface-500">
                     {!selectedSecteurId || selectedSecteurId.trim() === ""
-                      ? "Choose a business sector first."
-                      : "Activities are filtered by selected sector."}
+                      ? t('form.selectSectorMessage')
+                      : t('form.selectActivityMessage')}
                   </p>
                 )}
               </div>
@@ -889,14 +891,14 @@ const ClientForm = ({
       </div>
 
       {/* ── Banking Info ──────────────────────────────────────────── */}
-      <SectionTitle title="Banking Info" icon="🏦" />
+      <SectionTitle title={t('sections.bankingInfo')} icon="🏦" />
 
       {/* Agence is auto-assigned from the logged-in manager */}
       {user?.agenceId && (
-        <div className="mb-4 flex items-center gap-2 rounded-xl bg-brand-50 border border-brand-100 px-4 py-2.5">
+        <div className="mb-4 flex items-center gap-2 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 px-4 py-2.5 transition-colors">
           <span className="text-base">🏢</span>
-          <span className="text-sm text-surface-600">
-            Agence automatically assigned from your account:
+          <span className="text-sm text-surface-600 dark:text-surface-400">
+            {t('hints.agenceAssigned')}
           </span>
           <span className="text-sm font-semibold text-brand-700">
             {user.agenceId}
@@ -906,47 +908,47 @@ const ClientForm = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
   <SelectField
-    label="Relation avec client"
+    label={t('form.relationWithClient')}
     id="relationAvecClient"
     error={errors.relationAvecClient?.message}
     {...register("relationAvecClient")}
   >
-    <option value="">Select relation</option>
-    <option value="CLIENT">Client</option>
-    <option value="SUPPLIER">Fournisseur (Supplier)</option>
-    <option value="NEIGHBOUR">Voisin (Neighbour)</option>
-    <option value="OTHER">Other</option>
+    <option value="">{t('form.selectRelation')}</option>
+    <option value="CLIENT">{t('form.client')}</option>
+    <option value="SUPPLIER">{t('form.supplier')}</option>
+    <option value="NEIGHBOUR">{t('form.neighbour')}</option>
+    <option value="OTHER">{t('form.other')}</option>
   </SelectField>
 
   {/* Show input only if OTHER is selected */}
   {selectedRelation === "OTHER" && (
     <Input
-      label="Specify other relation"
+      label={t('form.specifyRelation')}
       {...register("relationAvecClientOther")}
       error={errors.relationAvecClientOther?.message}
-      placeholder="Type the relation here..."
+      placeholder={t('placeholders.relationNote')}
     />
   )}
 </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4">
         <Input
-          label="CBS ID"
+          label={t('form.cbsId')}
           {...register("cbsId")}
           error={errors.cbsId?.message}
-          placeholder="CBS ID (optional)"
+          placeholder={t('placeholders.cbsId')}
         />
         <Input
-          label="Scoring"
+          label={t('form.scoring')}
           {...register("scoring")}
           error={errors.scoring?.message}
-          placeholder="Score (optional)"
+          placeholder={t('placeholders.score')}
         />
         <div className="mb-4">
           <label className="block text-sm font-medium text-surface-600 mb-1.5">
-            Cycle
+            {t('form.cycle')}
           </label>
-          <div className="rounded-xl border border-surface-200 bg-surface-50 px-4 py-2.5 text-sm text-surface-500">
-            Auto-managed (starts at 0 and increments on approved demande)
+          <div className="rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-600 dark:text-surface-400">
+            {t('hints.cycleManaged')}
           </div>
         </div>
       </div>
@@ -954,7 +956,7 @@ const ClientForm = ({
       {/* ── Submit ────────────────────────────────────────────────── */}
       <div className="flex justify-end gap-3 pt-4 border-t border-surface-100">
         <Button type="submit" isLoading={isLoading}>
-          {isEdit ? "Update Client" : "Create Client"}
+          {isEdit ? t('buttons.update') : t('buttons.create')}
         </Button>
       </div>
     </form>

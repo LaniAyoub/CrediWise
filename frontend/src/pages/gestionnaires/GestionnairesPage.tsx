@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { gestionnaireService } from '@/services/gestionnaire.service';
 import type { Gestionnaire, GestionnaireCreateRequest, GestionnaireUpdateRequest } from '@/types/gestionnaire.types';
 import Table from '@/components/ui/Table';
@@ -12,6 +13,7 @@ import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import toast from 'react-hot-toast';
 
 const GestionnairesPage = () => {
+  const { t } = useTranslation('gestionnaires');
   const [gestionnaires, setGestionnaires] = useState<Gestionnaire[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,12 +68,12 @@ const GestionnairesPage = () => {
         ...(data.password && { password: data.password }),
       };
       await gestionnaireService.create(payload);
-      toast.success('Gestionnaire created successfully');
+      toast.success(t('messages.created'));
       setIsCreateModalOpen(false);
       fetchGestionnaires();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to create gestionnaire');
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -91,12 +93,12 @@ const GestionnairesPage = () => {
         ...(data.active !== undefined && { active: data.active }),
       };
       await gestionnaireService.update(editingGestionnaire.id, updateData);
-      toast.success('Gestionnaire updated successfully');
+      toast.success(t('messages.updated'));
       setEditingGestionnaire(null);
       fetchGestionnaires();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to update gestionnaire');
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -107,12 +109,12 @@ const GestionnairesPage = () => {
     setIsDeleting(true);
     try {
       await gestionnaireService.delete(deletingGestionnaire.id);
-      toast.success('Gestionnaire deleted successfully');
+      toast.success(t('messages.deleted'));
       setDeletingGestionnaire(null);
       fetchGestionnaires();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to delete gestionnaire');
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsDeleting(false);
     }
@@ -123,8 +125,8 @@ const GestionnairesPage = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900">Gestionnaires</h1>
-          <p className="text-surface-500 mt-1">Manage branch managers and team members</p>
+          <h1 className="text-page-title text-surface-900 dark:text-surface-50">{t('title')}</h1>
+          <p className="text-caption text-surface-600 dark:text-surface-400 mt-2">{t('subtitle')}</p>
         </div>
         <Button
           onClick={() => setIsCreateModalOpen(true)}
@@ -134,14 +136,14 @@ const GestionnairesPage = () => {
             </svg>
           }
         >
-          Add Manager
+          {t('buttons.add')}
         </Button>
       </div>
 
       {/* Search */}
       <div className="max-w-sm">
         <SearchBar
-          placeholder="Search by name, email, CIN, role..."
+          placeholder={t('searchPlaceholder')}
           onSearch={setSearchQuery}
         />
       </div>
@@ -151,48 +153,48 @@ const GestionnairesPage = () => {
         <LoadingSkeleton type="table" rows={5} />
       ) : (
         <Table
-          headers={['Name', 'Email', 'CIN', 'Role', 'Agence', 'Status', 'Actions']}
+          headers={[t('table.name'), t('table.email'), t('table.cin'), t('table.role'), t('table.agence'), t('table.status'), t('table.actions')]}
           isEmpty={filteredGestionnaires.length === 0}
           emptyMessage={
             searchQuery
-              ? 'No managers match your search'
-              : 'No gestionnaires found. Create your first one!'
+              ? t('messages.noSearch')
+              : t('messages.noResults')
           }
         >
           {filteredGestionnaires.map((g) => (
-            <tr key={g.id} className="table-row-hover">
+            <tr key={g.id} className="table-row-hover min-h-12">
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center flex-shrink-0">
-                    <span className="text-brand-700 text-xs font-bold">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/40 dark:to-brand-800/40 flex items-center justify-center flex-shrink-0">
+                    <span className="text-brand-700 dark:text-brand-300 text-xs font-bold">
                       {g.firstName?.[0]}{g.lastName?.[0]}
                     </span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-surface-800">
+                    <p className="text-sm font-500 text-surface-900 dark:text-surface-100">
                       {g.firstName} {g.lastName}
                     </p>
-                    <p className="text-xs text-surface-400">{g.numTelephone}</p>
+                    <p className="text-xs text-surface-500 dark:text-surface-400">{g.numTelephone}</p>
                   </div>
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className="text-sm text-surface-600">{g.email}</span>
+                <span className="text-sm text-surface-700 dark:text-surface-300">{g.email}</span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className="text-sm font-mono text-surface-500">{g.cin}</span>
+                <span className="text-sm font-mono text-surface-600 dark:text-surface-400">{g.cin}</span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <Badge variant="info" size="sm">{g.role}</Badge>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className="text-sm text-surface-600">
+                <span className="text-sm text-surface-700 dark:text-surface-300">
                   {g.agence?.libelle || '—'}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <Badge variant={g.active ? 'success' : 'neutral'}>
-                  {g.active ? 'Active' : 'Inactive'}
+                  {g.active ? t('form.active') : t('form.inactive')}
                 </Badge>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
@@ -202,7 +204,7 @@ const GestionnairesPage = () => {
                     size="sm"
                     onClick={() => setEditingGestionnaire(g)}
                   >
-                    Edit
+                    {t('buttons.edit')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -210,7 +212,7 @@ const GestionnairesPage = () => {
                     className="text-red-500 hover:text-red-700 hover:bg-red-50"
                     onClick={() => setDeletingGestionnaire(g)}
                   >
-                    Delete
+                    {t('buttons.delete')}
                   </Button>
                 </div>
               </td>
@@ -221,7 +223,7 @@ const GestionnairesPage = () => {
 
       {/* Create Modal */}
       <Modal
-        title="Add New Manager"
+        title={t('modals.createTitle')}
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         size="lg"
@@ -234,7 +236,7 @@ const GestionnairesPage = () => {
 
       {/* Edit Modal */}
       <Modal
-        title="Edit Manager"
+        title={t('modals.editTitle')}
         isOpen={!!editingGestionnaire}
         onClose={() => setEditingGestionnaire(null)}
         size="lg"
@@ -254,8 +256,8 @@ const GestionnairesPage = () => {
         isOpen={!!deletingGestionnaire}
         onClose={() => setDeletingGestionnaire(null)}
         onConfirm={handleDelete}
-        title="Delete Manager"
-        message={`Are you sure you want to delete ${deletingGestionnaire?.firstName} ${deletingGestionnaire?.lastName}? This action cannot be undone.`}
+        title={t('modals.deleteTitle')}
+        message={`${t('confirmDelete')} ${deletingGestionnaire?.firstName} ${deletingGestionnaire?.lastName}? ${t('confirmDelete')}`}
         isLoading={isDeleting}
       />
     </div>

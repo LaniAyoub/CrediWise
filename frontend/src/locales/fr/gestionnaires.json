@@ -1,0 +1,74 @@
+{
+  "title": "Gestionnaires",
+  "subtitle": "Gérer vos gestionnaires de crédit",
+  "addNew": "Ajouter un Nouveau Gestionnaire",
+  "editManager": "Modifier Gestionnaire",
+  "deleteManager": "Supprimer Gestionnaire",
+  "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce gestionnaire?",
+  "form": {
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "email": "Email",
+    "phone": "Numéro de Téléphone",
+    "cin": "CIN",
+    "nationalId": "Identité Nationale",
+    "dateOfBirth": "Date de Naissance",
+    "address": "Adresse",
+    "streetAddress": "Adresse postale",
+    "password": "Mot de Passe",
+    "initialPassword": "Mot de passe initial",
+    "role": "Rôle",
+    "selectRole": "Sélectionner un rôle",
+    "agence": "Agence",
+    "selectAgence": "Sélectionner une agence",
+    "accountStatus": "Statut du Compte",
+    "enableDisableAccess": "Activer ou désactiver l'accès de ce gestionnaire",
+    "branch": "Agence",
+    "status": "Statut",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "startDate": "Date de Début"
+  },
+  "roles": {
+    "CRO": "Responsable Relation Client",
+    "BRANCH_DM": "Décisionnaire d'Agence",
+    "HEAD_OFFICE_DM": "Décisionnaire Siège",
+    "RISK_ANALYST": "Analyste de Risque de Crédit",
+    "FRONT_OFFICE": "Front Office",
+    "READ_ONLY": "Utilisateur Lecture Seule",
+    "SUPER_ADMIN": "Super Administrateur",
+    "TECH_USER": "Utilisateur Technique"
+  },
+  "table": {
+    "name": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "branch": "Agence",
+    "status": "Statut",
+    "actions": "Actions",
+    "cin": "CIN",
+    "role": "Rôle",
+    "agence": "Agence"
+  },
+  "searchPlaceholder": "Rechercher par nom, email, CIN, rôle...",
+  "buttons": {
+    "add": "Ajouter Gestionnaire",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "create": "Créer Gestionnaire",
+    "update": "Mettre à Jour Gestionnaire"
+  },
+  "modals": {
+    "createTitle": "Ajouter un Nouveau Gestionnaire",
+    "editTitle": "Modifier Gestionnaire",
+    "deleteTitle": "Supprimer Gestionnaire"
+  },
+  "messages": {
+    "created": "Gestionnaire créé avec succès",
+    "updated": "Gestionnaire mis à jour avec succès",
+    "deleted": "Gestionnaire supprimé avec succès",
+    "loadError": "Erreur lors du chargement des gestionnaires",
+    "noResults": "Aucun gestionnaire trouvé. Créez le vôtre!",
+    "noSearch": "Aucun gestionnaire ne correspond à votre recherche"
+  }
+}

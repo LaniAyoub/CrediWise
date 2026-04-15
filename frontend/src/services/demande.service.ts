@@ -15,7 +15,7 @@ export const demandeService = {
     return api.get<Demande[]>("/api/demandes", { baseURL: DEMANDE_API_BASE_URL, params });
   },
 
-  getById: (id: string) => {
+  getById: (id: number) => {
     return api.get<Demande>(`/api/demandes/${id}`, { baseURL: DEMANDE_API_BASE_URL });
   },
 
@@ -23,15 +23,15 @@ export const demandeService = {
     return api.post<Demande>("/api/demandes", payload, { baseURL: DEMANDE_API_BASE_URL });
   },
 
-  update: (id: string, payload: DemandeUpdateRequest) => {
+  update: (id: number, payload: DemandeUpdateRequest) => {
     return api.put<Demande>(`/api/demandes/${id}`, payload, { baseURL: DEMANDE_API_BASE_URL });
   },
 
-  submit: (id: string) => {
+  submit: (id: number) => {
     return api.post<Demande>(`/api/demandes/${id}/submit`, {}, { baseURL: DEMANDE_API_BASE_URL });
   },
 
-  updateStatus: (id: string, status: Extract<DemandeStatut, "VALIDATED" | "REJECTED">) => {
+  updateStatus: (id: number, status: Extract<DemandeStatut, "VALIDATED" | "REJECTED">) => {
     return api.patch<Demande>(
       `/api/demandes/${id}/statut`,
       { status },
@@ -39,7 +39,7 @@ export const demandeService = {
     );
   },
 
-  remove: (id: string) => {
+  remove: (id: number) => {
     return api.delete(`/api/demandes/${id}`, { baseURL: DEMANDE_API_BASE_URL });
   },
 };

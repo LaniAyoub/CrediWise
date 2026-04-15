@@ -1,0 +1,74 @@
+{
+  "title": "Managers",
+  "subtitle": "Manage your credit managers",
+  "addNew": "Add New Manager",
+  "editManager": "Edit Manager",
+  "deleteManager": "Delete Manager",
+  "confirmDelete": "Are you sure you want to delete this manager?",
+  "form": {
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone Number",
+    "cin": "CIN",
+    "nationalId": "National ID",
+    "dateOfBirth": "Date of Birth",
+    "address": "Address",
+    "streetAddress": "Street address",
+    "password": "Password",
+    "initialPassword": "Initial password",
+    "role": "Role",
+    "selectRole": "Select a role",
+    "agence": "Agence",
+    "selectAgence": "Select an agence",
+    "accountStatus": "Account Status",
+    "enableDisableAccess": "Enable or disable this manager's access",
+    "branch": "Branch",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "startDate": "Start Date"
+  },
+  "roles": {
+    "CRO": "Client Relationship Officer",
+    "BRANCH_DM": "Branch Decision Maker",
+    "HEAD_OFFICE_DM": "Head Office Decision Maker",
+    "RISK_ANALYST": "Credit Risk Analyst",
+    "FRONT_OFFICE": "Front Office",
+    "READ_ONLY": "Read Only User",
+    "SUPER_ADMIN": "Super Administrator",
+    "TECH_USER": "Tech User"
+  },
+  "table": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "branch": "Branch",
+    "status": "Status",
+    "actions": "Actions",
+    "cin": "CIN",
+    "role": "Role",
+    "agence": "Agence"
+  },
+  "searchPlaceholder": "Search by name, email, CIN, role...",
+  "buttons": {
+    "add": "Add Manager",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create Manager",
+    "update": "Update Manager"
+  },
+  "modals": {
+    "createTitle": "Add New Manager",
+    "editTitle": "Edit Manager",
+    "deleteTitle": "Delete Manager"
+  },
+  "messages": {
+    "created": "Manager created successfully",
+    "updated": "Manager updated successfully",
+    "deleted": "Manager deleted successfully",
+    "loadError": "Failed to load managers",
+    "noResults": "No gestionnaires found. Create your first one!",
+    "noSearch": "No managers match your search"
+  }
+}

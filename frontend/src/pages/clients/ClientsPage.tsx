@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { clientService } from "@/services/client.service";
 import type {
   Client,
@@ -56,6 +57,7 @@ const CAN_DELETE_ROLES = ["SUPER_ADMIN"];
 // ── Page Component ───────────────────────────────────────────────────────────
 
 const ClientsPage = () => {
+  const { t } = useTranslation('clients');
   const { user } = useAuth();
   const canCreate = CAN_CREATE_ROLES.includes(user?.role || "");
   const canEdit = CAN_EDIT_ROLES.includes(user?.role || "");
@@ -211,12 +213,12 @@ const ClientsPage = () => {
         ...(data.cbsId && { cbsId: data.cbsId as string }),
       };
       await clientService.create(payload);
-      toast.success("Client created successfully!");
+      toast.success(t('messages.created'));
       setIsCreateModalOpen(false);
       fetchClients();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to create client");
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -301,12 +303,12 @@ const ClientsPage = () => {
         ...(data.cbsId && { cbsId: data.cbsId as string }),
       };
       await clientService.update(editingClient.id, payload);
-      toast.success("Client updated successfully!");
+      toast.success(t('messages.updated'));
       setEditingClient(null);
       fetchClients();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to update client");
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -317,12 +319,12 @@ const ClientsPage = () => {
     setIsDeleting(true);
     try {
       await clientService.delete(deletingClient.id);
-      toast.success("Client deleted successfully!");
+      toast.success(t('messages.deleted'));
       setDeletingClient(null);
       fetchClients();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || "Failed to delete client");
+      toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsDeleting(false);
     }
@@ -358,8 +360,8 @@ const ClientsPage = () => {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-surface-900">Clients</h1>
-          <p className="text-surface-500 mt-1">
+          <h1 className="text-page-title text-surface-900 dark:text-surface-50">{t('title')}</h1>
+          <p className="text-caption text-surface-600 dark:text-surface-400 mt-2">
             Manage physical persons and legal entities
           </p>
         </div>
@@ -382,15 +384,15 @@ const ClientsPage = () => {
               </svg>
             }
           >
-            Add Client
+            {t('buttons.add')}
           </Button>
         )}
       </div>
 
       {/* ── Quick Search by national ID / Phone ────────────────────── */}
-      <div className="rounded-2xl border border-surface-200 bg-white p-4 shadow-sm">
-        <p className="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-3">
-          Quick Search
+      <div className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 p-5 shadow-sm transition-colors">
+        <p className="text-label text-surface-600 dark:text-surface-400 mb-4">
+          {t('messages.searchSubtitle')}
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
           <select
@@ -399,10 +401,10 @@ const ClientsPage = () => {
               setSearchMode(e.target.value as "national_id" | "primary_phone");
               setQuickSearchResult(null);
             }}
-            className="rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-sm text-surface-800 focus-ring"
+            className="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-700 px-4 py-2.5 text-sm text-surface-800 dark:text-surface-200 focus-ring transition-colors"
           >
-            <option value="national_id">🪪 National ID</option>
-            <option value="primary_phone">📞 Primary Phone</option>
+            <option value="national_id">{t('searchOptions.nationalId')}</option>
+            <option value="primary_phone">{t('searchOptions.primaryPhone')}</option>
           </select>
           <input
             type="text"
@@ -414,25 +416,25 @@ const ClientsPage = () => {
             onKeyDown={(e) => e.key === "Enter" && handleQuickSearch()}
             placeholder={
               searchMode === "national_id"
-                ? "Enter national ID…"
-                : "Enter phone number…"
+                ? t('quickSearch.nationalIdPlaceholder')
+                : t('quickSearch.phonePlaceholder')
             }
-            className="flex-1 rounded-xl border border-surface-200 bg-white px-4 py-2.5 text-sm text-surface-800 focus-ring placeholder:text-surface-400"
+            className="flex-1 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-700 px-4 py-2.5 text-sm text-surface-800 dark:text-surface-200 focus-ring placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-colors"
           />
           <Button
             onClick={handleQuickSearch}
             isLoading={isSearching}
             variant="secondary"
           >
-            Search
+            {t('quickSearch.searchButton')}
           </Button>
         </div>
 
         {/* Search result */}
         {quickSearchResult === "not_found" && (
           <p className="mt-3 text-sm text-amber-600 bg-amber-50 rounded-xl px-4 py-2.5">
-            ⚠️ No client found for this{" "}
-            {searchMode === "national_id" ? "National ID" : "phone number"}.
+            ⚠️ {t('details.noClientFound')}{" "}
+            {searchMode === "national_id" ? t('searchOptions.nationalId') : t('searchOptions.primaryPhone')}.
           </p>
         )}
         {quickSearchResult && quickSearchResult !== "not_found" && (
@@ -442,7 +444,7 @@ const ClientsPage = () => {
                 {clientInitials(quickSearchResult)}
               </div>
               <div>
-                <p className="text-sm font-medium text-surface-800">
+                <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                   {clientDisplayName(quickSearchResult)}
                 </p>
                 <p className="text-xs text-surface-500">
@@ -465,15 +467,15 @@ const ClientsPage = () => {
       {/* ── Table Search & Filter ───────────────────────────────────── */}
       <div className="max-w-sm">
         <SearchBar
-          placeholder="Search by name, phone, email, national ID…"
+          placeholder={t('searchPlaceholder')}
           onSearch={setSearchQuery}
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-xl border border-surface-200 bg-white px-4 py-3">
+        <div className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 transition-colors">
           <p className="text-xs text-surface-500 uppercase tracking-wide">Total</p>
-          <p className="text-xl font-semibold text-surface-900 mt-1">{clientStats.total}</p>
+          <p className="text-xl font-semibold text-surface-900 dark:text-surface-50 mt-1">{clientStats.total}</p>
         </div>
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
           <p className="text-xs text-emerald-700 uppercase tracking-wide">Active</p>
@@ -491,20 +493,20 @@ const ClientsPage = () => {
       ) : (
         <Table
           headers={[
-            "Client",
-            "Type",
-            "Classification",
-            "Contact",
-            "Assignment",
-            "Status",
-            "Cycle",
-            "Actions",
+            t('table.name'),
+            t('table.type'),
+            t('table.classification'),
+            t('table.contact'),
+            t('table.assignment'),
+            t('table.status'),
+            t('table.cycle'),
+            t('table.actions'),
           ]}
           isEmpty={filteredClients.length === 0}
           emptyMessage={
             searchQuery
-              ? "No clients match your search"
-              : "No clients yet. Create the first one!"
+              ? t('messages.noSearch')
+              : t('messages.noResults')
           }
         >
           {filteredClients.map((c) => (
@@ -518,7 +520,7 @@ const ClientsPage = () => {
                     </span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-surface-800">
+                    <p className="text-sm font-medium text-surface-800 dark:text-surface-200">
                       {clientDisplayName(c)}
                     </p>
                     <p className="text-xs text-surface-400">
@@ -597,7 +599,7 @@ const ClientsPage = () => {
                     className="min-w-[72px]"
                     onClick={() => setViewingClient(c)}
                   >
-                    View
+                    {t('buttons.view')}
                   </Button>
                   {canEdit && (
                     <Button
@@ -606,7 +608,7 @@ const ClientsPage = () => {
                       className="min-w-[72px]"
                       onClick={() => setEditingClient(c)}
                     >
-                      Edit
+                      {t('buttons.edit')}
                     </Button>
                   )}
                   {canDelete && (
@@ -616,7 +618,7 @@ const ClientsPage = () => {
                       className="min-w-[72px] text-red-500 hover:text-red-700 hover:bg-red-50"
                       onClick={() => setDeletingClient(c)}
                     >
-                      Delete
+                      {t('buttons.delete')}
                     </Button>
                   )}
                 </div>
@@ -628,7 +630,7 @@ const ClientsPage = () => {
 
       {/* ── Create Modal ────────────────────────────────────────────── */}
       <Modal
-        title="Add New Client"
+        title={t('modals.createTitle')}
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         size="xl"
@@ -638,7 +640,7 @@ const ClientsPage = () => {
 
       {/* ── Edit Modal ──────────────────────────────────────────────── */}
       <Modal
-        title="Edit Client"
+        title={t('modals.editTitle')}
         isOpen={!!editingClient}
         onClose={() => setEditingClient(null)}
         size="xl"
@@ -655,7 +657,7 @@ const ClientsPage = () => {
 
       {/* ── View Detail Modal ───────────────────────────────────────── */}
       <Modal
-        title="Client Details"
+        title={t('details.title')}
         isOpen={!!viewingClient}
         onClose={() => setViewingClient(null)}
         size="xl"
@@ -668,7 +670,7 @@ const ClientsPage = () => {
                 {clientInitials(viewingClient)}
               </div>
               <div>
-                <p className="font-semibold text-surface-900 text-base">
+                <p className="font-semibold text-surface-900 dark:text-surface-100 text-base">
                   {clientDisplayName(viewingClient)}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
@@ -694,33 +696,33 @@ const ClientsPage = () => {
 
             {/* Details grid */}
             {[
-              { label: "ID", value: viewingClient.id },
-              { label: "National ID", value: viewingClient.nationalId },
-              { label: "Tax Identifier", value: viewingClient.taxIdentifier },
+              { label: t('detailLabels.id'), value: viewingClient.id },
+              { label: t('detailLabels.nationalId'), value: viewingClient.nationalId },
+              { label: t('detailLabels.taxIdentifier'), value: viewingClient.taxIdentifier },
               {
-                label: "Date of Birth",
+                label: t('detailLabels.dateOfBirth'),
                 value: viewingClient.dateOfBirth?.split("T")[0],
               },
-              { label: "Gender", value: viewingClient.gender },
-              { label: "Nationality", value: viewingClient.nationality },
+              { label: t('detailLabels.gender'), value: viewingClient.gender },
+              { label: t('detailLabels.nationality'), value: viewingClient.nationality },
               {
-                label: "Marital Status",
+                label: t('detailLabels.maritalStatus'),
                 value: viewingClient.situationFamiliale,
               },
               {
-                label: "Monthly Income",
+                label: t('detailLabels.monthlyIncome'),
                 value:
                   viewingClient.monthlyIncome != null
                     ? `${viewingClient.monthlyIncome.toLocaleString()} MAD`
                     : undefined,
               },
-              { label: "Company", value: viewingClient.companyName },
-              { label: "RC", value: viewingClient.registrationNumber },
-              { label: "Email", value: viewingClient.email },
-              { label: "Phone", value: viewingClient.primaryPhone },
-              { label: "Secondary Phone", value: viewingClient.secondaryPhone },
+              { label: t('detailLabels.company'), value: viewingClient.companyName },
+              { label: t('detailLabels.rc'), value: viewingClient.registrationNumber },
+              { label: t('detailLabels.email'), value: viewingClient.email },
+              { label: t('detailLabels.phone'), value: viewingClient.primaryPhone },
+              { label: t('detailLabels.secondaryPhone'), value: viewingClient.secondaryPhone },
               {
-                label: "Address",
+                label: t('detailLabels.address'),
                 value: [
                   viewingClient.addressStreet,
                   viewingClient.addressCity,
@@ -731,50 +733,50 @@ const ClientsPage = () => {
                   .join(", "),
               },
               {
-                label: "Agence",
+                label: t('detailLabels.agence'),
                 value: viewingClient.agenceLibelle || viewingClient.agenceId,
               },
-              { label: "Manager", value: viewingClient.managerFullName },
-              { label: "Scoring", value: viewingClient.scoring },
-              { label: "Cycle", value: viewingClient.cycle },
-              { label: "CBS ID", value: viewingClient.cbsId },
-              { label: "Segment", value: viewingClient.segmentLibelle },
+              { label: t('detailLabels.manager'), value: viewingClient.managerFullName },
+              { label: t('detailLabels.scoring'), value: viewingClient.scoring },
+              { label: t('detailLabels.cycle'), value: viewingClient.cycle },
+              { label: t('detailLabels.cbsId'), value: viewingClient.cbsId },
+              { label: t('detailLabels.segment'), value: viewingClient.segmentLibelle },
               {
-                label: "Account Type",
+                label: t('detailLabels.accountType'),
                 value:
                   viewingClient.accountTypeLibelle === "Other" &&
                   viewingClient.accountTypeCustomName
                     ? `${viewingClient.accountTypeLibelle} (${viewingClient.accountTypeCustomName})`
                     : viewingClient.accountTypeLibelle,
               },
-              { label: "Account Number", value: viewingClient.accountNumber },
+              { label: t('detailLabels.accountNumber'), value: viewingClient.accountNumber },
               {
-                label: "Business Sector",
+                label: t('detailLabels.businessSector'),
                 value: viewingClient.secteurActiviteLibelle,
               },
               {
-                label: "Business Activity",
+                label: t('detailLabels.businessActivity'),
                 value: viewingClient.sousActiviteLibelle,
               },
               {
-                label: "Risk Level",
+                label: t('detailLabels.riskLevel'),
                 value: viewingClient.ifcLevelOfRisk,
               },
               {
-                label: "Relation (Other Details)",
+                label: t('detailLabels.relationOtherDetails'),
                 value:
                   viewingClient.relationAvecClient === "OTHER"
                     ? viewingClient.relationAvecClientOther
                     : undefined,
               },
               {
-                label: "Created At",
+                label: t('detailLabels.createdAt'),
                 value: viewingClient.createdAt
                   ? new Date(viewingClient.createdAt).toLocaleString()
                   : undefined,
               },
               {
-                label: "Updated At",
+                label: t('detailLabels.updatedAt'),
                 value: viewingClient.updatedAt
                   ? new Date(viewingClient.updatedAt).toLocaleString()
                   : undefined,
@@ -789,7 +791,7 @@ const ClientsPage = () => {
                   <span className="text-surface-500 font-medium min-w-[140px]">
                     {row.label}
                   </span>
-                  <span className="text-surface-800 text-right break-all">
+                  <span className="text-surface-800 dark:text-surface-300 text-right break-all">
                     {row.value}
                   </span>
                 </div>
@@ -804,7 +806,7 @@ const ClientsPage = () => {
                   setViewingClient(null);
                 }}
               >
-                Edit
+                {t('buttons.edit')}
               </Button>
             </div>
           </div>
@@ -815,8 +817,8 @@ const ClientsPage = () => {
         isOpen={!!deletingClient}
         onClose={() => setDeletingClient(null)}
         onConfirm={handleDelete}
-        title="Delete Client"
-        message={`Are you sure you want to delete "${deletingClient ? clientDisplayName(deletingClient) : ""}"? This action cannot be undone.`}
+        title={t('confirm.deleteTitle')}
+        message={t('confirm.deleteMessage', { name: deletingClient ? clientDisplayName(deletingClient) : "" })}
         isLoading={isDeleting}
       />
     </div>

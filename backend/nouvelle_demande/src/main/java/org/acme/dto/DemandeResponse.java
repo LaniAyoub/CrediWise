@@ -14,7 +14,7 @@ import java.util.UUID;
 @Builder
 public class DemandeResponse {
 
-    public UUID id;
+    public Long id;
     public UUID clientId;
     public String clientType;
     public DemandeStatut status;
@@ -59,6 +59,10 @@ public class DemandeResponse {
     public String assetType;
     public BigDecimal monthlyRepaymentCapacity;
     public String applicationChannel;
+
+    // ── Risk assessment ──────────────────────────
+    public Boolean bankingRestriction;
+    public Boolean legalIssueOrAccountBlocked;
 
     // ── Consent ──────────────────────────────────
     public String consentText;

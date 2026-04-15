@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -32,6 +33,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 type PasswordFormData = z.infer<typeof passwordSchema>;
 
 const ProfilePage = () => {
+  const { t } = useTranslation('common');
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Gestionnaire | null>(null);
@@ -80,10 +82,10 @@ const ProfilePage = () => {
         ...(data.address && { address: data.address }),
         ...(data.dateOfBirth && { dateOfBirth: data.dateOfBirth }),
       });
-      toast.success('Profile updated successfully');
+      toast.success(t('profileUpdated'));
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+      toast.error(error.response?.data?.message || t('profileUpdateFailed'));
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -96,11 +98,11 @@ const ProfilePage = () => {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });
-      toast.success('Password changed successfully');
+      toast.success(t('passwordChanged'));
       resetPassword();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to change password');
+      toast.error(error.response?.data?.message || t('passwordChangeFailed'));
     } finally {
       setIsChangingPassword(false);
     }
@@ -111,132 +113,163 @@ const ProfilePage = () => {
     : '?';
 
   return (
-    <div className="page-container max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-surface-900">Profile</h1>
-        <p className="text-surface-500 mt-1">Manage your account information</p>
+    <div className="page-container max-w-3xl mx-auto space-y-8 py-8">
+      {/* Page Header */}
+      <div className="space-y-2">
+        <h1 className="text-page-title text-surface-900 dark:text-surface-50">{t('profile')}</h1>
+        <p className="text-body text-surface-600 dark:text-surface-400">{t('manageAccount')}</p>
       </div>
 
-      {/* Profile card header */}
-      <div className="bg-white rounded-2xl border border-surface-200 shadow-card overflow-hidden">
-        <div className="h-32 bg-gradient-to-r from-brand-600 via-brand-500 to-violet-500 relative">
-          <div className="absolute -bottom-12 left-6">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center border-4 border-white shadow-lg">
-              <span className="text-white font-bold text-2xl">{initials}</span>
+      {/* Profile card header - Enhanced */}
+      <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-md dark:shadow-lg overflow-hidden transition-all hover:shadow-lg dark:hover:shadow-xl">
+        <div className="h-40 bg-gradient-to-r from-brand-600 via-brand-500 to-violet-500 relative">
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl -mr-20 -mt-20" />
+          <div className="absolute -bottom-16 left-8">
+            <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center border-4 border-white shadow-2xl">
+              <span className="text-white font-bold text-4xl">{initials}</span>
             </div>
           </div>
         </div>
-        <div className="pt-16 px-6 pb-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-surface-900">
+        <div className="pt-20 px-8 pb-8">
+          <div className="flex items-start justify-between gap-6 mb-8">
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold text-surface-900 dark:text-surface-50 mb-2">
                 {user?.firstName} {user?.lastName}
               </h2>
-              <p className="text-surface-500">{user?.email}</p>
+              <p className="text-sm text-surface-600 dark:text-surface-400 flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-brand-500" />
+                {user?.email}
+              </p>
             </div>
-            <Badge variant="info" size="md">{user?.role}</Badge>
+            <Badge variant="info" size="md">
+              {user?.role}
+            </Badge>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-1">Agence</p>
-              <p className="text-surface-700">{profile?.agence?.libelle || '—'}</p>
+
+          {/* Info Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-surface-200 dark:border-surface-700">
+            <div className="space-y-1">
+              <p className="text-label text-surface-600 dark:text-surface-400">{t('agence')}</p>
+              <p className="text-base font-semibold text-surface-900 dark:text-surface-100">{profile?.agence?.libelle || '—'}</p>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-1">CIN</p>
-              <p className="font-mono text-surface-700">{profile?.cin || '—'}</p>
+            <div className="space-y-1">
+              <p className="text-label text-surface-600 dark:text-surface-400">{t('cin')}</p>
+              <p className="text-base font-mono font-semibold text-surface-900 dark:text-surface-100">{profile?.cin || '—'}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Update profile form */}
-      <div className="bg-white rounded-2xl border border-surface-200 shadow-card p-6">
-        <h3 className="text-lg font-semibold text-surface-900 mb-1">Personal Information</h3>
-        <p className="text-sm text-surface-500 mb-5">Update your name, phone, address and date of birth</p>
-        <form onSubmit={handleProfileSubmit(onUpdateProfile)} className="space-y-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+      <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-lg dark:shadow-lg p-8 transition-shadow hover:shadow-xl dark:hover:shadow-xl">
+        <div className="flex items-center gap-3 mb-2">
+          <svg className="w-6 h-6 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('personalInformation')}</h3>
+        </div>
+        <p className="text-base text-surface-600 dark:text-surface-400 mb-7 ml-9">{t('updatePersonal')}</p>
+        <form onSubmit={handleProfileSubmit(onUpdateProfile)} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <Input
-              label="First Name"
+              label={t('firstName')}
               {...registerProfile('firstName')}
               error={profileErrors.firstName?.message}
             />
             <Input
-              label="Last Name"
+              label={t('lastName')}
               {...registerProfile('lastName')}
               error={profileErrors.lastName?.message}
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <Input
-              label="Phone Number"
+              label={t('phone')}
               {...registerProfile('numTelephone')}
               error={profileErrors.numTelephone?.message}
-              placeholder="+216 XX XXX XXX"
+              placeholder={t('placeholders.phoneNumber')}
             />
             <Input
-              label="Date of Birth"
+              label={t('dateOfBirth')}
               type="date"
               {...registerProfile('dateOfBirth')}
               error={profileErrors.dateOfBirth?.message}
             />
           </div>
           <Input
-            label="Address"
+            label={t('address')}
             {...registerProfile('address')}
             error={profileErrors.address?.message}
-            placeholder="Street address"
+            placeholder={t('placeholders.streetAddress')}
+            className="focus:ring-2 focus:ring-brand-500"
           />
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-end pt-4">
             <Button type="submit" isLoading={isUpdatingProfile}>
-              Save Changes
+              {t('saveChanges')}
             </Button>
           </div>
         </form>
       </div>
 
       {/* Change password form */}
-      <div className="bg-white rounded-2xl border border-surface-200 shadow-card p-6">
-        <h3 className="text-lg font-semibold text-surface-900 mb-1">Change Password</h3>
-        <p className="text-sm text-surface-500 mb-5">Choose a strong password of at least 8 characters</p>
-        <form onSubmit={handlePasswordSubmit(onChangePassword)} className="space-y-1">
+      <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-lg dark:shadow-lg p-8 transition-shadow hover:shadow-xl dark:hover:shadow-xl">
+        <div className="flex items-center gap-3 mb-2">
+          <svg className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('changePassword')}</h3>
+        </div>
+        <p className="text-base text-surface-600 dark:text-surface-400 mb-7 ml-9">{t('passwordInstructions')}</p>
+        <form onSubmit={handlePasswordSubmit(onChangePassword)} className="space-y-6">
           <Input
-            label="Current Password"
+            label={t('currentPassword')}
             type="password"
             {...registerPassword('currentPassword')}
             error={passwordErrors.currentPassword?.message}
-            placeholder="••••••••"
+            placeholder={t('placeholders.password')}
+            className="focus:ring-2 focus:ring-amber-500"
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <Input
-              label="New Password"
+              label={t('newPassword')}
               type="password"
               {...registerPassword('newPassword')}
               error={passwordErrors.newPassword?.message}
-              placeholder="••••••••"
+              placeholder={t('placeholders.password')}
+              className="focus:ring-2 focus:ring-amber-500"
             />
             <Input
-              label="Confirm New Password"
+              label={t('confirmPassword')}
               type="password"
               {...registerPassword('confirmPassword')}
               error={passwordErrors.confirmPassword?.message}
-              placeholder="••••••••"
+              placeholder={t('placeholders.password')}
+              className="focus:ring-2 focus:ring-amber-500"
             />
           </div>
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-end pt-4">
             <Button type="submit" isLoading={isChangingPassword}>
-              Change Password
+              {t('changePassword')}
             </Button>
           </div>
         </form>
       </div>
 
       {/* Sign out */}
-      <div className="bg-white rounded-2xl border border-surface-200 shadow-card p-6">
-        <h3 className="text-lg font-semibold text-surface-900 mb-1">Session</h3>
-        <p className="text-sm text-surface-500 mb-4">Sign out of your account on this device</p>
-        <Button variant="danger" onClick={handleLogout}>
-          Sign Out
-        </Button>
+      <div className="bg-gradient-to-br from-red-50 to-red-50/50 dark:from-red-900/20 dark:to-red-900/10 rounded-xl border border-red-200 dark:border-red-800 shadow-lg dark:shadow-lg p-8">
+        <div className="flex items-center gap-3 mb-2">
+          <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('session')}</h3>
+        </div>
+        <p className="text-base text-surface-600 dark:text-surface-400 mb-6 ml-9">{t('signOutMessage')}</p>
+        <div className="ml-9">
+          <Button variant="danger" onClick={handleLogout}>
+            {t('signOut')}
+          </Button>
+        </div>
       </div>
     </div>
   );
