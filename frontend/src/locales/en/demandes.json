@@ -24,48 +24,7 @@
     "endDate": "End Date",
     "businessSector": "Business Sector",
     "businessSubSector": "Business Sub-Sector",
-    "riskLevel": "Risk Level"
-  },
-  "status": {
-    "pending": "Pending",
-    "approved": "Approved",
-    "rejected": "Rejected",
-    "inProgress": "In Progress",
-    "completed": "Completed",
-    "cancelled": "Cancelled",
-    "draft": "Draft",
-    "submitted": "Submitted",
-    "validated": "Validated"
-  },
-  "priority": {
-    "low": "Low",
-    "medium": "Medium",
-    "high": "High"
-  },
-  "table": {
-    "client": "Client",
-    "type": "Type",
-    "amount": "Amount",
-    "status": "Status",
-    "date": "Date",
-    "actions": "Actions",
-    "total": "Total"
-  },
-  "searchPlaceholder": "Search by client, purpose, manager, branch, or id...",
-  "buttons": {
-    "newDemande": "New Demande",
-    "add": "Add Request",
-    "edit": "Edit",
-    "delete": "Delete",
-    "create": "Create Request",
-    "update": "Update Request",
-    "view": "View",
-    "submit": "Submit",
-    "approve": "Approve",
-    "reject": "Reject",
-    "close": "Close"
-  },
-  "form": {
+    "riskLevel": "Risk Level",
     "selectProduct": "Select product",
     "selectChannel": "Select channel",
     "selectedClient": "Selected Client",
@@ -111,6 +70,45 @@
     "managerAssignment": "Manager Assignment",
     "managerAutoAssigned": "The manager is assigned automatically from the logged-in account.",
     "currentUser": "Current user:"
+  },
+  "status": {
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "validated": "Validated"
+  },
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "table": {
+    "client": "Client",
+    "type": "Type",
+    "amount": "Amount",
+    "status": "Status",
+    "date": "Date",
+    "actions": "Actions",
+    "total": "Total"
+  },
+  "searchPlaceholder": "Search by client, purpose, manager, branch, or id...",
+  "buttons": {
+    "newDemande": "New Demande",
+    "add": "Add Request",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create Request",
+    "update": "Update Request",
+    "view": "View",
+    "submit": "Submit",
+    "approve": "Approve",
+    "reject": "Reject",
+    "close": "Close"
   },
   "statusOptions": {
     "allStatuses": "All statuses",

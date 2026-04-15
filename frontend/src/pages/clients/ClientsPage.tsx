@@ -545,16 +545,16 @@ const ClientsPage = () => {
               {/* Business classification */}
               <td className="px-4 py-3 align-top">
                 <div>
-                  <p className="text-xs text-surface-400">
+                  <p className="text-xs text-surface-400 dark:text-surface-500">
                     Segment: {displayReference(c.segmentLibelle, c.segmentId)}
                   </p>
-                  <p className="text-sm text-surface-700 font-medium">
+                  <p className="text-sm text-surface-700 dark:text-surface-300 font-medium">
                     {displayReference(c.secteurActiviteLibelle, c.secteurActiviteId)}
                   </p>
-                  <p className="text-xs text-surface-400">
+                  <p className="text-xs text-surface-400 dark:text-surface-500">
                     {displayReference(c.sousActiviteLibelle, c.sousActiviteId)}
                   </p>
-                  <p className="text-xs text-surface-500 mt-1">
+                  <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
                     Account: {formatAccountType(c)}
                   </p>
                 </div>
@@ -562,8 +562,8 @@ const ClientsPage = () => {
 
               {/* Contact */}
               <td className="px-4 py-3 align-top">
-                <p className="text-sm text-surface-600">{c.email || "—"}</p>
-                <p className="text-xs text-surface-400">
+                <p className="text-sm text-surface-600 dark:text-surface-300">{c.email || "—"}</p>
+                <p className="text-xs text-surface-400 dark:text-surface-500">
                   {c.primaryPhone || "—"}
                 </p>
               </td>
@@ -571,8 +571,8 @@ const ClientsPage = () => {
               {/* Assignment */}
               <td className="px-4 py-3 align-top">
                 <div>
-                  <p className="text-sm text-surface-600">{c.managerFullName || "—"}</p>
-                  <p className="text-xs text-surface-400">
+                  <p className="text-sm text-surface-600 dark:text-surface-300">{c.managerFullName || "—"}</p>
+                  <p className="text-xs text-surface-400 dark:text-surface-500">
                     {c.agenceLibelle || c.agenceId || "—"}
                   </p>
                 </div>
@@ -585,7 +585,7 @@ const ClientsPage = () => {
 
               {/* Cycle */}
               <td className="px-4 py-3 align-top">
-                <span className="inline-flex items-center rounded-md border border-surface-200 bg-surface-50 px-2 py-0.5 text-xs font-medium text-surface-700">
+                <span className="inline-flex items-center rounded-md border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 px-2 py-0.5 text-xs font-medium text-surface-700 dark:text-surface-300">
                   {c.cycle || "0"}
                 </span>
               </td>

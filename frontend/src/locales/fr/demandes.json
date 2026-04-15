@@ -24,48 +24,7 @@
     "endDate": "Date de Fin",
     "businessSector": "Secteur d'Activité",
     "businessSubSector": "Sous-Secteur d'Activité",
-    "riskLevel": "Niveau de Risque"
-  },
-  "status": {
-    "pending": "En Attente",
-    "approved": "Approuvée",
-    "rejected": "Rejetée",
-    "inProgress": "En Cours",
-    "completed": "Complétée",
-    "cancelled": "Annulée",
-    "draft": "Brouillon",
-    "submitted": "Soumis",
-    "validated": "Validé"
-  },
-  "priority": {
-    "low": "Basse",
-    "medium": "Moyenne",
-    "high": "Haute"
-  },
-  "table": {
-    "client": "Client",
-    "type": "Type",
-    "amount": "Montant",
-    "status": "Statut",
-    "date": "Date",
-    "actions": "Actions",
-    "total": "Total"
-  },
-  "searchPlaceholder": "Rechercher par client, objet, gestionnaire, agence ou ID...",
-  "buttons": {
-    "newDemande": "Nouvelle Demande",
-    "add": "Ajouter Demande",
-    "edit": "Modifier",
-    "delete": "Supprimer",
-    "create": "Créer Demande",
-    "update": "Mettre à Jour Demande",
-    "view": "Afficher",
-    "submit": "Soumettre",
-    "approve": "Approuver",
-    "reject": "Rejeter",
-    "close": "Fermer"
-  },
-  "form": {
+    "riskLevel": "Niveau de Risque",
     "selectProduct": "Sélectionner un produit",
     "selectChannel": "Sélectionner un canal",
     "selectedClient": "Client Sélectionné",
@@ -111,6 +70,45 @@
     "managerAssignment": "Assignation du Gestionnaire",
     "managerAutoAssigned": "Le gestionnaire est automatiquement assigné du compte connecté.",
     "currentUser": "Utilisateur actuel:"
+  },
+  "status": {
+    "pending": "En Attente",
+    "approved": "Approuvée",
+    "rejected": "Rejetée",
+    "inProgress": "En Cours",
+    "completed": "Complétée",
+    "cancelled": "Annulée",
+    "draft": "Brouillon",
+    "submitted": "Soumis",
+    "validated": "Validé"
+  },
+  "priority": {
+    "low": "Basse",
+    "medium": "Moyenne",
+    "high": "Haute"
+  },
+  "table": {
+    "client": "Client",
+    "type": "Type",
+    "amount": "Montant",
+    "status": "Statut",
+    "date": "Date",
+    "actions": "Actions",
+    "total": "Total"
+  },
+  "searchPlaceholder": "Rechercher par client, objet, gestionnaire, agence ou ID...",
+  "buttons": {
+    "newDemande": "Nouvelle Demande",
+    "add": "Ajouter Demande",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "create": "Créer Demande",
+    "update": "Mettre à Jour Demande",
+    "view": "Afficher",
+    "submit": "Soumettre",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "close": "Fermer"
   },
   "statusOptions": {
     "allStatuses": "Tous les statuts",

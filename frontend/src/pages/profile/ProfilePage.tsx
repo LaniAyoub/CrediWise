@@ -82,10 +82,10 @@ const ProfilePage = () => {
         ...(data.address && { address: data.address }),
         ...(data.dateOfBirth && { dateOfBirth: data.dateOfBirth }),
       });
-      toast.success(t('profileUpdated'));
+      toast.success(t('common.profileUpdated'));
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || t('profileUpdateFailed'));
+      toast.error(error.response?.data?.message || t('common.profileUpdateFailed'));
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -98,11 +98,11 @@ const ProfilePage = () => {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });
-      toast.success(t('passwordChanged'));
+      toast.success(t('common.passwordChanged'));
       resetPassword();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || t('passwordChangeFailed'));
+      toast.error(error.response?.data?.message || t('common.passwordChangeFailed'));
     } finally {
       setIsChangingPassword(false);
     }
@@ -116,8 +116,8 @@ const ProfilePage = () => {
     <div className="page-container max-w-3xl mx-auto space-y-8 py-8">
       {/* Page Header */}
       <div className="space-y-2">
-        <h1 className="text-page-title text-surface-900 dark:text-surface-50">{t('profile')}</h1>
-        <p className="text-body text-surface-600 dark:text-surface-400">{t('manageAccount')}</p>
+        <h1 className="text-page-title text-surface-900 dark:text-surface-50">{t('common.profile')}</h1>
+        <p className="text-body text-surface-600 dark:text-surface-400">{t('common.manageAccount')}</p>
       </div>
 
       {/* Profile card header - Enhanced */}
@@ -150,11 +150,11 @@ const ProfilePage = () => {
           {/* Info Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-surface-200 dark:border-surface-700">
             <div className="space-y-1">
-              <p className="text-label text-surface-600 dark:text-surface-400">{t('agence')}</p>
+              <p className="text-label text-surface-600 dark:text-surface-400">{t('common.agence')}</p>
               <p className="text-base font-semibold text-surface-900 dark:text-surface-100">{profile?.agence?.libelle || '—'}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-label text-surface-600 dark:text-surface-400">{t('cin')}</p>
+              <p className="text-label text-surface-600 dark:text-surface-400">{t('common.cin')}</p>
               <p className="text-base font-mono font-semibold text-surface-900 dark:text-surface-100">{profile?.cin || '—'}</p>
             </div>
           </div>
@@ -167,38 +167,38 @@ const ProfilePage = () => {
           <svg className="w-6 h-6 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('personalInformation')}</h3>
+          <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('common.personalInformation')}</h3>
         </div>
-        <p className="text-base text-surface-600 dark:text-surface-400 mb-7 ml-9">{t('updatePersonal')}</p>
+        <p className="text-base text-surface-600 dark:text-surface-400 mb-7 ml-9">{t('common.updatePersonal')}</p>
         <form onSubmit={handleProfileSubmit(onUpdateProfile)} className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <Input
-              label={t('firstName')}
+              label={t('common.firstName')}
               {...registerProfile('firstName')}
               error={profileErrors.firstName?.message}
             />
             <Input
-              label={t('lastName')}
+              label={t('common.lastName')}
               {...registerProfile('lastName')}
               error={profileErrors.lastName?.message}
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <Input
-              label={t('phone')}
+              label={t('common.phone')}
               {...registerProfile('numTelephone')}
               error={profileErrors.numTelephone?.message}
               placeholder={t('placeholders.phoneNumber')}
             />
             <Input
-              label={t('dateOfBirth')}
+              label={t('common.dateOfBirth')}
               type="date"
               {...registerProfile('dateOfBirth')}
               error={profileErrors.dateOfBirth?.message}
             />
           </div>
           <Input
-            label={t('address')}
+            label={t('common.address')}
             {...registerProfile('address')}
             error={profileErrors.address?.message}
             placeholder={t('placeholders.streetAddress')}
@@ -206,7 +206,7 @@ const ProfilePage = () => {
           />
           <div className="flex justify-end pt-4">
             <Button type="submit" isLoading={isUpdatingProfile}>
-              {t('saveChanges')}
+              {t('common.saveChanges')}
             </Button>
           </div>
         </form>
@@ -218,12 +218,12 @@ const ProfilePage = () => {
           <svg className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
-          <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('changePassword')}</h3>
+          <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('common.changePassword')}</h3>
         </div>
-        <p className="text-base text-surface-600 dark:text-surface-400 mb-7 ml-9">{t('passwordInstructions')}</p>
+        <p className="text-base text-surface-600 dark:text-surface-400 mb-7 ml-9">{t('common.passwordInstructions')}</p>
         <form onSubmit={handlePasswordSubmit(onChangePassword)} className="space-y-6">
           <Input
-            label={t('currentPassword')}
+            label={t('common.currentPassword')}
             type="password"
             {...registerPassword('currentPassword')}
             error={passwordErrors.currentPassword?.message}
@@ -232,7 +232,7 @@ const ProfilePage = () => {
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <Input
-              label={t('newPassword')}
+              label={t('common.newPassword')}
               type="password"
               {...registerPassword('newPassword')}
               error={passwordErrors.newPassword?.message}
@@ -240,7 +240,7 @@ const ProfilePage = () => {
               className="focus:ring-2 focus:ring-amber-500"
             />
             <Input
-              label={t('confirmPassword')}
+              label={t('common.confirmPassword')}
               type="password"
               {...registerPassword('confirmPassword')}
               error={passwordErrors.confirmPassword?.message}
@@ -250,7 +250,7 @@ const ProfilePage = () => {
           </div>
           <div className="flex justify-end pt-4">
             <Button type="submit" isLoading={isChangingPassword}>
-              {t('changePassword')}
+              {t('common.changePassword')}
             </Button>
           </div>
         </form>
@@ -264,7 +264,7 @@ const ProfilePage = () => {
           </svg>
           <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('session')}</h3>
         </div>
-        <p className="text-base text-surface-600 dark:text-surface-400 mb-6 ml-9">{t('signOutMessage')}</p>
+        <p className="text-base text-surface-600 dark:text-surface-400 mb-6 ml-9">{t('common.signOutMessage')}</p>
         <div className="ml-9">
           <Button variant="danger" onClick={handleLogout}>
             {t('signOut')}
