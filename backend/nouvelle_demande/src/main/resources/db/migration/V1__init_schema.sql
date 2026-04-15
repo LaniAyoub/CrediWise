@@ -1,14 +1,15 @@
 -- ============================================================
--- nouvelle_demande_db schema — Complete & Clean
+-- nouvelle_demande_db — Complete Schema v1.0
+-- Auto-incremented BIGSERIAL IDs + Risk Assessment Fields
 -- ============================================================
 
 -- ────────────────────────────────────────────────────────────
--- DEMANDES TABLE
+-- DEMANDES TABLE (with BIGSERIAL auto-increment ID)
 -- ────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS demandes (
-    -- Primary key
-    id                               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    -- Primary key: Auto-incremented (1, 2, 3...)
+    id                               BIGSERIAL    PRIMARY KEY,
 
     -- Client reference (external microservice)
     client_id                        UUID         NOT NULL,
@@ -53,6 +54,10 @@ CREATE TABLE IF NOT EXISTS demandes (
     monthly_repayment_capacity       NUMERIC(15,3),
     application_channel              VARCHAR(100),
 
+    -- Risk assessment
+    banking_restriction              BOOLEAN      DEFAULT FALSE,
+    legal_issue_or_account_blocked   BOOLEAN      DEFAULT FALSE,
+
     -- Consent & signatories
     consent_text                     VARCHAR(4000),
     signatories                      VARCHAR(500),
@@ -75,12 +80,12 @@ CREATE INDEX idx_demandes_status     ON demandes (status);
 CREATE INDEX idx_demandes_deleted_at ON demandes (deleted_at);
 
 -- ────────────────────────────────────────────────────────────
--- GUARANTORS TABLE
+-- GUARANTORS TABLE (references BIGINT demande_id)
 -- ────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS guarantors (
     id                   UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    demande_id           UUID        NOT NULL REFERENCES demandes(id) ON DELETE CASCADE,
+    demande_id           BIGINT      NOT NULL REFERENCES demandes(id) ON DELETE CASCADE,
     amplitude_id         VARCHAR(100),
     name                 VARCHAR(200),
     client_relationship  VARCHAR(100)
@@ -89,12 +94,12 @@ CREATE TABLE IF NOT EXISTS guarantors (
 CREATE INDEX idx_guarantors_demande ON guarantors (demande_id);
 
 -- ────────────────────────────────────────────────────────────
--- GUARANTEES TABLE
+-- GUARANTEES TABLE (references BIGINT demande_id)
 -- ────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS guarantees (
     id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    demande_id     UUID         NOT NULL REFERENCES demandes(id) ON DELETE CASCADE,
+    demande_id     BIGINT       NOT NULL REFERENCES demandes(id) ON DELETE CASCADE,
     owner          VARCHAR(200),
     type           VARCHAR(100),
     estimated_value NUMERIC(15,3)
@@ -122,7 +127,7 @@ CREATE TABLE IF NOT EXISTS status (
 );
 
 -- ────────────────────────────────────────────────────────────
--- Reference data
+-- Seed Data
 -- ────────────────────────────────────────────────────────────
 
 INSERT INTO product (product_id, type, name) VALUES
@@ -130,7 +135,12 @@ INSERT INTO product (product_id, type, name) VALUES
     ('CREDIT_PME',        'PME',       'Crédit PME'),
     ('CREDIT_CONSO',      'CONSUMER',  'Crédit Consommation'),
     ('CREDIT_IMMO',       'MORTGAGE',  'Crédit Immobilier'),
-    ('CREDIT_EQUIPEMENT', 'EQUIPMENT', 'Crédit Équipement')
+    ('CREDIT_EQUIPEMENT', 'EQUIPMENT', 'Crédit Équipement'),
+    ('101',               NULL,        'Crédit Micro Tatouir'),
+    ('102',               NULL,        'Crédit TPE Mostakbali'),
+    ('103',               NULL,        'Crédit PME Imtiez'),
+    ('105',               NULL,        'Crédit EL BEYA'),
+    ('110',               NULL,        'Crédit Agricole Saba')
 ON CONFLICT (product_id) DO NOTHING;
 
 INSERT INTO status (id_status, libelle) VALUES
