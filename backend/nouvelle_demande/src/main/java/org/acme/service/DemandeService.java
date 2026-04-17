@@ -87,7 +87,7 @@ public class DemandeService {
         demande.requestedAmount = req.getRequestedAmount();
         demande.durationMonths = req.getDurationMonths();
         demande.productId = req.getProductId();
-        demande.productName = null; // Set if you have a local product lookup
+        demande.productName = null;
         demande.assetType = req.getAssetType();
         demande.monthlyRepaymentCapacity = req.getMonthlyRepaymentCapacity();
         demande.applicationChannel = req.getApplicationChannel();
