@@ -26,52 +26,58 @@ const CAN_EDIT_ROLES = ["SUPER_ADMIN", "FRONT_OFFICE"];
 const CAN_DELETE_ROLES = ["SUPER_ADMIN"];
 const CAN_APPROVE_ROLES = ["SUPER_ADMIN", "HEAD_OFFICE_DM", "BRANCH_DM"];
 
-const statusVariant = (status: DemandeStatut): "warning" | "info" | "success" | "danger" => {
+const statusVariant = (
+  status: DemandeStatut,
+): "warning" | "info" | "success" | "danger" => {
   if (status === "DRAFT") return "warning";
   if (status === "SUBMITTED") return "info";
   if (status === "VALIDATED") return "success";
   return "danger";
 };
 
-const generateDemandePdf = (demande: Demande, popUpMessage?: string, noGuarantorsMsg?: string, noGuaranteesMsg?: string) => {
+const generateDemandePdf = (demande: Demande, translations: any) => {
   const printWindow = window.open("", "_blank");
   if (!printWindow) {
-    alert(popUpMessage || "Please allow pop-ups to download PDF");
+    alert(translations.popup);
     return;
   }
 
-  const guarantorsHtml = (demande.guarantors && demande.guarantors.length > 0)
-    ? demande.guarantors
-        .map(
-          (g) =>
-            `<tr>
+  const t = translations.pdf;
+
+  const guarantorsHtml =
+    demande.guarantors && demande.guarantors.length > 0
+      ? demande.guarantors
+          .map(
+            (g) =>
+              `<tr>
               <td style="padding: 8px; border-bottom: 1px solid #ddd;">${g.name || "—"}</td>
               <td style="padding: 8px; border-bottom: 1px solid #ddd;">${g.amplitudeId || "—"}</td>
               <td style="padding: 8px; border-bottom: 1px solid #ddd;">${g.clientRelationship || "—"}</td>
-            </tr>`
-        )
-        .join("")
-    : `<tr><td colspan="3" style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${noGuarantorsMsg || "No guarantors"}</td></tr>`;
+            </tr>`,
+          )
+          .join("")
+      : `<tr><td colspan="3" style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${translations.noGuarantors}</td></tr>`;
 
-  const guaranteesHtml = (demande.guarantees && demande.guarantees.length > 0)
-    ? demande.guarantees
-        .map(
-          (g) =>
-            `<tr>
+  const guaranteesHtml =
+    demande.guarantees && demande.guarantees.length > 0
+      ? demande.guarantees
+          .map(
+            (g) =>
+              `<tr>
               <td style="padding: 8px; border-bottom: 1px solid #ddd;">${g.owner || "—"}</td>
               <td style="padding: 8px; border-bottom: 1px solid #ddd;">${g.type || "—"}</td>
               <td style="padding: 8px; border-bottom: 1px solid #ddd;">${Number(g.estimatedValue || 0).toLocaleString()} MAD</td>
-            </tr>`
-        )
-        .join("")
-    : `<tr><td colspan="3" style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${noGuaranteesMsg || "No guarantees"}</td></tr>`;
+            </tr>`,
+          )
+          .join("")
+      : `<tr><td colspan="3" style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${translations.noGuarantees}</td></tr>`;
 
   const htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Demande ${demande.id}</title>
+      <title>${t.title} ${demande.id}</title>
       <style>
         @media print {
           body { margin: 0; padding: 0; }
@@ -188,50 +194,50 @@ const generateDemandePdf = (demande: Demande, popUpMessage?: string, noGuarantor
     </head>
     <body>
       <div class="no-print">
-        <button class="print-btn" onclick="window.print()">Print / Download PDF</button>
-        <button class="close-btn" onclick="window.close()">Close</button>
+        <button class="print-btn" onclick="window.print()">${t.printDownloadPdf}</button>
+        <button class="close-btn" onclick="window.close()">${t.close}</button>
       </div>
 
       <div class="header">
-        <h1>Demande de Financement</h1>
+        <h1>${t.title}</h1>
         <div class="header-info">
-          <span><strong>Reference:</strong> #${demande.id}</span>
-          <span><strong>Date:</strong> ${new Date(demande.createdAt || new Date()).toLocaleDateString()}</span>
-          <span><strong>Status:</strong> ${demande.status}</span>
+          <span><strong>${t.reference}:</strong> #${demande.id}</span>
+          <span><strong>${t.date}:</strong> ${new Date(demande.createdAt || new Date()).toLocaleDateString()}</span>
+          <span><strong>${t.status}:</strong> ${demande.status}</span>
         </div>
       </div>
 
       <div class="section">
-        <div class="section-title">INFORMATION CLIENT</div>
+        <div class="section-title">${t.informationClient}</div>
         <div class="info-grid">
-          <div class="info-row"><span class="info-label">Client:</span> ${displayClient(demande)}</div>
-          <div class="info-row"><span class="info-label">Branch:</span> ${demande.branchName || "—"}</div>
-          <div class="info-row"><span class="info-label">Manager:</span> ${demande.managerName || "—"}</div>
-          <div class="info-row"><span class="info-label">Type:</span> ${demande.clientType || "—"}</div>
+          <div class="info-row"><span class="info-label">${t.client}:</span> ${displayClient(demande)}</div>
+          <div class="info-row"><span class="info-label">${t.branch}:</span> ${demande.branchName || "—"}</div>
+          <div class="info-row"><span class="info-label">${t.manager}:</span> ${demande.managerName || "—"}</div>
+          <div class="info-row"><span class="info-label">${t.type}:</span> ${demande.clientType || "—"}</div>
         </div>
       </div>
 
       <div class="section">
-        <div class="section-title">CREDIT REQUEST</div>
+        <div class="section-title">${t.creditRequest}</div>
         <div class="info-grid">
-          <div class="info-row"><span class="info-label">Purpose:</span> ${demande.loanPurpose || "—"}</div>
-          <div class="info-row"><span class="info-label">Amount:</span> ${Number(demande.requestedAmount || 0).toLocaleString()} MAD</div>
-          <div class="info-row"><span class="info-label">Duration:</span> ${demande.durationMonths || "—"} months</div>
-          <div class="info-row"><span class="info-label">Product:</span> ${demande.productName || demande.productId || "—"}</div>
-          <div class="info-row"><span class="info-label">Asset Type:</span> ${demande.assetType || "—"}</div>
-          <div class="info-row"><span class="info-label">Monthly Capacity:</span> ${Number(demande.monthlyRepaymentCapacity || 0).toLocaleString()} MAD</div>
-          <div class="info-row"><span class="info-label">Channel:</span> ${demande.applicationChannel || "—"}</div>
+          <div class="info-row"><span class="info-label">${t.purpose}:</span> ${demande.loanPurpose || "—"}</div>
+          <div class="info-row"><span class="info-label">${t.amount}:</span> ${Number(demande.requestedAmount || 0).toLocaleString()} MAD</div>
+          <div class="info-row"><span class="info-label">${t.duration}:</span> ${demande.durationMonths || "—"} ${t.months}</div>
+          <div class="info-row"><span class="info-label">${t.product}:</span> ${demande.productName || demande.productId || "—"}</div>
+          <div class="info-row"><span class="info-label">${t.assetType}:</span> ${demande.assetType || "—"}</div>
+          <div class="info-row"><span class="info-label">${t.monthlyCapacity}:</span> ${Number(demande.monthlyRepaymentCapacity || 0).toLocaleString()} MAD</div>
+          <div class="info-row"><span class="info-label">${t.channel}:</span> ${demande.applicationChannel || "—"}</div>
         </div>
       </div>
 
       <div class="section">
-        <div class="section-title">GUARANTORS</div>
+        <div class="section-title">${t.guarantorsTitle}</div>
         <table>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Amplitude ID</th>
-              <th>Relationship</th>
+              <th>${t.name}</th>
+              <th>${t.amplitudeId}</th>
+              <th>${t.relationship}</th>
             </tr>
           </thead>
           <tbody>
@@ -241,13 +247,13 @@ const generateDemandePdf = (demande: Demande, popUpMessage?: string, noGuarantor
       </div>
 
       <div class="section">
-        <div class="section-title">GUARANTEES / COLLATERAL</div>
+        <div class="section-title">${t.guaranteesTitle}</div>
         <table>
           <thead>
             <tr>
-              <th>Owner</th>
+              <th>${t.owner}</th>
               <th>Type</th>
-              <th>Estimated Value (MAD)</th>
+              <th>${t.estimatedValue}</th>
             </tr>
           </thead>
           <tbody>
@@ -257,7 +263,7 @@ const generateDemandePdf = (demande: Demande, popUpMessage?: string, noGuarantor
       </div>
 
       <div class="section">
-        <div class="section-title">DECLARATION OF CONSENT</div>
+        <div class="section-title">${t.declarationOfConsent}</div>
         <div class="consent-box">
           إنّي الممضي أسفله صاحب بطاقة التعريف الوطنية المذكورة أعلاه أشهد وأصرّح بصحّة المعطيات والمعلومات المبيّنة أعلاه<br><br>
           كما أنّي وطبقا لأحكام القانون الأساسي عدد 33 لسنة 2004 المؤرخ في 24 جويلية 2004 المتعلّق بحماية المعطيات الشخصية<br><br>
@@ -268,19 +274,19 @@ const generateDemandePdf = (demande: Demande, popUpMessage?: string, noGuarantor
       <div class="section">
         <div class="signature-section">
           <div class="signature-box">
-            <p>Client / Representative</p>
+            <p>${t.clientRepresentative}</p>
             <div class="signature-line"></div>
-            <p style="font-size: 10px; color: #999;">Date & Signature</p>
+            <p style="font-size: 10px; color: #999;">${t.signatureSection}</p>
           </div>
           <div class="signature-box">
-            <p>Manager</p>
+            <p>${t.manager}</p>
             <div class="signature-line"></div>
-            <p style="font-size: 10px; color: #999;">Date & Signature</p>
+            <p style="font-size: 10px; color: #999;">${t.signatureSection}</p>
           </div>
           <div class="signature-box">
-            <p>Agency Director</p>
+            <p>${t.agencyDirector}</p>
             <div class="signature-line"></div>
-            <p style="font-size: 10px; color: #999;">Date & Signature</p>
+            <p style="font-size: 10px; color: #999;">${t.signatureSection}</p>
           </div>
         </div>
       </div>
@@ -293,13 +299,15 @@ const generateDemandePdf = (demande: Demande, popUpMessage?: string, noGuarantor
 };
 
 const displayClient = (d: Demande) =>
-  `${d.firstName || ""} ${d.lastName || ""}`.trim() || d.companyName || d.clientId;
+  `${d.firstName || ""} ${d.lastName || ""}`.trim() ||
+  d.companyName ||
+  d.clientId;
 
 const formatAmount = (value?: number) =>
   value != null ? `${Number(value).toLocaleString()} MAD` : "—";
 
 const DemandesPage = () => {
-  const { t } = useTranslation('demandes');
+  const { t } = useTranslation("demandes");
   const { user } = useAuth();
   const [demandes, setDemandes] = useState<Demande[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -317,7 +325,11 @@ const DemandesPage = () => {
   const fetchDemandes = async () => {
     setLoading(true);
     try {
-      const res = await demandeService.getAll({ page: 0, size: 100, ...(statusFilter && { statut: statusFilter }) });
+      const res = await demandeService.getAll({
+        page: 0,
+        size: 100,
+        ...(statusFilter && { statut: statusFilter }),
+      });
       setDemandes(res.data);
     } catch {
       // handled by interceptor
@@ -351,7 +363,7 @@ const DemandesPage = () => {
         d.loanPurpose?.toLowerCase().includes(q) ||
         d.managerName?.toLowerCase().includes(q) ||
         d.branchName?.toLowerCase().includes(q) ||
-        d.id.toString().includes(q)
+        d.id.toString().includes(q),
     );
   }, [demandes, searchQuery]);
 
@@ -375,8 +387,16 @@ const DemandesPage = () => {
     bankingRestriction: boolean;
     legalIssueOrAccountBlocked: boolean;
     consentText?: string;
-    guarantors?: Array<{ name?: string; amplitudeId?: string; clientRelationship?: string }>;
-    guarantees?: Array<{ owner?: string; type?: string; estimatedValue?: number }>;
+    guarantors?: Array<{
+      name?: string;
+      amplitudeId?: string;
+      clientRelationship?: string;
+    }>;
+    guarantees?: Array<{
+      owner?: string;
+      type?: string;
+      estimatedValue?: number;
+    }>;
   }) => {
     setIsSubmitting(true);
     try {
@@ -392,19 +412,23 @@ const DemandesPage = () => {
         ...(Number.isFinite(data.monthlyRepaymentCapacity) && {
           monthlyRepaymentCapacity: Number(data.monthlyRepaymentCapacity),
         }),
-        ...(data.applicationChannel && { applicationChannel: data.applicationChannel }),
+        ...(data.applicationChannel && {
+          applicationChannel: data.applicationChannel,
+        }),
         ...(data.consentText && { consentText: data.consentText }),
-        ...(data.guarantors && data.guarantors.length > 0 && { guarantors: data.guarantors }),
-        ...(data.guarantees && data.guarantees.length > 0 && { guarantees: data.guarantees }),
+        ...(data.guarantors &&
+          data.guarantors.length > 0 && { guarantors: data.guarantors }),
+        ...(data.guarantees &&
+          data.guarantees.length > 0 && { guarantees: data.guarantees }),
       };
 
       await demandeService.create(payload);
-      toast.success(t('messages.created'));
+      toast.success(t("messages.created"));
       setIsCreateOpen(false);
       fetchDemandes();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || t('messages.loadError'));
+      toast.error(error.response?.data?.message || t("messages.loadError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -422,8 +446,16 @@ const DemandesPage = () => {
     bankingRestriction?: boolean;
     legalIssueOrAccountBlocked?: boolean;
     consentText?: string;
-    guarantors?: Array<{ name?: string; amplitudeId?: string; clientRelationship?: string }>;
-    guarantees?: Array<{ owner?: string; type?: string; estimatedValue?: number }>;
+    guarantors?: Array<{
+      name?: string;
+      amplitudeId?: string;
+      clientRelationship?: string;
+    }>;
+    guarantees?: Array<{
+      owner?: string;
+      type?: string;
+      estimatedValue?: number;
+    }>;
   }) => {
     if (!editingDemande) return;
     setIsSubmitting(true);
@@ -437,21 +469,29 @@ const DemandesPage = () => {
         ...(Number.isFinite(data.monthlyRepaymentCapacity) && {
           monthlyRepaymentCapacity: Number(data.monthlyRepaymentCapacity),
         }),
-        ...(data.applicationChannel && { applicationChannel: data.applicationChannel }),
-        ...(data.bankingRestriction !== undefined && { bankingRestriction: data.bankingRestriction }),
-        ...(data.legalIssueOrAccountBlocked !== undefined && { legalIssueOrAccountBlocked: data.legalIssueOrAccountBlocked }),
+        ...(data.applicationChannel && {
+          applicationChannel: data.applicationChannel,
+        }),
+        ...(data.bankingRestriction !== undefined && {
+          bankingRestriction: data.bankingRestriction,
+        }),
+        ...(data.legalIssueOrAccountBlocked !== undefined && {
+          legalIssueOrAccountBlocked: data.legalIssueOrAccountBlocked,
+        }),
         ...(data.consentText && { consentText: data.consentText }),
-        ...(data.guarantors && data.guarantors.length > 0 && { guarantors: data.guarantors }),
-        ...(data.guarantees && data.guarantees.length > 0 && { guarantees: data.guarantees }),
+        ...(data.guarantors &&
+          data.guarantors.length > 0 && { guarantors: data.guarantors }),
+        ...(data.guarantees &&
+          data.guarantees.length > 0 && { guarantees: data.guarantees }),
       };
 
       await demandeService.update(editingDemande.id, payload);
-      toast.success(t('messages.updated'));
+      toast.success(t("messages.updated"));
       setEditingDemande(null);
       fetchDemandes();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || t('messages.loadError'));
+      toast.error(error.response?.data?.message || t("messages.loadError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -460,22 +500,29 @@ const DemandesPage = () => {
   const handleSubmitDemande = async (demande: Demande) => {
     try {
       await demandeService.submit(demande.id);
-      toast.success(t('messages.submitted'));
+      toast.success(t("messages.submitted"));
       fetchDemandes();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || t('messages.loadError'));
+      toast.error(error.response?.data?.message || t("messages.loadError"));
     }
   };
 
-  const handleDecision = async (demande: Demande, status: "VALIDATED" | "REJECTED") => {
+  const handleDecision = async (
+    demande: Demande,
+    status: "VALIDATED" | "REJECTED",
+  ) => {
     try {
       await demandeService.updateStatus(demande.id, status);
-      toast.success(status === "VALIDATED" ? t('messages.validated') : t('messages.rejected'));
+      toast.success(
+        status === "VALIDATED"
+          ? t("messages.validated")
+          : t("messages.rejected"),
+      );
       fetchDemandes();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || t('messages.loadError'));
+      toast.error(error.response?.data?.message || t("messages.loadError"));
     }
   };
 
@@ -484,12 +531,12 @@ const DemandesPage = () => {
     setIsDeleting(true);
     try {
       await demandeService.remove(deletingDemande.id);
-      toast.success(t('messages.deleted'));
+      toast.success(t("messages.deleted"));
       setDeletingDemande(null);
       fetchDemandes();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || t('messages.loadError'));
+      toast.error(error.response?.data?.message || t("messages.loadError"));
     } finally {
       setIsDeleting(false);
     }
@@ -504,19 +551,33 @@ const DemandesPage = () => {
     <div className="page-container space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-page-title text-surface-900 dark:text-surface-50">{t('title')}</h1>
-          <p className="text-caption text-surface-600 dark:text-surface-400 mt-2">{t('subtitle')}</p>
+          <h1 className="text-page-title text-surface-900 dark:text-surface-50">
+            {t("title")}
+          </h1>
+          <p className="text-caption text-surface-600 dark:text-surface-400 mt-2">
+            {t("subtitle")}
+          </p>
         </div>
         {canCreate && (
           <Button
             onClick={() => setIsCreateOpen(true)}
             icon={
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
             }
           >
-            {t('buttons.newDemande')}
+            {t("buttons.newDemande")}
           </Button>
         )}
       </div>
@@ -524,39 +585,57 @@ const DemandesPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="md:col-span-2">
           <SearchBar
-            placeholder={t('searchPlaceholder')}
+            placeholder={t("searchPlaceholder")}
             onSearch={setSearchQuery}
           />
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as "" | DemandeStatut)}
+          onChange={(e) =>
+            setStatusFilter(e.target.value as "" | DemandeStatut)
+          }
           className="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-800 dark:text-surface-200 focus-ring transition-colors"
         >
-          <option value="">{t('statusOptions.allStatuses')}</option>
-          <option value="DRAFT">{t('statusOptions.draft')}</option>
-          <option value="SUBMITTED">{t('statusOptions.submitted')}</option>
-          <option value="VALIDATED">{t('statusOptions.validated')}</option>
-          <option value="REJECTED">{t('statusOptions.rejected')}</option>
+          <option value="">{t("statusOptions.allStatuses")}</option>
+          <option value="DRAFT">{t("statusOptions.draft")}</option>
+          <option value="SUBMITTED">{t("statusOptions.submitted")}</option>
+          <option value="VALIDATED">{t("statusOptions.validated")}</option>
+          <option value="REJECTED">{t("statusOptions.rejected")}</option>
         </select>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-3 transition-colors">
-          <p className="text-label text-surface-600 dark:text-surface-400">{t('table.total')}</p>
-          <p className="text-xl font-bold text-surface-900 dark:text-surface-50 mt-2">{demandeStats.total}</p>
+          <p className="text-label text-surface-600 dark:text-surface-400">
+            {t("table.total")}
+          </p>
+          <p className="text-xl font-bold text-surface-900 dark:text-surface-50 mt-2">
+            {demandeStats.total}
+          </p>
         </div>
         <div className="rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 transition-colors">
-          <p className="text-label text-amber-700 dark:text-amber-300">{t('status.draft')}</p>
-          <p className="text-xl font-bold text-amber-900 dark:text-amber-200 mt-2">{demandeStats.draft}</p>
+          <p className="text-label text-amber-700 dark:text-amber-300">
+            {t("status.draft")}
+          </p>
+          <p className="text-xl font-bold text-amber-900 dark:text-amber-200 mt-2">
+            {demandeStats.draft}
+          </p>
         </div>
         <div className="rounded-xl border border-brand-200 dark:border-brand-900/40 bg-brand-50 dark:bg-brand-900/20 px-4 py-3 transition-colors">
-          <p className="text-label text-brand-700 dark:text-brand-300">{t('status.submitted')}</p>
-          <p className="text-xl font-bold text-brand-900 dark:text-brand-200 mt-2">{demandeStats.submitted}</p>
+          <p className="text-label text-brand-700 dark:text-brand-300">
+            {t("status.submitted")}
+          </p>
+          <p className="text-xl font-bold text-brand-900 dark:text-brand-200 mt-2">
+            {demandeStats.submitted}
+          </p>
         </div>
         <div className="rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 transition-colors">
-          <p className="text-label text-emerald-700 dark:text-emerald-300">{t('status.validated')}</p>
-          <p className="text-xl font-bold text-emerald-900 dark:text-emerald-200 mt-2">{demandeStats.validated}</p>
+          <p className="text-label text-emerald-700 dark:text-emerald-300">
+            {t("status.validated")}
+          </p>
+          <p className="text-xl font-bold text-emerald-900 dark:text-emerald-200 mt-2">
+            {demandeStats.validated}
+          </p>
         </div>
       </div>
 
@@ -564,9 +643,16 @@ const DemandesPage = () => {
         <LoadingSkeleton type="table" rows={6} />
       ) : (
         <Table
-          headers={[t('table.client'), t('table.status'), "Financial", "Assignment", "Timeline", t('table.actions')]}
+          headers={[
+            t("table.client"),
+            t("table.status"),
+            "Financial",
+            "Assignment",
+            "Timeline",
+            t("table.actions"),
+          ]}
           isEmpty={filteredDemandes.length === 0}
-          emptyMessage={t('messages.noResults')}
+          emptyMessage={t("messages.noResults")}
         >
           {filteredDemandes.map((d) => {
             const canEditThisDemande = d.status === "DRAFT" && canEdit;
@@ -577,53 +663,94 @@ const DemandesPage = () => {
             return (
               <tr key={d.id} className="table-row-hover">
                 <td className="px-4 py-3 align-top">
-                  <p className="text-sm font-medium text-surface-800">{displayClient(d)}</p>
+                  <p className="text-sm font-medium text-surface-800">
+                    {displayClient(d)}
+                  </p>
                   <p className="text-xs text-surface-400">#{d.id}</p>
                 </td>
                 <td className="px-4 py-3 align-top">
                   <Badge variant={statusVariant(d.status)}>{d.status}</Badge>
                 </td>
                 <td className="px-4 py-3 align-top text-sm text-surface-600">
-                  <p className="font-medium text-surface-700">{formatAmount(d.requestedAmount)}</p>
+                  <p className="font-medium text-surface-700">
+                    {formatAmount(d.requestedAmount)}
+                  </p>
                   <p className="text-xs text-surface-400">
                     {d.durationMonths ? `${d.durationMonths} months` : "—"}
                   </p>
-                  <p className="text-xs text-surface-500 mt-1 line-clamp-1">{d.loanPurpose || "—"}</p>
+                  <p className="text-xs text-surface-500 mt-1 line-clamp-1">
+                    {d.loanPurpose || "—"}
+                  </p>
                 </td>
                 <td className="px-4 py-3 align-top">
-                  <p className="text-sm text-surface-600">{d.managerName || "—"}</p>
-                  <p className="text-xs text-surface-400">{d.branchName || "—"}</p>
+                  <p className="text-sm text-surface-600">
+                    {d.managerName || "—"}
+                  </p>
+                  <p className="text-xs text-surface-400">
+                    {d.branchName || "—"}
+                  </p>
                 </td>
                 <td className="px-4 py-3 align-top">
                   <p className="text-xs text-surface-500">
-                    Created: {d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "—"}
+                    Created:{" "}
+                    {d.createdAt
+                      ? new Date(d.createdAt).toLocaleDateString()
+                      : "—"}
                   </p>
                   <p className="text-xs text-surface-400">
-                    Updated: {d.updatedAt ? new Date(d.updatedAt).toLocaleDateString() : "—"}
+                    Updated:{" "}
+                    {d.updatedAt
+                      ? new Date(d.updatedAt).toLocaleDateString()
+                      : "—"}
                   </p>
                 </td>
                 <td className="px-4 py-3 align-top">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => setViewingDemande(d)}>
-                      {t('buttons.view')}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="min-w-[78px]"
+                      onClick={() => setViewingDemande(d)}
+                    >
+                      {t("buttons.view")}
                     </Button>
                     {canEditThisDemande && (
-                      <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => setEditingDemande(d)}>
-                        {t('buttons.edit')}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-w-[78px]"
+                        onClick={() => setEditingDemande(d)}
+                      >
+                        {t("buttons.edit")}
                       </Button>
                     )}
                     {canSubmitThisDemande && (
-                      <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => handleSubmitDemande(d)}>
-                        {t('buttons.submit')}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-w-[78px]"
+                        onClick={() => handleSubmitDemande(d)}
+                      >
+                        {t("buttons.submit")}
                       </Button>
                     )}
                     {canDecideThisDemande && (
                       <>
-                        <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => handleDecision(d, "VALIDATED")}>
-                          {t('buttons.approve')}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="min-w-[78px]"
+                          onClick={() => handleDecision(d, "VALIDATED")}
+                        >
+                          {t("buttons.approve")}
                         </Button>
-                        <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => handleDecision(d, "REJECTED")}>
-                          {t('buttons.reject')}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="min-w-[78px]"
+                          onClick={() => handleDecision(d, "REJECTED")}
+                        >
+                          {t("buttons.reject")}
                         </Button>
                       </>
                     )}
@@ -634,7 +761,7 @@ const DemandesPage = () => {
                         className="min-w-[78px] text-red-500 hover:text-red-700 hover:bg-red-50"
                         onClick={() => setDeletingDemande(d)}
                       >
-                        {t('buttons.delete')}
+                        {t("buttons.delete")}
                       </Button>
                     )}
                   </div>
@@ -646,7 +773,7 @@ const DemandesPage = () => {
       )}
 
       <Modal
-        title="Create Demande"
+        title={t("modals.createTitle")}
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         size="xl"
@@ -659,7 +786,7 @@ const DemandesPage = () => {
       </Modal>
 
       <Modal
-        title={t('modal.editDraftOnly')}
+        title={t("modal.editDraftOnly")}
         isOpen={!!editingDemande}
         onClose={() => setEditingDemande(null)}
         size="xl"
@@ -676,7 +803,7 @@ const DemandesPage = () => {
       </Modal>
 
       <Modal
-        title={t('modal.details')}
+        title={t("modal.details")}
         isOpen={!!viewingDemande}
         onClose={() => setViewingDemande(null)}
         size="xl"
@@ -690,12 +817,30 @@ const DemandesPage = () => {
                 { label: "Client", value: displayClient(viewingDemande) },
                 { label: "Status", value: viewingDemande.status },
                 { label: "Loan Purpose", value: viewingDemande.loanPurpose },
-                { label: "Requested Amount", value: viewingDemande.requestedAmount?.toLocaleString() },
-                { label: "Duration", value: viewingDemande.durationMonths ? `${viewingDemande.durationMonths} months` : undefined },
-                { label: "Product", value: viewingDemande.productName || viewingDemande.productId },
+                {
+                  label: "Requested Amount",
+                  value: viewingDemande.requestedAmount?.toLocaleString(),
+                },
+                {
+                  label: "Duration",
+                  value: viewingDemande.durationMonths
+                    ? `${viewingDemande.durationMonths} months`
+                    : undefined,
+                },
+                {
+                  label: "Product",
+                  value: viewingDemande.productName || viewingDemande.productId,
+                },
                 { label: "Asset Type", value: viewingDemande.assetType },
-                { label: "Monthly Capacity", value: viewingDemande.monthlyRepaymentCapacity?.toLocaleString() },
-                { label: "Application Channel", value: viewingDemande.applicationChannel },
+                {
+                  label: "Monthly Capacity",
+                  value:
+                    viewingDemande.monthlyRepaymentCapacity?.toLocaleString(),
+                },
+                {
+                  label: "Application Channel",
+                  value: viewingDemande.applicationChannel,
+                },
                 { label: "Manager", value: viewingDemande.managerName },
                 { label: "Branch", value: viewingDemande.branchName },
                 { label: "Created By", value: viewingDemande.createdBy },
@@ -714,8 +859,12 @@ const DemandesPage = () => {
                     key={row.label}
                     className="flex justify-between gap-4 py-1.5 border-b border-surface-50"
                   >
-                    <span className="text-surface-500 font-medium min-w-[150px]">{row.label}</span>
-                    <span className="text-surface-800 text-right break-all">{row.value}</span>
+                    <span className="text-surface-500 font-medium min-w-[150px]">
+                      {row.label}
+                    </span>
+                    <span className="text-surface-800 text-right break-all">
+                      {row.value}
+                    </span>
                   </div>
                 ))}
             </div>
@@ -723,79 +872,170 @@ const DemandesPage = () => {
             {/* Consent Text - Arabic Display */}
             {viewingDemande.consentText && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-xs font-semibold text-amber-800 uppercase mb-2">{t('modal.declarationOfConsent')}</p>
-                <div dir="rtl" className="text-xs text-surface-700 whitespace-pre-wrap leading-relaxed text-justify">
+                <p className="text-xs font-semibold text-amber-800 uppercase mb-2">
+                  {t("modal.declarationOfConsent")}
+                </p>
+                <div
+                  dir="rtl"
+                  className="text-xs text-surface-700 whitespace-pre-wrap leading-relaxed text-justify"
+                >
                   {viewingDemande.consentText}
                 </div>
               </div>
             )}
 
             {/* Guarantors Table */}
-            {viewingDemande.guarantors && viewingDemande.guarantors.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-surface-800 mb-2">{t('modal.guarantors')}</p>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-surface-100 border-b border-surface-200">
-                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guarantorName')}</th>
-                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guarantorAmplitudeId')}</th>
-                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guarantorRelationship')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {viewingDemande.guarantors.map((g, idx) => (
-                        <tr key={idx} className="border-b border-surface-100 hover:bg-surface-50">
-                          <td className="px-3 py-2 text-surface-800">{g.name || "—"}</td>
-                          <td className="px-3 py-2 text-surface-800">{g.amplitudeId || "—"}</td>
-                          <td className="px-3 py-2 text-surface-800">{g.clientRelationship || "—"}</td>
+            {viewingDemande.guarantors &&
+              viewingDemande.guarantors.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-surface-800 mb-2">
+                    {t("modal.guarantors")}
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-surface-100 border-b border-surface-200">
+                          <th className="px-3 py-2 text-left text-surface-700">
+                            {t("modal.guarantorName")}
+                          </th>
+                          <th className="px-3 py-2 text-left text-surface-700">
+                            {t("modal.guarantorAmplitudeId")}
+                          </th>
+                          <th className="px-3 py-2 text-left text-surface-700">
+                            {t("modal.guarantorRelationship")}
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {viewingDemande.guarantors.map((g, idx) => (
+                          <tr
+                            key={idx}
+                            className="border-b border-surface-100 hover:bg-surface-50"
+                          >
+                            <td className="px-3 py-2 text-surface-800">
+                              {g.name || "—"}
+                            </td>
+                            <td className="px-3 py-2 text-surface-800">
+                              {g.amplitudeId || "—"}
+                            </td>
+                            <td className="px-3 py-2 text-surface-800">
+                              {g.clientRelationship || "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Guarantees Table */}
-            {viewingDemande.guarantees && viewingDemande.guarantees.length > 0 && (
-              <div>
-                <p className="text-sm font-semibold text-surface-800 mb-2">{t('modal.guarantees')}</p>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-surface-100 border-b border-surface-200">
-                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guaranteeOwner')}</th>
-                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guaranteeType')}</th>
-                        <th className="px-3 py-2 text-right text-surface-700">{t('modal.guaranteeValue')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {viewingDemande.guarantees.map((g, idx) => (
-                        <tr key={idx} className="border-b border-surface-100 hover:bg-surface-50">
-                          <td className="px-3 py-2 text-surface-800">{g.owner || "—"}</td>
-                          <td className="px-3 py-2 text-surface-800">{g.type || "—"}</td>
-                          <td className="px-3 py-2 text-right text-surface-800">{Number(g.estimatedValue || 0).toLocaleString()} MAD</td>
+            {viewingDemande.guarantees &&
+              viewingDemande.guarantees.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-surface-800 mb-2">
+                    {t("modal.guarantees")}
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="bg-surface-100 border-b border-surface-200">
+                          <th className="px-3 py-2 text-left text-surface-700">
+                            {t("modal.guaranteeOwner")}
+                          </th>
+                          <th className="px-3 py-2 text-left text-surface-700">
+                            {t("modal.guaranteeType")}
+                          </th>
+                          <th className="px-3 py-2 text-right text-surface-700">
+                            {t("modal.guaranteeValue")}
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {viewingDemande.guarantees.map((g, idx) => (
+                          <tr
+                            key={idx}
+                            className="border-b border-surface-100 hover:bg-surface-50"
+                          >
+                            <td className="px-3 py-2 text-surface-800">
+                              {g.owner || "—"}
+                            </td>
+                            <td className="px-3 py-2 text-surface-800">
+                              {g.type || "—"}
+                            </td>
+                            <td className="px-3 py-2 text-right text-surface-800">
+                              {Number(g.estimatedValue || 0).toLocaleString()}{" "}
+                              MAD
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* PDF Download Button */}
             <div className="flex justify-end pt-4 border-t border-surface-100">
               <Button
                 variant="outline"
-                onClick={() => generateDemandePdf(viewingDemande, t('messages.allowPopUps'), t('messages.noGuarantors'), t('messages.noGuarantees'))}
+                onClick={() =>
+                  generateDemandePdf(viewingDemande, {
+                    popup: t("messages.allowPopUps"),
+                    noGuarantors: t("messages.noGuarantors"),
+                    noGuarantees: t("messages.noGuarantees"),
+                    pdf: {
+                      title: t("pdf.title"),
+                      reference: t("pdf.reference"),
+                      date: t("pdf.date"),
+                      status: t("pdf.status"),
+                      informationClient: t("pdf.informationClient"),
+                      creditRequest: t("pdf.creditRequest"),
+                      client: t("pdf.client"),
+                      branch: t("pdf.branch"),
+                      manager: t("pdf.manager"),
+                      type: t("pdf.type"),
+                      purpose: t("pdf.purpose"),
+                      amount: t("pdf.amount"),
+                      duration: t("pdf.duration"),
+                      product: t("pdf.product"),
+                      assetType: t("pdf.assetType"),
+                      monthlyCapacity: t("pdf.monthlyCapacity"),
+                      channel: t("pdf.channel"),
+                      guarantorsTitle: t("pdf.guarantorsTitle"),
+                      name: t("pdf.name"),
+                      amplitudeId: t("pdf.amplitudeId"),
+                      relationship: t("pdf.relationship"),
+                      guaranteesTitle: t("pdf.guaranteesTitle"),
+                      owner: t("pdf.owner"),
+                      estimatedValue: t("pdf.estimatedValue"),
+                      declarationOfConsent: t("pdf.declarationOfConsent"),
+                      signatureSection: t("pdf.signatureSection"),
+                      clientRepresentative: t("pdf.clientRepresentative"),
+                      agencyDirector: t("pdf.agencyDirector"),
+                      printDownloadPdf: t("pdf.printDownloadPdf"),
+                      close: t("pdf.close"),
+                      months: t("pdf.months"),
+                    },
+                  })
+                }
                 icon={
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8m0 8l-4-2m4 2l4-2" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8m0 8l-4-2m4 2l4-2"
+                    />
                   </svg>
                 }
               >
-                {t('modal.downloadPdf')}
+                {t("modal.downloadPdf")}
               </Button>
             </div>
           </div>
@@ -806,8 +1046,10 @@ const DemandesPage = () => {
         isOpen={!!deletingDemande}
         onClose={() => setDeletingDemande(null)}
         onConfirm={handleDelete}
-        title={t('confirm.deleteTitle')}
-        message={t('confirm.deleteMessage', { id: deletingDemande?.id.toString() || '' })}
+        title={t("confirm.deleteTitle")}
+        message={t("confirm.deleteMessage", {
+          id: deletingDemande?.id.toString() || "",
+        })}
         isLoading={isDeleting}
       />
     </div>

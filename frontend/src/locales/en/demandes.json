@@ -69,7 +69,18 @@
     "noGuaranteesAdded": "No guarantees added yet",
     "managerAssignment": "Manager Assignment",
     "managerAutoAssigned": "The manager is assigned automatically from the logged-in account.",
-    "currentUser": "Current user:"
+    "currentUser": "Current user:",
+    "clientSnapshot": "Client Snapshot (Auto-filled from database)",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "gender": "Gender",
+    "segment": "Segment",
+    "businessSector": "Business Sector",
+    "businessActivity": "Business Activity",
+    "ifcRiskLevel": "IFC Risk Level",
+    "loanPurposeHint": "Describe clearly why the client needs this loan.",
+    "requestedAmountHint": "Enter a positive amount only (no negative values).",
+    "loanPurposePlaceholder": "ex: Achat d'équipement pour la production"
   },
   "status": {
     "pending": "Pending",
@@ -126,6 +137,7 @@
     "delete": "Delete"
   },
   "modal": {
+    "title": "Credit Requests",
     "editDraftOnly": "Edit Demande (DRAFT only)",
     "details": "Demande Details",
     "declarationOfConsent": "Declaration of Consent",
@@ -162,5 +174,38 @@
     "allowPopUps": "Please allow pop-ups to download PDF",
     "noGuarantors": "No guarantors",
     "noGuarantees": "No guarantees"
+  },
+  "pdf": {
+    "title": "Financing Request",
+    "reference": "Reference",
+    "date": "Date",
+    "status": "Status",
+    "informationClient": "CLIENT INFORMATION",
+    "creditRequest": "CREDIT REQUEST",
+    "client": "Client",
+    "branch": "Branch",
+    "manager": "Manager",
+    "type": "Type",
+    "purpose": "Purpose",
+    "amount": "Amount",
+    "duration": "Duration",
+    "product": "Product",
+    "assetType": "Asset Type",
+    "monthlyCapacity": "Monthly Capacity",
+    "channel": "Channel",
+    "guarantorsTitle": "GUARANTORS",
+    "name": "Name",
+    "amplitudeId": "Amplitude ID",
+    "relationship": "Relationship",
+    "guaranteesTitle": "GUARANTEES / COLLATERAL",
+    "owner": "Owner",
+    "estimatedValue": "Estimated Value (MAD)",
+    "declarationOfConsent": "DECLARATION OF CONSENT",
+    "signatureSection": "Date & Signature",
+    "clientRepresentative": "Client / Representative",
+    "agencyDirector": "Agency Director",
+    "printDownloadPdf": "Print / Download PDF",
+    "close": "Close",
+    "months": "months"
   }
 }
