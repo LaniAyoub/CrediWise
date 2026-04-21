@@ -578,7 +578,7 @@ const DemandesPage = () => {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as "" | DemandeStatut)}
-          className="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-800 dark:text-surface-200 focus-ring transition-colors"
+          className="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-50 focus-ring transition-colors"
         >
           <option value="">{commonT('dossier.allStatuses')}</option>
           {getAllStatuses().map((status) => (
@@ -625,28 +625,28 @@ const DemandesPage = () => {
             return (
               <tr key={d.id} className="table-row-hover">
                 <td className="px-4 py-3 align-top">
-                  <p className="text-sm font-medium text-surface-800">{displayClient(d)}</p>
-                  <p className="text-xs text-surface-400">#{d.id}</p>
+                  <p className="text-sm font-medium text-surface-900 dark:text-surface-50">{displayClient(d)}</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">#{d.id}</p>
                 </td>
                 <td className="px-4 py-3 align-top">
                   <Badge variant={statusVariant(d.status)}>{commonT(getStatusKey(d.status))}</Badge>
                 </td>
-                <td className="px-4 py-3 align-top text-sm text-surface-600">
-                  <p className="font-medium text-surface-700">{formatAmount(d.requestedAmount)}</p>
-                  <p className="text-xs text-surface-400">
+                <td className="px-4 py-3 align-top text-sm text-surface-600 dark:text-surface-300">
+                  <p className="font-medium text-surface-900 dark:text-surface-50">{formatAmount(d.requestedAmount)}</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400">
                     {d.durationMonths ? `${d.durationMonths} months` : "—"}
                   </p>
-                  <p className="text-xs text-surface-500 mt-1 line-clamp-1">{d.loanPurpose || "—"}</p>
+                  <p className="text-xs text-surface-600 dark:text-surface-400 mt-1 line-clamp-1">{d.loanPurpose || "—"}</p>
                 </td>
                 <td className="px-4 py-3 align-top">
-                  <p className="text-sm text-surface-600">{d.managerName || "—"}</p>
-                  <p className="text-xs text-surface-400">{d.branchName || "—"}</p>
+                  <p className="text-sm text-surface-900 dark:text-surface-50 font-medium">{d.managerName || "—"}</p>
+                  <p className="text-xs text-surface-600 dark:text-surface-400">{d.branchName || "—"}</p>
                 </td>
                 <td className="px-4 py-3 align-top">
-                  <p className="text-xs text-surface-500">
+                  <p className="text-xs text-surface-600 dark:text-surface-300">
                     Created: {d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "—"}
                   </p>
-                  <p className="text-xs text-surface-400">
+                  <p className="text-xs text-surface-600 dark:text-surface-400">
                     Updated: {d.updatedAt ? new Date(d.updatedAt).toLocaleDateString() : "—"}
                   </p>
                 </td>
@@ -780,19 +780,19 @@ const DemandesPage = () => {
                 .map((row) => (
                   <div
                     key={row.label}
-                    className="flex justify-between gap-4 py-1.5 border-b border-surface-50"
+                    className="flex justify-between gap-4 py-1.5 border-b border-surface-200 dark:border-surface-700"
                   >
-                    <span className="text-surface-500 font-medium min-w-[150px]">{row.label}</span>
-                    <span className="text-surface-800 text-right break-all">{row.value}</span>
+                    <span className="text-surface-600 dark:text-surface-300 font-medium min-w-[150px]">{row.label}</span>
+                    <span className="text-surface-900 dark:text-surface-50 text-right break-all">{row.value}</span>
                   </div>
                 ))}
             </div>
 
             {/* Consent Text - Arabic Display */}
             {viewingDemande.consentText && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-xs font-semibold text-amber-800 uppercase mb-2">{t('modal.declarationOfConsent')}</p>
-                <div dir="rtl" className="text-xs text-surface-700 whitespace-pre-wrap leading-relaxed text-justify">
+              <div className="rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4">
+                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 uppercase mb-2">{t('modal.declarationOfConsent')}</p>
+                <div dir="rtl" className="text-xs text-surface-700 dark:text-surface-300 whitespace-pre-wrap leading-relaxed text-justify">
                   {viewingDemande.consentText}
                 </div>
               </div>
@@ -801,22 +801,22 @@ const DemandesPage = () => {
             {/* Guarantors Table */}
             {viewingDemande.guarantors && viewingDemande.guarantors.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-surface-800 mb-2">{t('modal.guarantors')}</p>
+                <p className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-2">{t('modal.guarantors')}</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="bg-surface-100 border-b border-surface-200">
-                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guarantorName')}</th>
-                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guarantorAmplitudeId')}</th>
-                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guarantorRelationship')}</th>
+                      <tr className="bg-surface-100 dark:bg-surface-700 border-b border-surface-200 dark:border-surface-600">
+                        <th className="px-3 py-2 text-left text-surface-700 dark:text-surface-300">{t('modal.guarantorName')}</th>
+                        <th className="px-3 py-2 text-left text-surface-700 dark:text-surface-300">{t('modal.guarantorAmplitudeId')}</th>
+                        <th className="px-3 py-2 text-left text-surface-700 dark:text-surface-300">{t('modal.guarantorRelationship')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {viewingDemande.guarantors.map((g, idx) => (
-                        <tr key={idx} className="border-b border-surface-100 hover:bg-surface-50">
-                          <td className="px-3 py-2 text-surface-800">{g.name || "—"}</td>
-                          <td className="px-3 py-2 text-surface-800">{g.amplitudeId || "—"}</td>
-                          <td className="px-3 py-2 text-surface-800">{g.clientRelationship || "—"}</td>
+                        <tr key={idx} className="border-b border-surface-100 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700/50">
+                          <td className="px-3 py-2 text-surface-900 dark:text-surface-50">{g.name || "—"}</td>
+                          <td className="px-3 py-2 text-surface-900 dark:text-surface-50">{g.amplitudeId || "—"}</td>
+                          <td className="px-3 py-2 text-surface-900 dark:text-surface-50">{g.clientRelationship || "—"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -828,22 +828,22 @@ const DemandesPage = () => {
             {/* Guarantees Table */}
             {viewingDemande.guarantees && viewingDemande.guarantees.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-surface-800 mb-2">{t('modal.guarantees')}</p>
+                <p className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-2">{t('modal.guarantees')}</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="bg-surface-100 border-b border-surface-200">
-                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guaranteeOwner')}</th>
-                        <th className="px-3 py-2 text-left text-surface-700">{t('modal.guaranteeType')}</th>
-                        <th className="px-3 py-2 text-right text-surface-700">{t('modal.guaranteeValue')}</th>
+                      <tr className="bg-surface-100 dark:bg-surface-700 border-b border-surface-200 dark:border-surface-600">
+                        <th className="px-3 py-2 text-left text-surface-700 dark:text-surface-300">{t('modal.guaranteeOwner')}</th>
+                        <th className="px-3 py-2 text-left text-surface-700 dark:text-surface-300">{t('modal.guaranteeType')}</th>
+                        <th className="px-3 py-2 text-right text-surface-700 dark:text-surface-300">{t('modal.guaranteeValue')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {viewingDemande.guarantees.map((g, idx) => (
-                        <tr key={idx} className="border-b border-surface-100 hover:bg-surface-50">
-                          <td className="px-3 py-2 text-surface-800">{g.owner || "—"}</td>
-                          <td className="px-3 py-2 text-surface-800">{g.type || "—"}</td>
-                          <td className="px-3 py-2 text-right text-surface-800">{Number(g.estimatedValue || 0).toLocaleString()} MAD</td>
+                        <tr key={idx} className="border-b border-surface-100 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-700/50">
+                          <td className="px-3 py-2 text-surface-900 dark:text-surface-50">{g.owner || "—"}</td>
+                          <td className="px-3 py-2 text-surface-900 dark:text-surface-50">{g.type || "—"}</td>
+                          <td className="px-3 py-2 text-right text-surface-900 dark:text-surface-50">{Number(g.estimatedValue || 0).toLocaleString()} MAD</td>
                         </tr>
                       ))}
                     </tbody>
