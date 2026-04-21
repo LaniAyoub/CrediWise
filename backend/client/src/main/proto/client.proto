@@ -39,21 +39,34 @@ message ClientResponse {
   // Contact
   string email = 16;
   string primary_phone = 17;
+  string secondary_phone = 18;
+
+  // Address
+  string address_street = 19;
+  string address_city = 20;
+  string address_postal = 21;
+  string address_country = 22;
+
+  // Account
+  string account_number = 23;
 
   // Resolved local labels
-  string segment = 18;
-  string account_type = 19;
-  string business_sector = 20;
-  string business_activity = 21;
+  string segment = 24;
+  string account_type = 25;
+  string business_sector = 26;
+  string business_activity = 27;
 
   // External refs
-  string branch_id = 22;
-  string assigned_manager_id = 23;
+  string branch_id = 28;
+  string assigned_manager_id = 29;
 
   // Scoring / lifecycle
-  string scoring = 24;
-  string cycle = 25;
-  string status = 26;
+  string scoring = 30;
+  string cycle = 31;
+  string status = 32;
+
+  // Risk level
+  string ifc_level_of_risk = 33;
 }
 
 message ClientCycleUpdateResponse {

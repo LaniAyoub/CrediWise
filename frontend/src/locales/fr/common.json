@@ -9,6 +9,7 @@
     "gestionnaires": "Gestionnaires",
     "clients": "Clients",
     "demandes": "Demandes",
+    "analyse": "Analyse",
     "profile": "Profil",
     "settings": "Paramètres",
     "logout": "Déconnexion"
@@ -92,5 +93,20 @@
     "networkError": "Erreur réseau",
     "tryAgain": "Réessayer",
     "goHome": "Aller à l'accueil"
+  },
+  "dossier": {
+    "allStatuses": "Tous les Statuts",
+    "status": {
+      "draft": "Brouillon",
+      "submitted": "Soumis",
+      "analyse": "En Analyse",
+      "check_before_committee": "Vérification Avant Comité",
+      "credit_risk_analysis": "Analyse de Risque Crédit",
+      "committee": "Comité",
+      "waiting_client_approval": "En Attente d'Approbation Client",
+      "ready_to_disburse": "Prêt à être Déboursé",
+      "disburse": "Déboursé",
+      "rejected": "Rejeté"
+    }
   }
 }

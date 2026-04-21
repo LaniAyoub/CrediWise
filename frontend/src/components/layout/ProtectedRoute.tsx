@@ -1,7 +1,6 @@
-import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context';
 import MainLayout from '@/components/layout/MainLayout';
 
 const ProtectedRoute = () => {

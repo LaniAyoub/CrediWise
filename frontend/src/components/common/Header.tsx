@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useState, useRef, useEffect } from 'react';
+import { useAuth } from '@/context';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -9,7 +9,7 @@ interface HeaderProps {
 }
 
 // Note: breadcrumb labels are translated dynamically now
-const getBreadcrumbLabel = (t: any, segment: string): string => {
+const getBreadcrumbLabel = (t: (key: string) => string, segment: string): string => {
   const labelMap: Record<string, string> = {
     dashboard: t('navigation.dashboard'),
     agences: t('navigation.agences'),
@@ -74,7 +74,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
               </svg>
             </span>
             {segments.map((seg, i) => (
-              <React.Fragment key={seg}>
+              <div key={seg} className="flex items-center gap-2">
                 <svg className="w-3.5 h-3.5 text-surface-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
@@ -85,7 +85,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
                 >
                   {getBreadcrumbLabel(t, seg)}
                 </span>
-              </React.Fragment>
+              </div>
             ))}
           </nav>
         </div>

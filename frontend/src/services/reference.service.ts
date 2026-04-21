@@ -1,8 +1,7 @@
 import api from "./api";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CLIENT_API_BASE_URL =
-  (import.meta as any).env.VITE_CLIENT_API_URL || "http://localhost:8082";
+  import.meta.env.VITE_CLIENT_API_URL || "http://localhost:8082";
 
 export interface ReferenceItem {
   id: number;

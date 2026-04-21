@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { Client } from "@/types/client.types";
-import type { Demande, GuarantorDto, GuaranteeDto } from "@/types/demande.types";
+import type { Demande } from "@/types/demande.types";
 import { useAuth } from "@/hooks/useAuth";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -179,7 +179,6 @@ const DemandeForm = ({
   };
 
   const watchApplicationChannel = watch("applicationChannel");
-  const watchApplicationChannelOther = watch("applicationChannelOther");
 
   const onFormSubmit = (data: DemandeFormData) => {
     // Process applicationChannel: if OTHER is selected, combine with the text input

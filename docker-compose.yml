@@ -65,7 +65,7 @@ services:
       - postgres-gestionnaire
       - postgres-client
       - postgres-nouvelle_demande
-      - postgres-analyse
+      - postgres-analyse  
 
 volumes:
   pgdata_gestionnaire:

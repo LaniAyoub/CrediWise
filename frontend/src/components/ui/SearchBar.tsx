@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface SearchBarProps {
@@ -15,15 +15,15 @@ const SearchBar = ({
   const { t } = useTranslation('common');
   const defaultPlaceholder = placeholder ?? t('common.searchPlaceholder');
   const [query, setQuery] = useState('');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const debouncedSearch = useCallback(
-    (() => {
-      let timer: ReturnType<typeof setTimeout>;
-      return (value: string) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => onSearch(value), debounceMs);
-      };
-    })(),
+    (value: string) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => onSearch(value), debounceMs);
+    },
     [onSearch, debounceMs]
   );
 

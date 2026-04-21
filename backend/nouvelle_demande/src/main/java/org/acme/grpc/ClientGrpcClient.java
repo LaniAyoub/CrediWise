@@ -7,6 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class ClientGrpcClient {
 
     @GrpcClient("client-service")
+
     ClientService clientService;
 
     public ClientResponse getClient(String id) {

@@ -1,7 +1,7 @@
-import React, { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import RoleGuard from './components/layout/RoleGuard';
 import { Toaster } from 'react-hot-toast';
@@ -13,6 +13,8 @@ const AgencesPage = lazy(() => import('./pages/agences/AgencesPage'));
 const GestionnairesPage = lazy(() => import('./pages/gestionnaires/GestionnairesPage'));
 const ClientsPage = lazy(() => import('./pages/clients/ClientsPage'));
 const DemandesPage = lazy(() => import('./pages/demandes/DemandesPage'));
+const DossierListPage = lazy(() => import('./pages/analyse/DossierListPage'));
+const DossierAnalysePage = lazy(() => import('./pages/analyse/DossierAnalysePage'));
 const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'));
 
 // Roles allowed to manage agences & gestionnaires
@@ -79,6 +81,8 @@ function App() {
               />
               <Route path="/clients" element={<ClientsPage />} />
               <Route path="/demandes" element={<DemandesPage />} />
+              <Route path="/analyse/dossiers" element={<DossierListPage />} />
+              <Route path="/analyse/dossiers/:dossierId" element={<DossierAnalysePage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

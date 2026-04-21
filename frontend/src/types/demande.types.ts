@@ -1,4 +1,14 @@
-export type DemandeStatut = "DRAFT" | "SUBMITTED" | "VALIDATED" | "REJECTED";
+export type DemandeStatut =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "ANALYSE"
+  | "CHECK_BEFORE_COMMITTEE"
+  | "CREDIT_RISK_ANALYSIS"
+  | "COMMITTEE"
+  | "WAITING_CLIENT_APPROVAL"
+  | "READY_TO_DISBURSE"
+  | "DISBURSE"
+  | "REJECTED";
 
 export interface GuarantorDto {
   id?: string;
@@ -86,4 +96,11 @@ export interface DemandeListParams {
   size?: number;
   clientId?: string;
   statut?: DemandeStatut;
+}
+
+export interface StartAnalysisResponse {
+  demandeId: number;
+  demandeStatus: DemandeStatut;
+  dossierId: number;
+  message: string;
 }

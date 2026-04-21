@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,9 +8,8 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
 import { referenceService, type ReferenceItem } from "@/services/reference.service";
-import {  
+import {
   isAtLeast18YearsOld,
-  isValidCIN,
   isValidTunisianPhone,
 } from "@/utils/validators";
 
@@ -534,7 +533,7 @@ const ClientForm = ({
 
   return (
     <form
-      onSubmit={handleSubmit(handleFormSubmit as any)}
+      onSubmit={handleSubmit(handleFormSubmit)}
       className="space-y-1"
     >
       {/* ── Type & Status ─────────────────────────────────────────── */}

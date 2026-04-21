@@ -4,6 +4,8 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.acme.dto.*;
@@ -102,6 +104,20 @@ public class DemandeResource {
     @Operation(summary = "Validate or reject a SUBMITTED demande")
     public DemandeResponse updateStatut(@PathParam("id") Long id, @Valid StatutUpdateRequest req) {
         return demandeService.updateStatut(id, req.getStatus());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // START ANALYSIS  (SUBMITTED → ANALYSE + create dossier, atomic transaction)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @POST
+    @Path("/{id}/start-analysis")
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "FRONT_OFFICE"})
+    @Operation(summary = "Start analysis: create dossier + update status to ANALYSE (atomic)")
+    public Response startAnalysis(@PathParam("id") Long id, @Context HttpHeaders headers) {
+        String authorizationHeader = headers.getHeaderString(HttpHeaders.AUTHORIZATION);
+        StartAnalysisResponse result = demandeService.startAnalysis(id, authorizationHeader);
+        return Response.ok(result).build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

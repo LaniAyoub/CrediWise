@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/context';
 import { useTranslation } from 'react-i18next';
 import { agenceService } from '@/services/agence.service';
 import { gestionnaireService } from '@/services/gestionnaire.service';
 import { clientService } from '@/services/client.service';
 import { demandeService } from '@/services/demande.service';
+import { getStatusKey } from '@/utils/statusMapping';
 import Card from '@/components/ui/Card';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
 import Button from '@/components/ui/Button';
@@ -62,15 +63,13 @@ const DashboardPage = () => {
   const totalClients = clients.length;
   const activeClients = clients.filter((c) => c.status === 'ACTIVE').length;
   const prospectClients = clients.filter((c) => c.status === 'PROSPECT').length;
-  const physicalClients = clients.filter((c) => c.clientType === 'PHYSICAL').length;
-  const legalClients = clients.filter((c) => c.clientType === 'LEGAL').length;
   const myClients = clients.filter((c) => c.assignedManagerId === user?.id);
 
   // ── Demande analytics ──────────────────────────────────────────────────────
   const totalDemandes = demandes.length;
   const draftDemandes = demandes.filter((d) => d.status === 'DRAFT').length;
   const submittedDemandes = demandes.filter((d) => d.status === 'SUBMITTED').length;
-  const validatedDemandes = demandes.filter((d) => d.status === 'VALIDATED').length;
+  const validatedDemandes = demandes.filter((d) => d.status === 'ANALYSE').length;
   const rejectedDemandes = demandes.filter((d) => d.status === 'REJECTED').length;
 
   // ── Admin analytics ───────────────────────────────────────────────────────
@@ -368,7 +367,7 @@ const DashboardPage = () => {
                   <div className="flex items-center gap-2 ml-2">
                     <span
                       className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${
-                        d.status === 'VALIDATED'
+                        d.status === 'ANALYSE'
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                           : d.status === 'SUBMITTED'
                             ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
@@ -377,7 +376,7 @@ const DashboardPage = () => {
                               : 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
                       }`}
                     >
-                      {d.status}
+                      {commonT(getStatusKey(d.status))}
                     </span>
                     <button
                       onClick={() => navigate(`/demandes/${d.id}`)}

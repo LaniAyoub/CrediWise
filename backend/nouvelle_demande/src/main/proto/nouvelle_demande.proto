@@ -1,0 +1,37 @@
+// Source proto file for NouvelleDemandeService gRPC
+// IMPORTANT: When this file changes, update the copy in backend/analyse/src/main/proto/nouvelle_demande.proto
+
+syntax = "proto3";
+
+package nouvelle_demande;
+
+option java_package = "org.acme.grpc";
+option java_outer_classname = "NouvelleDemandProto";
+option java_multiple_files = true;
+
+service NouvelleDemandeService {
+  rpc GetDemandeById (GetDemandeByIdRequest) returns (DemandeDetailResponse);
+}
+
+message GetDemandeByIdRequest {
+  int64 demande_id = 1;
+}
+
+message DemandeDetailResponse {
+  bool success = 1;
+  DemandeDetail data = 2;
+  string error_message = 3;  // if success=false
+}
+
+message DemandeDetail {
+  int64 id = 1;
+  string client_id = 2;                           // UUID as string
+  string loan_purpose = 3;                        // Section A
+  string requested_amount = 4;                    // as string (e.g., "50000.00")
+  int32 duration_months = 5;                      // Section A
+  string product_id = 6;                          // Section A
+  string product_name = 7;                        // Section A
+  string monthly_repayment_capacity = 8;          // as string
+  string status = 9;                              // DRAFT|SUBMITTED|ANALYSE|etc.
+  string created_at = 10;                         // ISO datetime string
+}

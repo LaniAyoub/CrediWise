@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDarkMode } from '@/hooks/useDarkMode';
 
@@ -22,19 +22,12 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
 export const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
   const { isDark, toggleDarkMode } = useDarkMode();
-  const [currentLanguage, setCurrentLanguage] = useState<Language>(
-    (i18n.language as Language) || 'en'
-  );
   const [isOpen, setIsOpen] = useState(false);
 
-  // Sync state with i18n changes
-  useEffect(() => {
-    setCurrentLanguage((i18n.language as Language) || 'en');
-  }, [i18n.language]);
+  const currentLanguage = (i18n.language as Language) || 'en';
 
   const handleLanguageChange = (language: Language) => {
     i18n.changeLanguage(language);
-    setCurrentLanguage(language);
     setIsOpen(false);
   };
 

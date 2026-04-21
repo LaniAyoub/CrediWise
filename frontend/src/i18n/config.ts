@@ -10,6 +10,7 @@ import enAgences from '../locales/en/agences.json' assert { type: 'json' };
 import enGestionnaires from '../locales/en/gestionnaires.json' assert { type: 'json' };
 import enClients from '../locales/en/clients.json' assert { type: 'json' };
 import enDemandes from '../locales/en/demandes.json' assert { type: 'json' };
+import enAnalyse from '../locales/en/analyse.json' assert { type: 'json' };
 
 import frCommon from '../locales/fr/common.json' assert { type: 'json' };
 import frAuth from '../locales/fr/auth.json' assert { type: 'json' };
@@ -18,6 +19,7 @@ import frAgences from '../locales/fr/agences.json' assert { type: 'json' };
 import frGestionnaires from '../locales/fr/gestionnaires.json' assert { type: 'json' };
 import frClients from '../locales/fr/clients.json' assert { type: 'json' };
 import frDemandes from '../locales/fr/demandes.json' assert { type: 'json' };
+import frAnalyse from '../locales/fr/analyse.json' assert { type: 'json' };
 
 const resources = {
   en: {
@@ -28,6 +30,7 @@ const resources = {
     gestionnaires: enGestionnaires,
     clients: enClients,
     demandes: enDemandes,
+    analyse: enAnalyse,
   },
   fr: {
     common: frCommon,
@@ -37,6 +40,7 @@ const resources = {
     gestionnaires: frGestionnaires,
     clients: frClients,
     demandes: frDemandes,
+    analyse: frAnalyse,
   },
 };
 
@@ -48,7 +52,7 @@ i18n
     resources,
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'auth', 'dashboard', 'agences', 'gestionnaires', 'clients', 'demandes'],
+    ns: ['common', 'auth', 'dashboard', 'agences', 'gestionnaires', 'clients', 'demandes', 'analyse'],
     interpolation: {
       escapeValue: false, // React already protects from XSS
     },

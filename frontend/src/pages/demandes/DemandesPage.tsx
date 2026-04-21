@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { clientService } from "@/services/client.service";
 import { demandeService } from "@/services/demande.service";
 import { useAuth } from "@/hooks/useAuth";
+import { getStatusKey, getAllStatuses } from "@/utils/statusMapping";
 import type { Client } from "@/types/client.types";
 import type {
   Demande,
@@ -29,7 +31,14 @@ const CAN_APPROVE_ROLES = ["SUPER_ADMIN", "HEAD_OFFICE_DM", "BRANCH_DM"];
 const statusVariant = (status: DemandeStatut): "warning" | "info" | "success" | "danger" => {
   if (status === "DRAFT") return "warning";
   if (status === "SUBMITTED") return "info";
-  if (status === "VALIDATED") return "success";
+  if (status === "ANALYSE") return "info";
+  if (status === "CHECK_BEFORE_COMMITTEE") return "info";
+  if (status === "CREDIT_RISK_ANALYSIS") return "info";
+  if (status === "COMMITTEE") return "warning";
+  if (status === "WAITING_CLIENT_APPROVAL") return "warning";
+  if (status === "READY_TO_DISBURSE") return "success";
+  if (status === "DISBURSE") return "success";
+  if (status === "REJECTED") return "danger";
   return "danger";
 };
 
@@ -300,6 +309,8 @@ const formatAmount = (value?: number) =>
 
 const DemandesPage = () => {
   const { t } = useTranslation('demandes');
+  const commonT = useTranslation('common').t;
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [demandes, setDemandes] = useState<Demande[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -313,6 +324,7 @@ const DemandesPage = () => {
   const [deletingDemande, setDeletingDemande] = useState<Demande | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [analyzingDemandeId, setAnalyzingDemandeId] = useState<number | null>(null);
 
   const fetchDemandes = async () => {
     setLoading(true);
@@ -359,7 +371,7 @@ const DemandesPage = () => {
     const total = demandes.length;
     const draft = demandes.filter((d) => d.status === "DRAFT").length;
     const submitted = demandes.filter((d) => d.status === "SUBMITTED").length;
-    const validated = demandes.filter((d) => d.status === "VALIDATED").length;
+    const validated = demandes.filter((d) => d.status === "ANALYSE").length;
     return { total, draft, submitted, validated };
   }, [demandes]);
 
@@ -468,10 +480,10 @@ const DemandesPage = () => {
     }
   };
 
-  const handleDecision = async (demande: Demande, status: "VALIDATED" | "REJECTED") => {
+  const handleDecision = async (demande: Demande, status: "ANALYSE" | "REJECTED") => {
     try {
       await demandeService.updateStatus(demande.id, status);
-      toast.success(status === "VALIDATED" ? t('messages.validated') : t('messages.rejected'));
+      toast.success(status === "ANALYSE" ? t('messages.validated') : t('messages.rejected'));
       fetchDemandes();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -492,6 +504,41 @@ const DemandesPage = () => {
       toast.error(error.response?.data?.message || t('messages.loadError'));
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleStartAnalysis = async (demande: Demande) => {
+    // Only allow if status is SUBMITTED
+    if (demande.status !== 'SUBMITTED') {
+      toast.error('Can only start analysis from SUBMITTED status');
+      return;
+    }
+
+    setAnalyzingDemandeId(demande.id);
+    try {
+      // Unified API call: creates dossier + updates status atomically
+      const result = await demandeService.startAnalysis(demande.id);
+
+      // Optimistically update the local state with new status
+      setDemandes(prevDemandes =>
+        prevDemandes.map(d =>
+          d.id === demande.id ? { ...d, status: 'ANALYSE' } : d
+        )
+      );
+
+      toast.success(result.data.message || 'Analysis started successfully');
+
+      // Navigate to the newly created dossier
+      setTimeout(() => {
+        navigate(`/analyse/dossiers/${result.data.dossierId}`);
+      }, 1000);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      toast.error(error.response?.data?.message || 'Failed to start analysis');
+      // Refetch to ensure we have correct state if optimistic update was wrong
+      fetchDemandes();
+    } finally {
+      setAnalyzingDemandeId(null);
     }
   };
 
@@ -533,11 +580,12 @@ const DemandesPage = () => {
           onChange={(e) => setStatusFilter(e.target.value as "" | DemandeStatut)}
           className="rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-800 dark:text-surface-200 focus-ring transition-colors"
         >
-          <option value="">{t('statusOptions.allStatuses')}</option>
-          <option value="DRAFT">{t('statusOptions.draft')}</option>
-          <option value="SUBMITTED">{t('statusOptions.submitted')}</option>
-          <option value="VALIDATED">{t('statusOptions.validated')}</option>
-          <option value="REJECTED">{t('statusOptions.rejected')}</option>
+          <option value="">{commonT('dossier.allStatuses')}</option>
+          {getAllStatuses().map((status) => (
+            <option key={status} value={status}>
+              {commonT(getStatusKey(status))}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -547,15 +595,15 @@ const DemandesPage = () => {
           <p className="text-xl font-bold text-surface-900 dark:text-surface-50 mt-2">{demandeStats.total}</p>
         </div>
         <div className="rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 transition-colors">
-          <p className="text-label text-amber-700 dark:text-amber-300">{t('status.draft')}</p>
+          <p className="text-label text-amber-700 dark:text-amber-300">{commonT(getStatusKey('DRAFT'))}</p>
           <p className="text-xl font-bold text-amber-900 dark:text-amber-200 mt-2">{demandeStats.draft}</p>
         </div>
         <div className="rounded-xl border border-brand-200 dark:border-brand-900/40 bg-brand-50 dark:bg-brand-900/20 px-4 py-3 transition-colors">
-          <p className="text-label text-brand-700 dark:text-brand-300">{t('status.submitted')}</p>
+          <p className="text-label text-brand-700 dark:text-brand-300">{commonT(getStatusKey('SUBMITTED'))}</p>
           <p className="text-xl font-bold text-brand-900 dark:text-brand-200 mt-2">{demandeStats.submitted}</p>
         </div>
         <div className="rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 transition-colors">
-          <p className="text-label text-emerald-700 dark:text-emerald-300">{t('status.validated')}</p>
+          <p className="text-label text-emerald-700 dark:text-emerald-300">{commonT(getStatusKey('ANALYSE'))}</p>
           <p className="text-xl font-bold text-emerald-900 dark:text-emerald-200 mt-2">{demandeStats.validated}</p>
         </div>
       </div>
@@ -581,7 +629,7 @@ const DemandesPage = () => {
                   <p className="text-xs text-surface-400">#{d.id}</p>
                 </td>
                 <td className="px-4 py-3 align-top">
-                  <Badge variant={statusVariant(d.status)}>{d.status}</Badge>
+                  <Badge variant={statusVariant(d.status)}>{commonT(getStatusKey(d.status))}</Badge>
                 </td>
                 <td className="px-4 py-3 align-top text-sm text-surface-600">
                   <p className="font-medium text-surface-700">{formatAmount(d.requestedAmount)}</p>
@@ -619,13 +667,33 @@ const DemandesPage = () => {
                     )}
                     {canDecideThisDemande && (
                       <>
-                        <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => handleDecision(d, "VALIDATED")}>
+                        <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => handleDecision(d, "ANALYSE")}>
                           {t('buttons.approve')}
                         </Button>
                         <Button variant="outline" size="sm" className="min-w-[78px]" onClick={() => handleDecision(d, "REJECTED")}>
                           {t('buttons.reject')}
                         </Button>
                       </>
+                    )}
+                    {d.status === "SUBMITTED" && canCreate && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-w-[120px] text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => handleStartAnalysis(d)}
+                        disabled={analyzingDemandeId === d.id}
+                      >
+                        {analyzingDemandeId === d.id ? (
+                          <>
+                            <svg className="w-4 h-4 animate-spin mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Starting...
+                          </>
+                        ) : (
+                          'Start Analysis'
+                        )}
+                      </Button>
                     )}
                     {canDeleteThisDemande && (
                       <Button

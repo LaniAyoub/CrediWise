@@ -4,6 +4,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import org.acme.client.AnalyseServiceClient;
 import org.acme.dto.*;
 import org.acme.entity.Demande;
 import org.acme.entity.Guarantee;
@@ -14,6 +17,7 @@ import org.acme.grpc.ClientGrpcClient;
 import org.acme.grpc.GestionnaireGrpcClient;
 import org.acme.repository.DemandeRepository;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import io.quarkus.logging.Log;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -33,6 +37,9 @@ public class DemandeService {
 
     @Inject
     ClientGrpcClient clientGrpcClient;
+
+    @Inject
+    AnalyseServiceClient analyseServiceClient;
 
     @Inject
     JsonWebToken jwt;
@@ -160,7 +167,7 @@ public class DemandeService {
         validateTransition(demande.status, newStatut);
         demande.status = newStatut;
 
-        if (previousStatut == DemandeStatut.SUBMITTED && newStatut == DemandeStatut.VALIDATED) {
+        if (previousStatut == DemandeStatut.SUBMITTED && newStatut == DemandeStatut.ANALYSE) {
             boolean updated = clientGrpcClient.incrementClientCycle(demande.clientId.toString());
             if (!updated) {
                 throw new BadRequestException("Failed to increment client cycle for client: " + demande.clientId);
@@ -172,6 +179,51 @@ public class DemandeService {
     @Transactional
     public DemandeResponse submit(Long id) {
         return updateStatut(id, DemandeStatut.SUBMITTED);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // START ANALYSIS (atomic: create dossier + update status SUBMITTED → ANALYSE)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Transactional
+    public StartAnalysisResponse startAnalysis(Long id, String authorizationHeader) {
+        // 1. Load demande
+        Demande demande = demandeRepository.findByIdOptional(id)
+                .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
+
+        // 2. Validate status is SUBMITTED
+        if (demande.status != DemandeStatut.SUBMITTED) {
+            throw new BadRequestException("Can only start analysis from SUBMITTED status, current: " + demande.status);
+        }
+
+        // 3. Create analysis dossier (will fail if analyse service is down)
+        // IMPORTANT: Pass ANALYSE status, not SUBMITTED — dossier status must match demande status
+        String createdAtStr = demande.createdAt != null
+                ? demande.createdAt.toString()
+                : null;
+        Long dossierId = analyseServiceClient.createDossier(
+                id,
+                demande.clientId.toString(),
+                DemandeStatut.ANALYSE.toString(),
+                createdAtStr,
+                authorizationHeader
+        );
+
+        Log.info("Created analysis dossier " + dossierId + " for demande " + id);
+
+        // 4. Update demande status to ANALYSE (atomic with dossier creation)
+        // Entity is managed, change will be persisted automatically by transaction
+        demande.status = DemandeStatut.ANALYSE;
+
+        Log.info("Updated demande " + id + " status to ANALYSE");
+
+        // 5. Return response with both demande and dossier info
+        return new StartAnalysisResponse(
+                id,
+                DemandeStatut.ANALYSE.toString(),
+                dossierId,
+                "Analysis started: dossier " + dossierId + " created and demande status updated to ANALYSE"
+        );
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -220,7 +272,14 @@ public class DemandeService {
     private void validateTransition(DemandeStatut current, DemandeStatut next) {
         boolean valid = switch (current) {
             case DRAFT -> next == DemandeStatut.SUBMITTED;
-            case SUBMITTED -> next == DemandeStatut.VALIDATED || next == DemandeStatut.REJECTED;
+            case SUBMITTED -> next == DemandeStatut.ANALYSE || next == DemandeStatut.REJECTED;
+            case ANALYSE -> next == DemandeStatut.CHECK_BEFORE_COMMITTEE || next == DemandeStatut.REJECTED;
+            case CHECK_BEFORE_COMMITTEE -> next == DemandeStatut.CREDIT_RISK_ANALYSIS || next == DemandeStatut.REJECTED;
+            case CREDIT_RISK_ANALYSIS -> next == DemandeStatut.COMMITTEE || next == DemandeStatut.REJECTED;
+            case COMMITTEE -> next == DemandeStatut.WAITING_CLIENT_APPROVAL || next == DemandeStatut.REJECTED;
+            case WAITING_CLIENT_APPROVAL -> next == DemandeStatut.READY_TO_DISBURSE || next == DemandeStatut.REJECTED;
+            case READY_TO_DISBURSE -> next == DemandeStatut.DISBURSE || next == DemandeStatut.REJECTED;
+            case DISBURSE -> next == DemandeStatut.REJECTED;
             default -> false;
         };
         if (!valid) {

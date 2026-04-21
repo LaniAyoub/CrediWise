@@ -5,6 +5,7 @@ import type {
   DemandeListParams,
   DemandeStatut,
   DemandeUpdateRequest,
+  StartAnalysisResponse,
 } from "@/types/demande.types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,10 +32,18 @@ export const demandeService = {
     return api.post<Demande>(`/api/demandes/${id}/submit`, {}, { baseURL: DEMANDE_API_BASE_URL });
   },
 
-  updateStatus: (id: number, status: Extract<DemandeStatut, "VALIDATED" | "REJECTED">) => {
+  updateStatus: (id: number, status: Extract<DemandeStatut, "ANALYSE" | "REJECTED">) => {
     return api.patch<Demande>(
       `/api/demandes/${id}/statut`,
       { status },
+      { baseURL: DEMANDE_API_BASE_URL }
+    );
+  },
+
+  startAnalysis: (id: number) => {
+    return api.post<StartAnalysisResponse>(
+      `/api/demandes/${id}/start-analysis`,
+      {},
       { baseURL: DEMANDE_API_BASE_URL }
     );
   },

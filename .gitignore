@@ -11,3 +11,22 @@ Thumbs.db
 
 # Root-level artifacts
 package-lock.json
+
+# Claude Code personal config
+CLAUDE.local.md
+.claude/settings.local.json
+
+# JWT keys — NEVER commit these
+backend/gestionnaire/privateKey.pem
+backend/gestionnaire/publicKey.pem
+*.pem
+
+# Environment files
+.env
+.env.local
+!.env.example
+
+# Build artifacts
+backend/*/target/
+frontend/dist/
+frontend/.vite/

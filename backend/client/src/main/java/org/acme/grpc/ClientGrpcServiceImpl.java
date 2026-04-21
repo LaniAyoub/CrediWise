@@ -53,6 +53,12 @@ public class ClientGrpcServiceImpl implements ClientService {
                     .setPrincipalInterlocutor(safe(c.getPrincipalInterlocutor()))
                     .setEmail(safe(c.getEmail()))
                     .setPrimaryPhone(safe(c.getPrimaryPhone()))
+                    .setSecondaryPhone(safe(c.getSecondaryPhone()))
+                    .setAddressStreet(safe(c.getAddressStreet()))
+                    .setAddressCity(safe(c.getAddressCity()))
+                    .setAddressPostal(safe(c.getAddressPostal()))
+                    .setAddressCountry(safe(c.getAddressCountry()))
+                    .setAccountNumber(safe(c.getAccountNumber()))
                     .setSegment(c.getSegment() != null ? safe(c.getSegment().getLibelle()) : "")
                     .setAccountType(c.getAccountType() != null ? safe(c.getAccountType().getLibelle()) : "")
                     .setBusinessSector(c.getSecteurActivite() != null ? safe(c.getSecteurActivite().getLibelle()) : "")
@@ -60,7 +66,8 @@ public class ClientGrpcServiceImpl implements ClientService {
                     .setBranchId(safe(c.getAgenceId()))
                     .setAssignedManagerId(c.getAssignedManagerId() != null ? c.getAssignedManagerId().toString() : "")
                     .setScoring(safe(c.getScoring()))
-                    .setCycle(safe(c.getCycle()));
+                    .setCycle(safe(c.getCycle()))
+                    .setIfcLevelOfRisk(c.getRiskLevel() != null ? safe(c.getRiskLevel().getIfcLevelOfRisk()) : "");
 
             return b.build();
         });
