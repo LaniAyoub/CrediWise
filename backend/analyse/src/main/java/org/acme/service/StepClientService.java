@@ -87,7 +87,7 @@ public class StepClientService {
         }
 
         // Build response
-        return buildResponse(clientData, agenceData, historique, warningMessage, false, null, null, null, managerData, dossier);
+        return buildResponse(clientData, agenceData, historique, warningMessage, false, null, null, null, managerData, dossier, Optional.empty());
     }
 
     /**
@@ -138,6 +138,14 @@ public class StepClientService {
             Log.warn("Failed to fetch manager data: " + e.getMessage());
         }
 
+        // Fetch confirming gestionnaire data (OPTIONAL)
+        Optional<GestionnaireResponse> confirmingGestionnaireData = Optional.empty();
+        try {
+            confirmingGestionnaireData = gestionnaireDataClient.fetchGestionnaire(callerGestionnaireId);
+        } catch (Exception e) {
+            Log.warn("Failed to fetch confirming gestionnaire data: " + e.getMessage());
+        }
+
         LocalDateTime now = LocalDateTime.now();
 
         // Create or update StepClient
@@ -182,6 +190,7 @@ public class StepClientService {
         // Mark as complete
         stepClient.isComplete = true;
         stepClient.confirmedBy = callerGestionnaireId;
+        stepClient.confirmedByName = buildManagerName(confirmingGestionnaireData);
         stepClient.confirmedAt = now;
         stepClient.dataFetchedAt = now;
         stepClient.warningMessage = warningMessage;
@@ -198,7 +207,7 @@ public class StepClientService {
         dossier.updatedAt = now;
         // Entity is managed, changes will be persisted automatically
 
-        return buildResponse(clientData, agenceData, historique, warningMessage, true, callerGestionnaireId, stepClient.confirmedAt, now, managerData, dossier);
+        return buildResponse(clientData, agenceData, historique, warningMessage, true, callerGestionnaireId, stepClient.confirmedAt, now, managerData, dossier, confirmingGestionnaireData);
     }
 
     /**
@@ -322,7 +331,7 @@ public class StepClientService {
                                               List<CreditHistoriqueItem> historique, String warningMessage,
                                               Boolean isComplete, UUID confirmedBy, LocalDateTime confirmedAt,
                                               LocalDateTime dataFetchedAt, Optional<GestionnaireResponse> managerData,
-                                              AnalyseDossier dossier) {
+                                              AnalyseDossier dossier, Optional<GestionnaireResponse> confirmingGestionnaireData) {
         return new StepClientResponse(
             java.util.UUID.fromString(clientData.getId()),
             clientData.getClientType(),
@@ -378,6 +387,7 @@ public class StepClientService {
             (int) historique.stream().filter(h -> "REJECTED".equals(h.status())).count(),
             isComplete,
             confirmedBy,
+            buildManagerName(confirmingGestionnaireData),
             confirmedAt,
             dataFetchedAt,
             agenceData.isPresent(),
@@ -447,6 +457,7 @@ public class StepClientService {
             entity.nombreDemandesRejetees,
             entity.isComplete,
             entity.confirmedBy,
+            entity.confirmedByName,
             entity.confirmedAt,
             entity.dataFetchedAt,
             entity.agenceDataAvailable,

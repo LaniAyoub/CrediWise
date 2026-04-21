@@ -169,7 +169,7 @@ const StepClientView: React.FC<StepClientViewProps> = ({ data, onConfirmer, isCo
 
         {/* Assigned Manager Name */}
         <div className="border-t border-surface-200 dark:border-surface-700 pt-4 mb-4">
-          <p className="text-label text-surface-600 dark:text-surface-400 mb-1">{t('analyse:common.status') === 'analyse:common.status' ? 'Assigned Manager' : t('analyse:common.status')}</p>
+          <p className="text-label text-surface-600 dark:text-surface-400 mb-1">Assigned Manager</p>
           <p className="text-body text-surface-900 dark:text-surface-50">{data.assignedManagerName || '—'}</p>
         </div>
 
@@ -188,21 +188,24 @@ const StepClientView: React.FC<StepClientViewProps> = ({ data, onConfirmer, isCo
           </p>
         </div>
 
-        {/* Location Input - Only show when not complete */}
-        {!data.isComplete && (
-          <div className="border-t border-surface-200 dark:border-surface-700 pt-4">
-            <label className="block text-label text-surface-600 dark:text-surface-400 mb-2">
-              Location
-            </label>
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Enter location or address for this analysis..."
-              className="w-full px-3 py-2 border border-surface-300 dark:border-surface-600 rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
-        )}
+        {/* Location Input */}
+        <div className="border-t border-surface-200 dark:border-surface-700 pt-4">
+          <label className="block text-label text-surface-600 dark:text-surface-400 mb-2">
+            Location
+          </label>
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            disabled={data.isComplete}
+            placeholder="Enter location or address for this analysis..."
+            className={`w-full px-3 py-2 border rounded-lg text-surface-900 dark:text-surface-50 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 ${
+              data.isComplete
+                ? 'border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 cursor-not-allowed opacity-60'
+                : 'border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-700 focus:ring-emerald-500'
+            }`}
+          />
+        </div>
       </div>
 
       {/* Credit History Card */}
@@ -274,30 +277,31 @@ const StepClientView: React.FC<StepClientViewProps> = ({ data, onConfirmer, isCo
 
       {/* STATUS & AUDIT PANEL */}
       <div className="space-y-4">
-        {data.isComplete && (
-          <div className={`border-l-4 p-4 rounded-lg ${
-            location !== (data.location || '')
-              ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500'
-              : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500'
-          }`}>
-            <p className={`text-sm font-medium ${
-              location !== (data.location || '')
-                ? 'text-amber-700 dark:text-amber-300'
-                : 'text-emerald-700 dark:text-emerald-300'
-            }`}>
-              {location !== (data.location || '')
-                ? <>⚠️ {t('common.modified')}</>
-                : <>✓ {t('common.confirmed')}</>
-              }
+        {/* Status Badge - Only show if complete AND has changes */}
+        {data.isComplete && location !== (data.location || '') && (
+          <div className="border-l-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border-amber-500">
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+              ⚠️ {t('common.modified')}
             </p>
           </div>
         )}
 
-        {/* Audit Panel */}
-        <AuditMetadataPanel
-          confirmedAt={data.confirmedAt}
-          confirmedBy={data.confirmedBy}
-        />
+        {/* Status Badge - Show confirmed if complete AND no changes */}
+        {data.isComplete && location === (data.location || '') && (data.confirmedAt || data.confirmedBy) && (
+          <div className="border-l-4 p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500">
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+              ✓ {t('common.confirmed')}
+            </p>
+          </div>
+        )}
+
+        {/* Audit Panel - Only show if complete */}
+        {data.isComplete && (data.confirmedAt || data.confirmedByName) && (
+          <AuditMetadataPanel
+            confirmedAt={data.confirmedAt}
+            confirmedByName={data.confirmedByName}
+          />
+        )}
 
         {/* Action Buttons */}
         {!data.isComplete && (

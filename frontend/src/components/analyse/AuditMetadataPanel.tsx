@@ -3,14 +3,14 @@ import { useTranslation } from 'react-i18next';
 
 interface AuditMetadataPanelProps {
   confirmedAt?: string | null;
-  confirmedBy?: string | null;
+  confirmedByName?: string | null;
   lastEditedAt?: string | null;
   lastEditedBy?: string | null;
 }
 
 const AuditMetadataPanel: React.FC<AuditMetadataPanelProps> = ({
   confirmedAt,
-  confirmedBy,
+  confirmedByName,
   lastEditedAt,
   lastEditedBy,
 }) => {
@@ -31,7 +31,7 @@ const AuditMetadataPanel: React.FC<AuditMetadataPanelProps> = ({
     }
   };
 
-  const hasConfirmedData = confirmedAt || confirmedBy;
+  const hasConfirmedData = confirmedAt || confirmedByName;
   const hasEditData = lastEditedAt || lastEditedBy;
 
   if (!hasConfirmedData && !hasEditData) {
@@ -54,9 +54,9 @@ const AuditMetadataPanel: React.FC<AuditMetadataPanelProps> = ({
               <span className="font-medium">{t('common.confirmedAt')}:</span>{' '}
               {formatDateTime(confirmedAt) || t('common.notYetConfirmed')}
             </p>
-            {confirmedBy && (
+            {confirmedByName && (
               <p className="text-surface-600 dark:text-surface-400 mt-1">
-                <span className="font-medium">{t('common.confirmedBy')}:</span> {confirmedBy}
+                <span className="font-medium">{t('common.confirmedBy')}:</span> {confirmedByName}
               </p>
             )}
           </div>

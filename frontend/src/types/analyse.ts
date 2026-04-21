@@ -89,6 +89,7 @@ export interface StepClientData {
   // Metadata
   isComplete: boolean;
   confirmedBy: string | null;
+  confirmedByName: string | null;
   confirmedAt: string | null;
   dataFetchedAt: string | null;
   agenceDataAvailable: boolean;
@@ -173,6 +174,7 @@ export interface StepObjetCreditData {
   // Metadata:
   isComplete: boolean;
   confirmedBy: string | null;
+  confirmedByName: string | null;
   confirmedAt: string | null;
   dataFetchedAt: string | null;
 

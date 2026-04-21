@@ -190,6 +190,9 @@ public record StepClientResponse(
     @JsonProperty("confirmedBy")
     UUID confirmedBy,
 
+    @JsonProperty("confirmedByName")
+    String confirmedByName,
+
     @JsonProperty("confirmedAt")
     LocalDateTime confirmedAt,
 

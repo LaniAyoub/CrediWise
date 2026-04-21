@@ -68,6 +68,9 @@ public record StepCreditResponse(
     @JsonProperty("confirmedBy")
     UUID confirmedBy,
 
+    @JsonProperty("confirmedByName")
+    String confirmedByName,
+
     @JsonProperty("confirmedAt")
     LocalDateTime confirmedAt,
 

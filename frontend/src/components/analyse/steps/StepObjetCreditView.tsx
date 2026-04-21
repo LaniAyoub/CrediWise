@@ -366,31 +366,31 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
 
       {/* STATUS BADGE & ACTIONS */}
       <div className="space-y-4">
-        {isComplete && (
-          <div className={`border-l-4 p-4 rounded-lg ${
-            isDirty
-              ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500'
-              : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500'
-          }`}>
-            <p className={`text-sm font-medium ${
-              isDirty
-                ? 'text-amber-700 dark:text-amber-300'
-                : 'text-emerald-700 dark:text-emerald-300'
-            }`}>
-              {isDirty ? (
-                <>⚠️ {t('common.modified')}</>
-              ) : (
-                <>✓ {t('common.confirmed')}</>
-              )}
+        {/* Status Badge - Only show if complete AND has changes */}
+        {isComplete && isDirty && (
+          <div className="border-l-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border-amber-500">
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+              ⚠️ {t('common.modified')}
             </p>
           </div>
         )}
 
-        {/* Audit Panel */}
-        <AuditMetadataPanel
-          confirmedAt={confirmedAt}
-          confirmedBy={initialData.confirmedBy}
-        />
+        {/* Status Badge - Show confirmed if complete AND no changes */}
+        {isComplete && !isDirty && (confirmedAt || initialData.confirmedBy) && (
+          <div className="border-l-4 p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500">
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+              ✓ {t('common.confirmed')}
+            </p>
+          </div>
+        )}
+
+        {/* Audit Panel - Only show if complete */}
+        {isComplete && (confirmedAt || initialData.confirmedByName) && (
+          <AuditMetadataPanel
+            confirmedAt={confirmedAt}
+            confirmedByName={initialData.confirmedByName}
+          />
+        )}
 
         {/* Action Buttons */}
         {!isComplete ? (
