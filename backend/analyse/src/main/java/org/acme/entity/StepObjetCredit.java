@@ -110,6 +110,9 @@ public class StepObjetCredit extends PanacheEntity {
     @Column(name = "confirmed_by", columnDefinition = "uuid")
     public UUID confirmedBy;
 
+    @Column(name = "confirmed_by_name", length = 200)
+    public String confirmedByName;
+
     @Column(name = "confirmed_at")
     public LocalDateTime confirmedAt;
 

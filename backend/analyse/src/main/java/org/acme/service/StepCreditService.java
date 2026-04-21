@@ -11,7 +11,9 @@ import org.acme.entity.StepDépenseProjet;
 import org.acme.entity.StepFinancementAutre;
 import org.acme.entity.enums.DossierStatus;
 import org.acme.exception.ServiceUnavailableException;
+import org.acme.grpc.GestionnaireResponse;
 import org.acme.grpc.NouvelleDemandeDataClient;
+import org.acme.grpc.GestionnaireDataClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,6 +31,9 @@ public class StepCreditService {
 
     @Inject
     NouvelleDemandeDataClient nouvelleDemandeDataClient;
+
+    @Inject
+    GestionnaireDataClient gestionnaireDataClient;
 
     /**
      * Preview live Section A data before confirmation.
@@ -60,6 +65,7 @@ public class StepCreditService {
             null,
             null,
             null,
+            null,
             dossier,
             null
         );
@@ -86,6 +92,14 @@ public class StepCreditService {
 
         // Fetch demande data for Section A
         org.acme.grpc.DemandeDetail sectionAData = nouvelleDemandeDataClient.fetchDemandeById(dossier.demandeId);
+
+        // Fetch confirming gestionnaire data (OPTIONAL)
+        Optional<GestionnaireResponse> confirmingGestionnaireData = Optional.empty();
+        try {
+            confirmingGestionnaireData = gestionnaireDataClient.fetchGestionnaire(callerGestionnaireId);
+        } catch (Exception e) {
+            Log.warn("Failed to fetch confirming gestionnaire data: " + e.getMessage());
+        }
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -143,6 +157,7 @@ public class StepCreditService {
         // Mark as complete
         stepCredit.isComplete = true;
         stepCredit.confirmedBy = callerGestionnaireId;
+        stepCredit.confirmedByName = buildManagerName(confirmingGestionnaireData);
         stepCredit.confirmedAt = now;
         stepCredit.dataFetchedAt = now;
 
@@ -163,6 +178,7 @@ public class StepCreditService {
             stepCredit.financementAutre,
             true,
             callerGestionnaireId,
+            stepCredit.confirmedByName,
             stepCredit.confirmedAt,
             now,
             dossier,
@@ -221,6 +237,7 @@ public class StepCreditService {
         List<StepFinancementAutre> financementAutre,
         Boolean isComplete,
         UUID confirmedBy,
+        String confirmedByName,
         LocalDateTime confirmedAt,
         LocalDateTime dataFetchedAt,
         AnalyseDossier dossier,
@@ -272,6 +289,7 @@ public class StepCreditService {
             financementItems,
             isComplete,
             confirmedBy,
+            confirmedByName,
             confirmedAt,
             dataFetchedAt,
             dossier.id,
@@ -317,6 +335,7 @@ public class StepCreditService {
             financementItems,
             entity.isComplete,
             entity.confirmedBy,
+            entity.confirmedByName,
             entity.confirmedAt,
             entity.dataFetchedAt,
             dossier.id,
@@ -324,6 +343,14 @@ public class StepCreditService {
             dossier.status.toString(),
             dossier.demandeCreatedAt
         );
+    }
+
+    private String buildManagerName(Optional<GestionnaireResponse> managerData) {
+        if (managerData.isEmpty()) {
+            return null;
+        }
+        GestionnaireResponse mgr = managerData.get();
+        return mgr.getFirstName() + " " + mgr.getLastName();
     }
 
     /**
