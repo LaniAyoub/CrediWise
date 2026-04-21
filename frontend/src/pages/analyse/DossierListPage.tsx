@@ -89,8 +89,8 @@ const DossierListPage = () => {
               onClick={() => navigate(`/analyse/dossiers/${dossier.id}`)}
               className="hover:bg-surface-50 dark:hover:bg-surface-700/30 cursor-pointer transition-colors"
             >
-              <td className="px-4 py-3 text-body">#{dossier.demandeId}</td>
-              <td className="px-4 py-3 text-body text-surface-600 dark:text-surface-400 font-mono text-xs">
+              <td className="px-4 py-3 text-body font-medium">#{dossier.demandeId}</td>
+              <td className="px-4 py-3 text-body font-medium text-surface-900 dark:text-surface-50">
                 {dossier.clientId.slice(0, 8)}...
               </td>
               <td className="px-4 py-3">
