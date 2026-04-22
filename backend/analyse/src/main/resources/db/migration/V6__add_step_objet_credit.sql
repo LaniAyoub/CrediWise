@@ -2,9 +2,12 @@
 -- Step 2: Credit Object (Objet du Crédit) tables
 -- ============================================================
 
+-- Create sequence for step_objet_credit (required by Hibernate)
+CREATE SEQUENCE IF NOT EXISTS step_objet_credit_seq START WITH 1 INCREMENT BY 50;
+
 -- Main Step 2 data: Section A snapshot + balance tracking
 CREATE TABLE IF NOT EXISTS step_objet_credit (
-  id BIGSERIAL PRIMARY KEY,
+  id BIGINT PRIMARY KEY DEFAULT nextval('step_objet_credit_seq'),
   dossier_id BIGINT NOT NULL UNIQUE REFERENCES analyse_dossier(id) ON DELETE CASCADE,
 
   -- Section A: Read-only snapshot from demande
@@ -38,9 +41,12 @@ CREATE TABLE IF NOT EXISTS step_objet_credit (
 CREATE INDEX idx_step_objet_credit_dossier_id ON step_objet_credit(dossier_id);
 CREATE INDEX idx_step_objet_credit_confirmed_at ON step_objet_credit(confirmed_at);
 
+-- Create sequence for step_depense_projet
+CREATE SEQUENCE IF NOT EXISTS step_depense_projet_seq START WITH 1 INCREMENT BY 50;
+
 -- Section B: Project expenses (min 1 required)
 CREATE TABLE IF NOT EXISTS step_depense_projet (
-  id BIGSERIAL PRIMARY KEY,
+  id BIGINT PRIMARY KEY DEFAULT nextval('step_depense_projet_seq'),
   step_objet_credit_id BIGINT NOT NULL REFERENCES step_objet_credit(id) ON DELETE CASCADE,
 
   categorie VARCHAR(50) NOT NULL,  -- ENUM: TERRAIN_BATIMENT, EQUIPEMENT, etc.
@@ -60,9 +66,12 @@ CREATE TABLE IF NOT EXISTS step_depense_projet (
 CREATE INDEX idx_step_depense_projet_step_credit_id ON step_depense_projet(step_objet_credit_id);
 CREATE INDEX idx_step_depense_projet_categorie ON step_depense_projet(categorie);
 
+-- Create sequence for step_financement_autre
+CREATE SEQUENCE IF NOT EXISTS step_financement_autre_seq START WITH 1 INCREMENT BY 50;
+
 -- Section C: Other financing sources (optional, can be empty)
 CREATE TABLE IF NOT EXISTS step_financement_autre (
-  id BIGSERIAL PRIMARY KEY,
+  id BIGINT PRIMARY KEY DEFAULT nextval('step_financement_autre_seq'),
   step_objet_credit_id BIGINT NOT NULL REFERENCES step_objet_credit(id) ON DELETE CASCADE,
 
   description TEXT NOT NULL,
