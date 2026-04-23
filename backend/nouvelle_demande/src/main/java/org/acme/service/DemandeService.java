@@ -1,5 +1,6 @@
 package org.acme.service;
 
+import io.micrometer.core.instrument.Timer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -25,17 +26,11 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class DemandeService {
 
-    @Inject
-    DemandeRepository demandeRepository;
-
-    @Inject
-    GestionnaireGrpcClient gestionnaireGrpcClient;
-
-    @Inject
-    ClientGrpcClient clientGrpcClient;
-
-    @Inject
-    JsonWebToken jwt;
+    @Inject DemandeRepository demandeRepository;
+    @Inject GestionnaireGrpcClient gestionnaireGrpcClient;
+    @Inject ClientGrpcClient clientGrpcClient;
+    @Inject JsonWebToken jwt;
+    @Inject DemandeEventService eventService;
 
     // ─────────────────────────────────────────────────────────────────────────
     // CREATE
@@ -43,81 +38,98 @@ public class DemandeService {
 
     @Transactional
     public DemandeResponse create(DemandeCreateRequest req) {
-        // 1. Resolve gestionnaire from JWT
-        String gestionnaireId = jwt.getSubject();
-        org.acme.grpc.GestionnaireResponse gestionnaire = gestionnaireGrpcClient.getGestionnaire(gestionnaireId);
-        if (!gestionnaire.getFound()) {
-            throw new BadRequestException("Gestionnaire not found: " + gestionnaireId);
-        }
+        Timer.Sample sample = Timer.start();
+        DemandeEventService.DemandeEventData evt = new DemandeEventService.DemandeEventData();
+        evt.clientId        = req.getClientId();
+        evt.productId       = req.getProductId();
+        evt.requestedAmount = req.getRequestedAmount();
+        evt.durationMonths  = req.getDurationMonths();
 
-        // 2. Fetch client snapshot via gRPC
-        org.acme.grpc.ClientResponse client = clientGrpcClient.getClient(req.getClientId().toString());
-        if (!client.getFound()) {
-            throw new BadRequestException("Client not found: " + req.getClientId());
-        }
+        try {
+            String gestionnaireId = jwt.getSubject();
+            org.acme.grpc.GestionnaireResponse gestionnaire = gestionnaireGrpcClient.getGestionnaire(gestionnaireId);
+            eventService.recordGrpcCall("gestionnaire", "getGestionnaire", gestionnaire.getFound());
+            if (!gestionnaire.getFound()) throw new BadRequestException("Gestionnaire not found: " + gestionnaireId);
 
-        // 3. Build Demande
-        Demande demande = new Demande();
-        demande.clientId = req.getClientId();
-        demande.clientType = client.getClientType();
-        demande.firstName = nullIfBlank(client.getFirstName());
-        demande.lastName = nullIfBlank(client.getLastName());
-        demande.dateOfBirth = client.getDateOfBirth().isBlank() ? null : LocalDate.parse(client.getDateOfBirth());
-        demande.nationalId = nullIfBlank(client.getNationalId());
-        demande.gender = nullIfBlank(client.getGender());
-        demande.maritalStatus = nullIfBlank(client.getMaritalStatus());
-        demande.nationality = nullIfBlank(client.getNationality());
-        demande.monthlyIncome = client.getMonthlyIncome().isBlank() ? null : new BigDecimal(client.getMonthlyIncome());
-        demande.companyName = nullIfBlank(client.getCompanyName());
-        demande.sigle = nullIfBlank(client.getSigle());
-        demande.registrationNumber = nullIfBlank(client.getRegistrationNumber());
-        demande.principalInterlocutor = nullIfBlank(client.getPrincipalInterlocutor());
-        demande.email = nullIfBlank(client.getEmail());
-        demande.primaryPhone = nullIfBlank(client.getPrimaryPhone());
-        demande.scoring = nullIfBlank(client.getScoring());
-        demande.cycle = nullIfBlank(client.getCycle());
-        demande.segment = nullIfBlank(client.getSegment());
-        demande.accountType = nullIfBlank(client.getAccountType());
-        demande.businessSector = nullIfBlank(client.getBusinessSector());
-        demande.businessActivity = nullIfBlank(client.getBusinessActivity());
-        demande.managerName = gestionnaire.getFirstName() + " " + gestionnaire.getLastName();
-        demande.branchId = nullIfBlank(gestionnaire.getAgenceId());
-        demande.branchName = nullIfBlank(gestionnaire.getAgenceLibelle());
-        demande.loanPurpose = req.getLoanPurpose();
-        demande.requestedAmount = req.getRequestedAmount();
-        demande.durationMonths = req.getDurationMonths();
-        demande.productId = req.getProductId();
-        demande.productName = null;
-        demande.assetType = req.getAssetType();
-        demande.monthlyRepaymentCapacity = req.getMonthlyRepaymentCapacity();
-        demande.applicationChannel = req.getApplicationChannel();
-        demande.consentText = req.getConsentText();
-        demande.bankingRestriction = req.getBankingRestriction();
-        demande.legalIssueOrAccountBlocked = req.getLegalIssueOrAccountBlocked();
-        // Guarantors
-        if (req.getGuarantors() != null) {
-            for (GuarantorDto g : req.getGuarantors()) {
-                Guarantor guarantor = new Guarantor();
-                guarantor.demande = demande;
-                guarantor.name = g.name;
-                guarantor.amplitudeId = g.amplitudeId;
-                guarantor.clientRelationship = g.clientRelationship;
-                demande.guarantors.add(guarantor);
+            org.acme.grpc.ClientResponse client = clientGrpcClient.getClient(req.getClientId().toString());
+            eventService.recordGrpcCall("client", "getClient", client.getFound());
+            if (!client.getFound()) throw new BadRequestException("Client not found: " + req.getClientId());
+
+            Demande demande = new Demande();
+            demande.clientId = req.getClientId();
+            demande.clientType = client.getClientType();
+            demande.firstName = nullIfBlank(client.getFirstName());
+            demande.lastName = nullIfBlank(client.getLastName());
+            demande.dateOfBirth = client.getDateOfBirth().isBlank() ? null : LocalDate.parse(client.getDateOfBirth());
+            demande.nationalId = nullIfBlank(client.getNationalId());
+            demande.gender = nullIfBlank(client.getGender());
+            demande.maritalStatus = nullIfBlank(client.getMaritalStatus());
+            demande.nationality = nullIfBlank(client.getNationality());
+            demande.monthlyIncome = client.getMonthlyIncome().isBlank() ? null : new BigDecimal(client.getMonthlyIncome());
+            demande.companyName = nullIfBlank(client.getCompanyName());
+            demande.sigle = nullIfBlank(client.getSigle());
+            demande.registrationNumber = nullIfBlank(client.getRegistrationNumber());
+            demande.principalInterlocutor = nullIfBlank(client.getPrincipalInterlocutor());
+            demande.email = nullIfBlank(client.getEmail());
+            demande.primaryPhone = nullIfBlank(client.getPrimaryPhone());
+            demande.scoring = nullIfBlank(client.getScoring());
+            demande.cycle = nullIfBlank(client.getCycle());
+            demande.segment = nullIfBlank(client.getSegment());
+            demande.accountType = nullIfBlank(client.getAccountType());
+            demande.businessSector = nullIfBlank(client.getBusinessSector());
+            demande.businessActivity = nullIfBlank(client.getBusinessActivity());
+            demande.managerName = gestionnaire.getFirstName() + " " + gestionnaire.getLastName();
+            demande.branchId = nullIfBlank(gestionnaire.getAgenceId());
+            demande.branchName = nullIfBlank(gestionnaire.getAgenceLibelle());
+            demande.loanPurpose = req.getLoanPurpose();
+            demande.requestedAmount = req.getRequestedAmount();
+            demande.durationMonths = req.getDurationMonths();
+            demande.productId = req.getProductId();
+            demande.productName = null;
+            demande.assetType = req.getAssetType();
+            demande.monthlyRepaymentCapacity = req.getMonthlyRepaymentCapacity();
+            demande.applicationChannel = req.getApplicationChannel();
+            demande.consentText = req.getConsentText();
+            demande.bankingRestriction = req.getBankingRestriction();
+            demande.legalIssueOrAccountBlocked = req.getLegalIssueOrAccountBlocked();
+            if (req.getGuarantors() != null) {
+                for (GuarantorDto g : req.getGuarantors()) {
+                    Guarantor guarantor = new Guarantor();
+                    guarantor.demande = demande;
+                    guarantor.name = g.name;
+                    guarantor.amplitudeId = g.amplitudeId;
+                    guarantor.clientRelationship = g.clientRelationship;
+                    demande.guarantors.add(guarantor);
+                }
             }
-        }
-        // Guarantees
-        if (req.getGuarantees() != null) {
-            for (GuaranteeDto g : req.getGuarantees()) {
-                Guarantee guarantee = new Guarantee();
-                guarantee.demande = demande;
-                guarantee.owner = g.getOwner();
-                guarantee.type = g.getType();
-                guarantee.estimatedValue = g.getEstimatedValue();
-                demande.guarantees.add(guarantee);
+            if (req.getGuarantees() != null) {
+                for (GuaranteeDto g : req.getGuarantees()) {
+                    Guarantee guarantee = new Guarantee();
+                    guarantee.demande = demande;
+                    guarantee.owner = g.getOwner();
+                    guarantee.type = g.getType();
+                    guarantee.estimatedValue = g.getEstimatedValue();
+                    demande.guarantees.add(guarantee);
+                }
             }
+            demandeRepository.persist(demande);
+
+            evt.demandeId   = demande.id;
+            evt.clientType  = demande.clientType;
+            evt.branchId    = demande.branchId;
+            evt.branchName  = demande.branchName;
+            evt.managerName = demande.managerName;
+            evt.cycle       = demande.cycle;
+            evt.success     = true;
+            eventService.recordCreate(evt, sample);
+            return toResponse(demande);
+
+        } catch (Exception e) {
+            evt.success       = false;
+            evt.failureReason = e.getMessage();
+            eventService.recordCreate(evt, sample);
+            throw e;
         }
-        demandeRepository.persist(demande);
-        return toResponse(demande);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -154,24 +166,79 @@ public class DemandeService {
 
     @Transactional
     public DemandeResponse updateStatut(Long id, DemandeStatut newStatut) {
-        Demande demande = demandeRepository.findByIdOptional(id)
-                .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
-        DemandeStatut previousStatut = demande.status;
-        validateTransition(demande.status, newStatut);
-        demande.status = newStatut;
+        Timer.Sample sample = Timer.start();
+        DemandeEventService.DemandeEventData evt = new DemandeEventService.DemandeEventData();
+        evt.demandeId = id;
+        evt.newStatus = newStatut;
 
-        if (previousStatut == DemandeStatut.SUBMITTED && newStatut == DemandeStatut.VALIDATED) {
-            boolean updated = clientGrpcClient.incrementClientCycle(demande.clientId.toString());
-            if (!updated) {
-                throw new BadRequestException("Failed to increment client cycle for client: " + demande.clientId);
+        try {
+            Demande demande = demandeRepository.findByIdOptional(id)
+                    .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
+            evt.previousStatus  = demande.status;
+            evt.createdAt       = demande.createdAt;
+            evt.clientId        = demande.clientId;
+            evt.clientType      = demande.clientType;
+            evt.productId       = demande.productId;
+            evt.requestedAmount = demande.requestedAmount;
+            evt.branchId        = demande.branchId;
+            evt.branchName      = demande.branchName;
+            evt.managerName     = demande.managerName;
+            evt.cycle           = demande.cycle;
+
+            validateTransition(demande.status, newStatut);
+            demande.status = newStatut;
+
+            if (evt.previousStatus == DemandeStatut.SUBMITTED && newStatut == DemandeStatut.VALIDATED) {
+                boolean updated = clientGrpcClient.incrementClientCycle(demande.clientId.toString());
+                eventService.recordGrpcCall("client", "incrementClientCycle", updated);
+                if (!updated) throw new BadRequestException("Failed to increment client cycle for client: " + demande.clientId);
             }
+
+            evt.success = true;
+            eventService.recordStatusUpdate(evt, sample);
+            return toResponse(demande);
+
+        } catch (Exception e) {
+            evt.success       = false;
+            evt.failureReason = e.getMessage();
+            eventService.recordStatusUpdate(evt, sample);
+            throw e;
         }
-        return toResponse(demande);
     }
 
     @Transactional
     public DemandeResponse submit(Long id) {
-        return updateStatut(id, DemandeStatut.SUBMITTED);
+        Timer.Sample sample = Timer.start();
+        DemandeEventService.DemandeEventData evt = new DemandeEventService.DemandeEventData();
+        evt.demandeId = id;
+        evt.newStatus = DemandeStatut.SUBMITTED;
+
+        try {
+            Demande demande = demandeRepository.findByIdOptional(id)
+                    .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
+            evt.previousStatus  = demande.status;
+            evt.clientId        = demande.clientId;
+            evt.clientType      = demande.clientType;
+            evt.productId       = demande.productId;
+            evt.requestedAmount = demande.requestedAmount;
+            evt.branchId        = demande.branchId;
+            evt.branchName      = demande.branchName;
+            evt.managerName     = demande.managerName;
+            evt.cycle           = demande.cycle;
+
+            validateTransition(demande.status, DemandeStatut.SUBMITTED);
+            demande.status = DemandeStatut.SUBMITTED;
+
+            evt.success = true;
+            eventService.recordSubmit(evt, sample);
+            return toResponse(demande);
+
+        } catch (Exception e) {
+            evt.success       = false;
+            evt.failureReason = e.getMessage();
+            eventService.recordSubmit(evt, sample);
+            throw e;
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -179,24 +246,42 @@ public class DemandeService {
     // ─────────────────────────────────────────────────────────────────────────
     @Transactional
     public DemandeResponse update(Long id, DemandeUpdateRequest req) {
-        Demande demande = demandeRepository.findByIdOptional(id)
-                .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
-        if (demande.status != DemandeStatut.DRAFT) {
-            throw new BadRequestException("Only DRAFT demandes can be updated");
+        Timer.Sample sample = Timer.start();
+        DemandeEventService.DemandeEventData evt = new DemandeEventService.DemandeEventData();
+        evt.demandeId = id;
+
+        try {
+            Demande demande = demandeRepository.findByIdOptional(id)
+                    .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
+            if (demande.status != DemandeStatut.DRAFT) {
+                throw new BadRequestException("Only DRAFT demandes can be updated");
+            }
+            if (req.loanPurpose != null)                  demande.loanPurpose = req.loanPurpose;
+            if (req.requestedAmount != null)               demande.requestedAmount = req.requestedAmount;
+            if (req.durationMonths != null)                demande.durationMonths = req.durationMonths;
+            if (req.productId != null)                     demande.productId = req.productId;
+            if (req.assetType != null)                     demande.assetType = req.assetType;
+            if (req.monthlyRepaymentCapacity != null)      demande.monthlyRepaymentCapacity = req.monthlyRepaymentCapacity;
+            if (req.applicationChannel != null)            demande.applicationChannel = req.applicationChannel;
+            if (req.consentText != null)                   demande.consentText = req.consentText;
+            if (req.bankingRestriction != null)            demande.bankingRestriction = req.bankingRestriction;
+            if (req.legalIssueOrAccountBlocked != null)    demande.legalIssueOrAccountBlocked = req.legalIssueOrAccountBlocked;
+
+            evt.clientId        = demande.clientId;
+            evt.clientType      = demande.clientType;
+            evt.productId       = demande.productId;
+            evt.requestedAmount = demande.requestedAmount;
+            evt.branchId        = demande.branchId;
+            evt.success         = true;
+            eventService.recordUpdate(evt, sample);
+            return toResponse(demande);
+
+        } catch (Exception e) {
+            evt.success       = false;
+            evt.failureReason = e.getMessage();
+            eventService.recordUpdate(evt, sample);
+            throw e;
         }
-        // Update fields from request
-        if (req.loanPurpose != null) demande.loanPurpose = req.loanPurpose;
-        if (req.requestedAmount != null) demande.requestedAmount = req.requestedAmount;
-        if (req.durationMonths != null) demande.durationMonths = req.durationMonths;
-        if (req.productId != null) demande.productId = req.productId;
-        if (req.assetType != null) demande.assetType = req.assetType;
-        if (req.monthlyRepaymentCapacity != null) demande.monthlyRepaymentCapacity = req.monthlyRepaymentCapacity;
-        if (req.applicationChannel != null) demande.applicationChannel = req.applicationChannel;
-        if (req.consentText != null) demande.consentText = req.consentText;
-        if (req.bankingRestriction != null) demande.bankingRestriction = req.bankingRestriction;
-        if (req.legalIssueOrAccountBlocked != null) demande.legalIssueOrAccountBlocked = req.legalIssueOrAccountBlocked;
-        // Guarantors and guarantees update logic can be added as needed
-        return toResponse(demande);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -205,12 +290,30 @@ public class DemandeService {
 
     @Transactional
     public void delete(Long id) {
-        Demande demande = demandeRepository.findByIdOptional(id)
-                .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
-        if (demande.status != DemandeStatut.DRAFT) {
-            throw new BadRequestException("Only DRAFT demandes can be deleted");
+        Timer.Sample sample = Timer.start();
+        DemandeEventService.DemandeEventData evt = new DemandeEventService.DemandeEventData();
+        evt.demandeId = id;
+
+        try {
+            Demande demande = demandeRepository.findByIdOptional(id)
+                    .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
+            if (demande.status != DemandeStatut.DRAFT) {
+                throw new BadRequestException("Only DRAFT demandes can be deleted");
+            }
+            evt.clientId    = demande.clientId;
+            evt.clientType  = demande.clientType;
+            evt.productId   = demande.productId;
+            evt.branchId    = demande.branchId;
+            demandeRepository.delete(demande);
+            evt.success = true;
+            eventService.recordDelete(evt, sample);
+
+        } catch (Exception e) {
+            evt.success       = false;
+            evt.failureReason = e.getMessage();
+            eventService.recordDelete(evt, sample);
+            throw e;
         }
-        demandeRepository.delete(demande);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

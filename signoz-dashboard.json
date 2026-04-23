@@ -1,0 +1,79 @@
+{
+  "title": "CrediWise — Auth Overview",
+  "description": "Authentication KPIs: logins, sessions, latency, failures",
+  "tags": ["crediwise", "auth"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active Sessions",
+      "type": "value",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "targets": [
+        {
+          "expr": "auth_active_sessions",
+          "legendFormat": "Sessions"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Login Attempts / min",
+      "type": "graph",
+      "gridPos": { "x": 6, "y": 0, "w": 9, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(auth_login_total{status=\"success\"}[5m]) * 60",
+          "legendFormat": "Success"
+        },
+        {
+          "expr": "rate(auth_login_total{status=\"failed\"}[5m]) * 60",
+          "legendFormat": "Failed"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Failed Logins / min",
+      "type": "graph",
+      "gridPos": { "x": 15, "y": 0, "w": 9, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(auth_login_failed_total[5m]) * 60",
+          "legendFormat": "{{reason}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Login Latency p99 (ms)",
+      "type": "graph",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "auth_login_duration_ms_seconds{quantile=\"0.99\"} * 1000",
+          "legendFormat": "p99"
+        },
+        {
+          "expr": "auth_login_duration_ms_seconds{quantile=\"0.95\"} * 1000",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "auth_login_duration_ms_seconds{quantile=\"0.5\"} * 1000",
+          "legendFormat": "p50"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Logouts / min",
+      "type": "graph",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(auth_logout_total[5m]) * 60",
+          "legendFormat": "{{role}}"
+        }
+      ]
+    }
+  ]
+}

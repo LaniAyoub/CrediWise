@@ -13,6 +13,8 @@ import org.acme.dto.LoginRequestDTO;
 import org.acme.dto.LoginResponseDTO;
 import org.acme.entity.Gestionnaire;
 import org.acme.repository.GestionnaireRepository;
+import org.acme.service.AuthEventService;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.time.Instant;
@@ -27,59 +29,40 @@ import java.util.UUID;
 @Tag(name = "Authentication", description = "Login and session management")
 public class AuthResource {
 
-    @Inject
-    GestionnaireRepository gestionnaireRepository;
+    @Inject GestionnaireRepository gestionnaireRepository;
+    @Inject AuthEventService        authEventService;
+    @Inject JsonWebToken            jwt;
 
-    /**
-     * Login endpoint - Authenticates user and returns JWT token
-     *
-     * @param loginRequest contains email and password
-     * @return JWT token with user information
-     */
+    // ------------------------------------------------------------------
+    // POST /api/auth/login
+    // ------------------------------------------------------------------
     @POST
     @Path("/login")
     @Transactional
     public Response login(@Valid LoginRequestDTO loginRequest) {
         try {
-            var gestionnaire = gestionnaireRepository.findByEmail(loginRequest.getEmail());
+            var found = gestionnaireRepository.findByEmail(loginRequest.getEmail());
 
-            if (gestionnaire.isEmpty()) {
-                return Response.status(Response.Status.UNAUTHORIZED)
-                        .entity(ApiErrorResponse.builder()
-                                .timestamp(Instant.now())
-                                .status(401)
-                                .error("Unauthorized")
-                                .message("Invalid email or password")
-                                .build())
-                        .build();
+            if (found.isEmpty()) {
+                authEventService.recordLogin(failedLogin(null, "User not found"));
+                return unauthorized("Invalid email or password");
             }
 
-            Gestionnaire user = gestionnaire.get();
+            Gestionnaire user = found.get();
 
             if (!user.getIsActive()) {
-                return Response.status(Response.Status.FORBIDDEN)
-                        .entity(ApiErrorResponse.builder()
-                                .timestamp(Instant.now())
-                                .status(403)
-                                .error("Forbidden")
-                                .message("User account is inactive")
-                                .build())
-                        .build();
+                authEventService.recordLogin(failedLogin(user, "Account inactive"));
+                return forbidden("User account is inactive");
             }
 
             if (!BcryptUtil.matches(loginRequest.getPassword(), user.getPassword())) {
-                return Response.status(Response.Status.UNAUTHORIZED)
-                        .entity(ApiErrorResponse.builder()
-                                .timestamp(Instant.now())
-                                .status(401)
-                                .error("Unauthorized")
-                                .message("Invalid email or password")
-                                .build())
-                        .build();
+                authEventService.recordLogin(failedLogin(user, "Invalid password"));
+                return unauthorized("Invalid email or password");
             }
 
-            Instant now = Instant.now();
+            Instant now       = Instant.now();
             Instant expiresAt = now.plus(24, ChronoUnit.HOURS);
+            String  sessionId = UUID.randomUUID().toString();
 
             Set<String> roles = new HashSet<>();
             roles.add(user.getRole());
@@ -90,122 +73,125 @@ public class AuthResource {
                     .groups(roles)
                     .audience("gestionnaire-api")
                     .issuedAt(now)
-                    .expiresAt(expiresAt);
+                    .expiresAt(expiresAt)
+                    .claim("sessionId", sessionId);
 
-            if (user.getEmail() != null) {
-                jwtBuilder.claim("email", user.getEmail());
-            }
-            if (user.getFirstName() != null) {
-                jwtBuilder.claim("firstName", user.getFirstName());
-            }
-            if (user.getLastName() != null) {
-                jwtBuilder.claim("lastName", user.getLastName());
-            }
-            if (user.getRole() != null) {
-                jwtBuilder.claim("role", user.getRole());
-            }
-            if (user.getAgence() != null && user.getAgence().getIdBranch() != null) {
+            if (user.getEmail() != null)     jwtBuilder.claim("email",     user.getEmail());
+            if (user.getFirstName() != null) jwtBuilder.claim("firstName", user.getFirstName());
+            if (user.getLastName() != null)  jwtBuilder.claim("lastName",  user.getLastName());
+            if (user.getRole() != null)      jwtBuilder.claim("role",      user.getRole());
+            if (user.getAgence() != null && user.getAgence().getIdBranch() != null)
                 jwtBuilder.claim("agenceId", user.getAgence().getIdBranch());
-            }
 
             String token = jwtBuilder.sign();
 
-            LoginResponseDTO response = LoginResponseDTO.builder()
+            // Record successful login
+            var data = new AuthEventService.LoginEventData();
+            data.userId    = user.getId();
+            data.username  = user.getEmail();
+            data.userRole  = user.getRole();
+            data.agencyId  = user.getAgence() != null ? user.getAgence().getIdBranch() : null;
+            data.agencyName= user.getAgence() != null ? user.getAgence().getLibelle()  : null;
+            data.success   = true;
+            data.sessionId = sessionId;
+            authEventService.recordLogin(data);
+
+            return Response.ok(LoginResponseDTO.builder()
                     .accessToken(token)
                     .refreshToken(null)
                     .expiresAt(expiresAt)
                     .role(user.getRole())
-                    .build();
-
-            return Response.ok(response).build();
+                    .build()).build();
 
         } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(ApiErrorResponse.builder()
-                            .timestamp(Instant.now())
-                            .status(500)
-                            .error("Internal Server Error")
-                            .message("An error occurred during login: " + e.getMessage())
-                            .build())
-                    .build();
+            return serverError("An error occurred during login: " + e.getMessage());
         }
     }
 
-    /**
-     * Logout endpoint - Invalidates token (optional, can be handled client-side)
-     * This endpoint mainly serves for server-side token blacklisting if needed
-     *
-     * @return success message
-     */
+    // ------------------------------------------------------------------
+    // POST /api/auth/logout
+    // ------------------------------------------------------------------
     @POST
     @Path("/logout")
     public Response logout() {
         try {
-            // In a real application, you would:
-            // 1. Add token to blacklist in cache/database
-            // 2. Clear any server-side sessions
-            // 3. Return success response
+            var data = new AuthEventService.LogoutEventData();
+            try {
+                data.userId    = UUID.fromString(jwt.getSubject());
+                data.username  = jwt.getName();
+                data.userRole  = jwt.getClaim("role");
+                data.agencyId  = jwt.getClaim("agenceId");
+                data.sessionId = jwt.getClaim("sessionId");
+            } catch (Exception ignored) {
+                // JWT absent or expired — still record the logout
+            }
+            authEventService.recordLogout(data);
 
-            return Response.ok()
-                    .entity(new LogoutResponseDTO("Successfully logged out"))
-                    .build();
+            return Response.ok(new LogoutResponseDTO("Successfully logged out")).build();
 
         } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(ApiErrorResponse.builder()
-                            .timestamp(Instant.now())
-                            .status(500)
-                            .error("Internal Server Error")
-                            .message("Logout failed: " + e.getMessage())
-                            .build())
-                    .build();
+            return serverError("Logout failed: " + e.getMessage());
         }
     }
 
-    /**
-     * Health check endpoint for testing token validity
-     *
-     * @return success if token is valid
-     */
+    // ------------------------------------------------------------------
+    // GET /api/auth/health
+    // ------------------------------------------------------------------
     @GET
     @Path("/health")
     public Response health() {
-        return Response.ok()
-                .entity(new HealthCheckResponse("Gestionnaire Service is running"))
-                .build();
+        return Response.ok(new HealthCheckResponse("Gestionnaire Service is running")).build();
     }
 
-    // Inner class for logout response
+    // ------------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------------
+
+    private AuthEventService.LoginEventData failedLogin(Gestionnaire user, String reason) {
+        var d = new AuthEventService.LoginEventData();
+        if (user != null) {
+            d.userId    = user.getId();
+            d.username  = user.getEmail();
+            d.userRole  = user.getRole();
+            d.agencyId  = user.getAgence() != null ? user.getAgence().getIdBranch() : null;
+            d.agencyName= user.getAgence() != null ? user.getAgence().getLibelle()  : null;
+        }
+        d.success       = false;
+        d.failureReason = reason;
+        return d;
+    }
+
+    private Response unauthorized(String msg) {
+        return Response.status(Response.Status.UNAUTHORIZED)
+                .entity(ApiErrorResponse.builder().timestamp(Instant.now())
+                        .status(401).error("Unauthorized").message(msg).build()).build();
+    }
+
+    private Response forbidden(String msg) {
+        return Response.status(Response.Status.FORBIDDEN)
+                .entity(ApiErrorResponse.builder().timestamp(Instant.now())
+                        .status(403).error("Forbidden").message(msg).build()).build();
+    }
+
+    private Response serverError(String msg) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(ApiErrorResponse.builder().timestamp(Instant.now())
+                        .status(500).error("Internal Server Error").message(msg).build()).build();
+    }
+
+    // ---- inner DTOs ----
+
     public static class LogoutResponseDTO {
         public String message;
-
-        public LogoutResponseDTO(String message) {
-            this.message = message;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
+        public LogoutResponseDTO(String m) { this.message = m; }
+        public String getMessage() { return message; }
+        public void setMessage(String m) { this.message = m; }
     }
 
-    // Inner class for health check response
     public static class HealthCheckResponse {
         public String status;
-
-        public HealthCheckResponse(String status) {
-            this.status = status;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
-        }
+        public HealthCheckResponse(String s) { this.status = s; }
+        public String getStatus() { return status; }
+        public void setStatus(String s) { this.status = s; }
     }
 }

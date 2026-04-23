@@ -1,6 +1,8 @@
 package org.acme.service;
 
+import io.micrometer.core.instrument.Timer;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import org.acme.dto.ClientCreateDTO;
@@ -14,6 +16,7 @@ import org.acme.exception.ClientNotFoundException;
 import org.acme.grpc.AgenceResponse;
 import org.acme.grpc.GestionnaireGrpcClient;
 import org.acme.grpc.GestionnaireResponse;
+import org.acme.metrics.ClientMetrics;
 import org.acme.repository.ClientRepository;
 
 import java.util.List;
@@ -28,6 +31,9 @@ public class ClientService {
     private final ClientRepository clientRepository;
     private final GestionnaireGrpcClient grpcClient;
 
+    @Inject ClientEventService eventService;
+    @Inject ClientMetrics metrics;
+
     public ClientService(ClientRepository clientRepository, GestionnaireGrpcClient grpcClient) {
         this.clientRepository = clientRepository;
         this.grpcClient = grpcClient;
@@ -39,36 +45,56 @@ public class ClientService {
 
     @Transactional
     public ClientResponseDTO create(ClientCreateDTO dto, UUID actorId) {
-        validateUniqueness(dto.getEmail(), dto.getNationalId(), dto.getCbsId(), null);
+        Timer.Sample sample = Timer.start();
+        ClientEventService.ClientEventData evt = new ClientEventService.ClientEventData();
+        evt.actorId    = actorId;
+        evt.clientType = dto.getClientType() != null ? dto.getClientType().name() : null;
+        evt.nationalId = dto.getNationalId();
+        evt.email      = dto.getEmail();
+        evt.agenceId   = dto.getAgenceId();
+        evt.managerId  = dto.getAssignedManagerId();
 
-        // Validate external references via gRPC
-        String agenceLibelle = null;
-        if (dto.getAgenceId() != null && !dto.getAgenceId().isBlank()) {
-            AgenceResponse agence = grpcClient.getAgence(dto.getAgenceId());
-            if (!agence.getFound()) {
-                throw new BadRequestException("Agence not found: " + dto.getAgenceId());
+        try {
+            validateUniqueness(dto.getEmail(), dto.getNationalId(), dto.getCbsId(), null);
+
+            String agenceLibelle = null;
+            if (dto.getAgenceId() != null && !dto.getAgenceId().isBlank()) {
+                AgenceResponse agence = grpcClient.getAgence(dto.getAgenceId());
+                eventService.recordGrpcCall("gestionnaire", "getAgence", agence.getFound());
+                if (!agence.getFound()) throw new BadRequestException("Agence not found: " + dto.getAgenceId());
+                agenceLibelle = agence.getLibelle();
             }
-            agenceLibelle = agence.getLibelle();
-        }
 
-        String managerFullName = null;
-        if (dto.getAssignedManagerId() != null) {
-            GestionnaireResponse manager = grpcClient.getGestionnaire(dto.getAssignedManagerId().toString());
-            if (!manager.getFound()) {
-                throw new BadRequestException("Manager not found: " + dto.getAssignedManagerId());
+            String managerFullName = null;
+            if (dto.getAssignedManagerId() != null) {
+                GestionnaireResponse manager = grpcClient.getGestionnaire(dto.getAssignedManagerId().toString());
+                eventService.recordGrpcCall("gestionnaire", "getGestionnaire", manager.getFound());
+                if (!manager.getFound()) throw new BadRequestException("Manager not found: " + dto.getAssignedManagerId());
+                managerFullName = manager.getFirstName() + " " + manager.getLastName();
             }
-            managerFullName = manager.getFirstName() + " " + manager.getLastName();
+
+            Client client = new Client();
+            client.setClientType(dto.getClientType());
+            client.setStatus(ClientStatus.PROSPECT);
+            applyFields(client, dto);
+            client.setCreatedBy(actorId);
+            client.setUpdatedBy(actorId);
+            clientRepository.persist(client);
+
+            evt.clientId     = client.getId();
+            evt.clientStatus = ClientStatus.PROSPECT.name();
+            evt.segment      = client.getSegment() != null ? client.getSegment().getLibelle() : null;
+            evt.riskLevel    = client.getRiskLevel() != null ? client.getRiskLevel().getIfcLevelOfRisk() : null;
+            evt.success      = true;
+            eventService.recordCreate(evt, sample);
+            return toResponse(client, agenceLibelle, managerFullName);
+
+        } catch (Exception e) {
+            evt.success       = false;
+            evt.failureReason = e.getMessage();
+            eventService.recordCreate(evt, sample);
+            throw e;
         }
-
-        Client client = new Client();
-        client.setClientType(dto.getClientType());
-        client.setStatus(ClientStatus.PROSPECT);
-        applyFields(client, dto);
-        client.setCreatedBy(actorId);
-        client.setUpdatedBy(actorId);
-
-        clientRepository.persist(client);
-        return toResponse(client, agenceLibelle, managerFullName);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -109,40 +135,58 @@ public class ClientService {
 
     @Transactional
     public ClientResponseDTO update(UUID id, ClientUpdateDTO dto, UUID actorId) {
-        Client client = clientRepository.findByIdOptional(id)
-                .orElseThrow(() -> new ClientNotFoundException("Client not found: " + id));
+        Timer.Sample sample = Timer.start();
+        ClientEventService.ClientEventData evt = new ClientEventService.ClientEventData();
+        evt.clientId = id;
+        evt.actorId  = actorId;
 
-        validateUniqueness(dto.getEmail(), dto.getNationalId(), dto.getCbsId(), id);
+        try {
+            Client client = clientRepository.findByIdOptional(id)
+                    .orElseThrow(() -> new ClientNotFoundException("Client not found: " + id));
 
-        // Validate external references via gRPC
-        String agenceLibelle = null;
-        if (dto.getAgenceId() != null && !dto.getAgenceId().isBlank()) {
-            AgenceResponse agence = grpcClient.getAgence(dto.getAgenceId());
-            if (!agence.getFound()) {
-                throw new BadRequestException("Agence not found: " + dto.getAgenceId());
+            validateUniqueness(dto.getEmail(), dto.getNationalId(), dto.getCbsId(), id);
+
+            String agenceLibelle = null;
+            if (dto.getAgenceId() != null && !dto.getAgenceId().isBlank()) {
+                AgenceResponse agence = grpcClient.getAgence(dto.getAgenceId());
+                eventService.recordGrpcCall("gestionnaire", "getAgence", agence.getFound());
+                if (!agence.getFound()) throw new BadRequestException("Agence not found: " + dto.getAgenceId());
+                agenceLibelle = agence.getLibelle();
+            } else if (client.getAgenceId() != null) {
+                AgenceResponse agence = grpcClient.getAgence(client.getAgenceId());
+                eventService.recordGrpcCall("gestionnaire", "getAgence", agence.getFound());
+                if (agence.getFound()) agenceLibelle = agence.getLibelle();
             }
-            agenceLibelle = agence.getLibelle();
-        } else if (client.getAgenceId() != null) {
-            AgenceResponse agence = grpcClient.getAgence(client.getAgenceId());
-            if (agence.getFound()) agenceLibelle = agence.getLibelle();
-        }
 
-        String managerFullName = null;
-        if (dto.getAssignedManagerId() != null) {
-            GestionnaireResponse manager = grpcClient.getGestionnaire(dto.getAssignedManagerId().toString());
-            if (!manager.getFound()) {
-                throw new BadRequestException("Manager not found: " + dto.getAssignedManagerId());
+            String managerFullName = null;
+            if (dto.getAssignedManagerId() != null) {
+                GestionnaireResponse manager = grpcClient.getGestionnaire(dto.getAssignedManagerId().toString());
+                eventService.recordGrpcCall("gestionnaire", "getGestionnaire", manager.getFound());
+                if (!manager.getFound()) throw new BadRequestException("Manager not found: " + dto.getAssignedManagerId());
+                managerFullName = manager.getFirstName() + " " + manager.getLastName();
+            } else if (client.getAssignedManagerId() != null) {
+                GestionnaireResponse manager = grpcClient.getGestionnaire(client.getAssignedManagerId().toString());
+                eventService.recordGrpcCall("gestionnaire", "getGestionnaire", manager.getFound());
+                if (manager.getFound()) managerFullName = manager.getFirstName() + " " + manager.getLastName();
             }
-            managerFullName = manager.getFirstName() + " " + manager.getLastName();
-        } else if (client.getAssignedManagerId() != null) {
-            GestionnaireResponse manager = grpcClient.getGestionnaire(client.getAssignedManagerId().toString());
-            if (manager.getFound()) managerFullName = manager.getFirstName() + " " + manager.getLastName();
+
+            applyUpdateFields(client, dto);
+            client.setUpdatedBy(actorId);
+
+            evt.clientType   = client.getClientType() != null ? client.getClientType().name() : null;
+            evt.clientStatus = client.getStatus() != null ? client.getStatus().name() : null;
+            evt.agenceId     = client.getAgenceId();
+            evt.email        = client.getEmail();
+            evt.success      = true;
+            eventService.recordUpdate(evt, sample);
+            return toResponse(client, agenceLibelle, managerFullName);
+
+        } catch (Exception e) {
+            evt.success       = false;
+            evt.failureReason = e.getMessage();
+            eventService.recordUpdate(evt, sample);
+            throw e;
         }
-
-        applyUpdateFields(client, dto);
-        client.setUpdatedBy(actorId);
-
-        return toResponse(client, agenceLibelle, managerFullName);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -151,9 +195,24 @@ public class ClientService {
 
     @Transactional
     public void delete(UUID id) {
-        Client client = clientRepository.findByIdOptional(id)
-                .orElseThrow(() -> new ClientNotFoundException("Client not found: " + id));
-        clientRepository.delete(client);
+        Timer.Sample sample = Timer.start();
+        ClientEventService.ClientEventData evt = new ClientEventService.ClientEventData();
+        evt.clientId = id;
+        try {
+            Client client = clientRepository.findByIdOptional(id)
+                    .orElseThrow(() -> new ClientNotFoundException("Client not found: " + id));
+            evt.clientType   = client.getClientType() != null ? client.getClientType().name() : null;
+            evt.clientStatus = client.getStatus() != null ? client.getStatus().name() : null;
+            evt.agenceId     = client.getAgenceId();
+            clientRepository.delete(client);
+            evt.success = true;
+            eventService.recordDelete(evt, sample);
+        } catch (Exception e) {
+            evt.success       = false;
+            evt.failureReason = e.getMessage();
+            eventService.recordDelete(evt, sample);
+            throw e;
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
