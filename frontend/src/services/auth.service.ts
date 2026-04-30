@@ -6,8 +6,8 @@ export const authService = {
     return api.post<LoginResponse>('/api/auth/login', credentials);
   },
 
-  logout: () => {
-    return api.post('/api/auth/logout');
+  logout: (sessionDurationMs?: number) => {
+    return api.post('/api/auth/logout', { sessionDurationMs });
   },
 
   healthCheck: () => {

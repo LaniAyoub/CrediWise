@@ -71,6 +71,7 @@ public class ClientService {
                 eventService.recordGrpcCall("gestionnaire", "getGestionnaire", manager.getFound());
                 if (!manager.getFound()) throw new BadRequestException("Manager not found: " + dto.getAssignedManagerId());
                 managerFullName = manager.getFirstName() + " " + manager.getLastName();
+                evt.managerEmail = manager.getEmail();
             }
 
             Client client = new Client();

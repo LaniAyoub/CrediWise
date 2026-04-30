@@ -34,7 +34,7 @@ public class ClientEventService {
     public void recordCreate(ClientEventData data, Timer.Sample sample) {
         String status = data.success ? "success" : "failed";
         emitLog("CREATED", data, status);
-        metrics.recordCreate(status, data.clientType, data.agenceId, data.segment);
+        metrics.recordCreate(status, data.clientType, data.agenceId, data.segment, data.managerEmail);
         metrics.recordOperationDuration(sample, "create", status);
     }
 
@@ -183,6 +183,7 @@ public class ClientEventService {
         public String riskLevel;
         public String agenceId;
         public UUID   managerId;
+        public String managerEmail;
         public UUID   actorId;
         public boolean success = true;
         public String failureReason;

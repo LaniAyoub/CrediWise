@@ -59,42 +59,30 @@ SigNoz est la plateforme d'observabilité. Elle reçoit les traces, logs et mét
 cd ~
 git clone https://github.com/SigNoz/signoz.git
 cd signoz/deploy/docker
+docker-compose up -d```
+
+### Étape 2 — Copier la configuration OTel Collector
+
+Le fichier `otel-collector-config.yaml` à la racine du projet CrediWise contient déjà toute la configuration nécessaire (scrape jobs pour gestionnaire, client, nouvelle_demande + docker stats + exporters ClickHouse).
+
+**Copie-le dans ton installation SigNoz :**
+
+```bash
+# Windows
+copy otel-collector-config.yaml %USERPROFILE%\signoz\deploy\docker\otel-collector-config.yaml
+
+# Linux / Mac
+cp otel-collector-config.yaml ~/signoz/deploy/docker/otel-collector-config.yaml
 ```
 
-### Étape 2 — Ajouter le scrape Prometheus pour gestionnaire
-
-Ouvrir le fichier `~/signoz/deploy/docker/otel-collector-config.yaml` et ajouter le job `gestionnaire` dans la section `scrape_configs` :
-
-```yaml
-receivers:
-  prometheus:
-    config:
-      global:
-        scrape_interval: 60s
-      scrape_configs:
-        - job_name: otel-collector          # déjà présent
-          static_configs:
-          - targets:
-              - localhost:8888
-
-        - job_name: gestionnaire            # AJOUTER CE BLOC
-          scrape_interval: 15s
-          metrics_path: /q/metrics
-          static_configs:
-          - targets:
-              - host.docker.internal:8090   # Windows/Mac
-              # - 172.17.0.1:8090           # Linux : remplacer par l'IP gateway Docker
-            labels:
-              service_name: gestionnaire
-              job_name: gestionnaire
-```
-
-> **Linux uniquement** — `host.docker.internal` n'existe pas par défaut. Trouver l'IP gateway :
+> **Linux uniquement** — `host.docker.internal` n'existe pas par défaut. Après la copie, remplace `host.docker.internal` par l'IP gateway Docker dans le yaml :
 > ```bash
 > ip route show default | awk '{print $3}'
 > # Exemple : 172.17.0.1
 > ```
-> Remplacer `host.docker.internal` par cette IP dans le yaml.
+> ```bash
+> sed -i 's/host.docker.internal/172.17.0.1/g' ~/signoz/deploy/docker/otel-collector-config.yaml
+> ```
 
 ### Étape 3 — Démarrer SigNoz
 
@@ -393,3 +381,11 @@ SigNoz :
 
 Fichier	Modification
 otel-collector-config.yaml	+ scrape jobs client:8082 et nouvelle_demande:8083
+
+
+
+
+
+git clone https://github.com/SigNoz/signoz.git
+cd signoz/deploy/docker
+docker-compose up -d```

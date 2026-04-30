@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
+import { authService } from '@/services/auth.service';
 import type { ReactNode } from 'react';
 import type { User, JwtPayload } from '@/types/auth.types';
 
@@ -76,14 +77,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw new Error('Invalid token');
     }
     localStorage.setItem('cw_token', newToken);
+    localStorage.setItem('cw_login_time', Date.now().toString());
     setToken(newToken);
     setUser(extractUser(payload));
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('cw_token');
-    setToken(null);
-    setUser(null);
+    const loginTime = parseInt(localStorage.getItem('cw_login_time') || '0', 10);
+    const sessionDurationMs = loginTime > 0 ? Date.now() - loginTime : undefined;
+    authService.logout(sessionDurationMs).finally(() => {
+      localStorage.removeItem('cw_token');
+      localStorage.removeItem('cw_login_time');
+      setToken(null);
+      setUser(null);
+    });
   }, []);
 
   return (

@@ -111,9 +111,13 @@ public class AuthResource {
     // ------------------------------------------------------------------
     // POST /api/auth/logout
     // ------------------------------------------------------------------
+    public static class LogoutRequestBody {
+        public Long sessionDurationMs;
+    }
+
     @POST
     @Path("/logout")
-    public Response logout() {
+    public Response logout(LogoutRequestBody body) {
         try {
             var data = new AuthEventService.LogoutEventData();
             try {
@@ -124,6 +128,9 @@ public class AuthResource {
                 data.sessionId = jwt.getClaim("sessionId");
             } catch (Exception ignored) {
                 // JWT absent or expired — still record the logout
+            }
+            if (body != null) {
+                data.sessionDurationMs = body.sessionDurationMs;
             }
             authEventService.recordLogout(data);
 
