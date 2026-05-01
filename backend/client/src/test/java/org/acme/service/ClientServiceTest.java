@@ -67,7 +67,7 @@ class ClientServiceTest {
         c.setNationalId("12345678");
         c.setAccountNumber("12345678901234567890");
         c.setRelationAvecClient(RelationAvecClient.CLIENT);
-        c.setCycle("0");
+        c.setCycle(0);
         return c;
     }
 

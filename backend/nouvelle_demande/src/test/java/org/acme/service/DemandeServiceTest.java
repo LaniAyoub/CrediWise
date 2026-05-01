@@ -4,6 +4,7 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.BadRequestException;
+import org.acme.client.AnalyseServiceClient;
 import org.acme.dto.*;
 import org.acme.entity.Demande;
 import org.acme.entity.enums.DemandeStatut;
@@ -38,6 +39,9 @@ class DemandeServiceTest {
     ClientGrpcClient clientGrpcClient;
 
     @InjectMock
+    AnalyseServiceClient analyseServiceClient;
+
+    @InjectMock
     JsonWebToken jwt;
 
     @Inject
@@ -46,7 +50,8 @@ class DemandeServiceTest {
     private static final Long DEMANDE_ID = 1L;
     private static final UUID CLIENT_ID = UUID.randomUUID();
 
-    // ── Helpers – vraies instances protobuf (pas de mock) ────────────────────
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
     private GestionnaireResponse gestionnaire(String firstName, String lastName) {
         return GestionnaireResponse.newBuilder()
                 .setFound(true)
@@ -118,9 +123,16 @@ class DemandeServiceTest {
         return d;
     }
 
+    private Demande demandeWithStatus(DemandeStatut status) {
+        Demande d = draftDemande();
+        d.status = status;
+        return d;
+    }
+
     // =========================================================================
     // CREATE
     // =========================================================================
+
     @Test
     void create_gestionnaireNotFound_throwsBadRequest() {
         when(jwt.getSubject()).thenReturn("unknown-uuid");
@@ -167,6 +179,7 @@ class DemandeServiceTest {
     // =========================================================================
     // GET BY ID
     // =========================================================================
+
     @Test
     void getById_existingDemande_returnsDTO() {
         when(demandeRepository.findByIdOptional(DEMANDE_ID))
@@ -190,6 +203,7 @@ class DemandeServiceTest {
     // =========================================================================
     // LIST
     // =========================================================================
+
     @Test
     void listAll_returnsMappedDTOs() {
         when(demandeRepository.findAllPaged(0, 20)).thenReturn(List.of(draftDemande()));
@@ -214,6 +228,7 @@ class DemandeServiceTest {
     // =========================================================================
     // UPDATE (DRAFT only)
     // =========================================================================
+
     @Test
     void update_draftDemande_updatesFields() {
         when(demandeRepository.findByIdOptional(DEMANDE_ID))
@@ -230,10 +245,9 @@ class DemandeServiceTest {
     }
 
     @Test
-    void update_submittedDemande_throwsBadRequest() {
-        Demande submitted = draftDemande();
-        submitted.status = DemandeStatut.SUBMITTED;
-        when(demandeRepository.findByIdOptional(DEMANDE_ID)).thenReturn(Optional.of(submitted));
+    void update_nonDraftDemande_throwsBadRequest() {
+        when(demandeRepository.findByIdOptional(DEMANDE_ID))
+                .thenReturn(Optional.of(demandeWithStatus(DemandeStatut.ANALYSE)));
 
         assertThatThrownBy(() -> demandeService.update(DEMANDE_ID, new DemandeUpdateRequest()))
                 .isInstanceOf(BadRequestException.class)
@@ -251,59 +265,73 @@ class DemandeServiceTest {
     // =========================================================================
     // SUBMIT
     // =========================================================================
-    @Test
-    void submit_draftDemande_statusBecomesSubmitted() {
-        when(demandeRepository.findByIdOptional(DEMANDE_ID))
-                .thenReturn(Optional.of(draftDemande()));
 
-        DemandeResponse result = demandeService.submit(DEMANDE_ID);
-        assertThat(result.getStatus()).isEqualTo(DemandeStatut.SUBMITTED);
+    @Test
+    void submit_draftWithNoProduct_statusBecomesCheckBeforeCommittee() {
+        when(demandeRepository.findByIdOptional(DEMANDE_ID))
+                .thenReturn(Optional.of(draftDemande())); // productId = null
+
+        StartAnalysisResponse result = demandeService.submit(DEMANDE_ID, null);
+
+        assertThat(result.demandeStatus()).isEqualTo(DemandeStatut.CHECK_BEFORE_COMMITTEE.toString());
+        assertThat(result.dossierId()).isNull();
     }
 
     @Test
-    void submit_alreadySubmitted_throwsBadRequest() {
-        Demande submitted = draftDemande();
-        submitted.status = DemandeStatut.SUBMITTED;
-        when(demandeRepository.findByIdOptional(DEMANDE_ID)).thenReturn(Optional.of(submitted));
+    void submit_draftWithAnalyseProduct_createsDossier() {
+        Demande d = draftDemande();
+        d.productId = "101";
+        d.createdAt = java.time.LocalDateTime.now();
+        when(demandeRepository.findByIdOptional(DEMANDE_ID)).thenReturn(Optional.of(d));
+        when(analyseServiceClient.createDossier(any(), any(), any(), any(), any())).thenReturn(42L);
 
-        assertThatThrownBy(() -> demandeService.submit(DEMANDE_ID))
+        StartAnalysisResponse result = demandeService.submit(DEMANDE_ID, null);
+
+        assertThat(result.demandeStatus()).isEqualTo(DemandeStatut.ANALYSE.toString());
+        assertThat(result.dossierId()).isEqualTo(42L);
+    }
+
+    @Test
+    void submit_nonDraftDemande_throwsBadRequest() {
+        when(demandeRepository.findByIdOptional(DEMANDE_ID))
+                .thenReturn(Optional.of(demandeWithStatus(DemandeStatut.ANALYSE)));
+
+        assertThatThrownBy(() -> demandeService.submit(DEMANDE_ID, null))
                 .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Invalid status transition");
+                .hasMessageContaining("Can only submit from DRAFT status");
     }
 
     // =========================================================================
     // UPDATE STATUT
     // =========================================================================
+
     @Test
-    void updateStatut_submittedToValidated_incrementsClientCycle() {
-        Demande submitted = draftDemande();
-        submitted.status = DemandeStatut.SUBMITTED;
-        when(demandeRepository.findByIdOptional(DEMANDE_ID)).thenReturn(Optional.of(submitted));
+    void updateStatut_readyToDisburse_toDisburse_incrementsClientCycle() {
+        Demande demande = demandeWithStatus(DemandeStatut.READY_TO_DISBURSE);
+        when(demandeRepository.findByIdOptional(DEMANDE_ID)).thenReturn(Optional.of(demande));
         when(clientGrpcClient.incrementClientCycle(CLIENT_ID.toString())).thenReturn(true);
 
-        DemandeResponse result = demandeService.updateStatut(DEMANDE_ID, DemandeStatut.VALIDATED);
+        DemandeResponse result = demandeService.updateStatut(DEMANDE_ID, DemandeStatut.DISBURSE);
 
-        assertThat(result.getStatus()).isEqualTo(DemandeStatut.VALIDATED);
+        assertThat(result.getStatus()).isEqualTo(DemandeStatut.DISBURSE);
         verify(clientGrpcClient).incrementClientCycle(CLIENT_ID.toString());
     }
 
     @Test
-    void updateStatut_submittedToValidated_cycleIncrementFails_throwsBadRequest() {
-        Demande submitted = draftDemande();
-        submitted.status = DemandeStatut.SUBMITTED;
-        when(demandeRepository.findByIdOptional(DEMANDE_ID)).thenReturn(Optional.of(submitted));
+    void updateStatut_readyToDisburse_toDisburse_cycleIncrementFails_doesNotThrow() {
+        Demande demande = demandeWithStatus(DemandeStatut.READY_TO_DISBURSE);
+        when(demandeRepository.findByIdOptional(DEMANDE_ID)).thenReturn(Optional.of(demande));
         when(clientGrpcClient.incrementClientCycle(CLIENT_ID.toString())).thenReturn(false);
 
-        assertThatThrownBy(() -> demandeService.updateStatut(DEMANDE_ID, DemandeStatut.VALIDATED))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Failed to increment client cycle");
+        // cycle increment failure is logged as a warning — it does not throw
+        assertThatNoException().isThrownBy(
+                () -> demandeService.updateStatut(DEMANDE_ID, DemandeStatut.DISBURSE));
     }
 
     @Test
-    void updateStatut_submittedToRejected_doesNotIncrementCycle() {
-        Demande submitted = draftDemande();
-        submitted.status = DemandeStatut.SUBMITTED;
-        when(demandeRepository.findByIdOptional(DEMANDE_ID)).thenReturn(Optional.of(submitted));
+    void updateStatut_draft_toRejected_doesNotIncrementCycle() {
+        when(demandeRepository.findByIdOptional(DEMANDE_ID))
+                .thenReturn(Optional.of(draftDemande()));
 
         DemandeResponse result = demandeService.updateStatut(DEMANDE_ID, DemandeStatut.REJECTED);
 
@@ -313,10 +341,11 @@ class DemandeServiceTest {
 
     @Test
     void updateStatut_invalidTransition_throwsBadRequest() {
-        Demande draft = draftDemande();
-        when(demandeRepository.findByIdOptional(DEMANDE_ID)).thenReturn(Optional.of(draft));
+        // DISBURSE → DRAFT is invalid
+        when(demandeRepository.findByIdOptional(DEMANDE_ID))
+                .thenReturn(Optional.of(demandeWithStatus(DemandeStatut.DISBURSE)));
 
-        assertThatThrownBy(() -> demandeService.updateStatut(DEMANDE_ID, DemandeStatut.VALIDATED))
+        assertThatThrownBy(() -> demandeService.updateStatut(DEMANDE_ID, DemandeStatut.DRAFT))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Invalid status transition");
     }
@@ -324,6 +353,7 @@ class DemandeServiceTest {
     // =========================================================================
     // DELETE
     // =========================================================================
+
     @Test
     void delete_draftDemande_callsRepositoryDelete() {
         Demande draft = draftDemande();
@@ -335,10 +365,9 @@ class DemandeServiceTest {
     }
 
     @Test
-    void delete_submittedDemande_throwsBadRequest() {
-        Demande submitted = draftDemande();
-        submitted.status = DemandeStatut.SUBMITTED;
-        when(demandeRepository.findByIdOptional(DEMANDE_ID)).thenReturn(Optional.of(submitted));
+    void delete_nonDraftDemande_throwsBadRequest() {
+        when(demandeRepository.findByIdOptional(DEMANDE_ID))
+                .thenReturn(Optional.of(demandeWithStatus(DemandeStatut.ANALYSE)));
 
         assertThatThrownBy(() -> demandeService.delete(DEMANDE_ID))
                 .isInstanceOf(BadRequestException.class)
