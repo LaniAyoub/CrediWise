@@ -15,6 +15,7 @@ import org.acme.exception.GestionnaireNotFoundException;
 import org.acme.exception.RoleNotFoundException;
 import org.acme.repository.AgenceRepository;
 import org.acme.repository.GestionnaireRepository;
+import org.acme.repository.RoleRepository;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,11 +25,14 @@ public class GestionnaireService {
 
     private final GestionnaireRepository gestionnaireRepository;
     private final AgenceRepository agenceRepository;
+    private final RoleRepository roleRepository;
 
-    public GestionnaireService(GestionnaireRepository gestionnaireRepository, AgenceRepository agenceRepository) {
+    public GestionnaireService(GestionnaireRepository gestionnaireRepository, AgenceRepository agenceRepository,RoleRepository roleRepository) {
         this.gestionnaireRepository = gestionnaireRepository;
         this.agenceRepository = agenceRepository;
+        this.roleRepository = roleRepository;
     }
+
 
     @Transactional
     public GestionnaireResponseDTO create(GestionnaireCreateDTO dto, UUID actorId) {
@@ -42,8 +46,10 @@ public class GestionnaireService {
         Agence agence = agenceRepository.findByIdOptional(dto.getAgenceId())
                 .orElseThrow(() -> new AgenceNotFoundException("Agence not found: " + dto.getAgenceId()));
 
-        Role role = Role.find("code", dto.getRole()).firstResult();
-        if (role == null || !Boolean.TRUE.equals(role.getIsActive())) {
+        Role role = roleRepository.findByCode(dto.getRole())
+                .orElseThrow(() -> new RoleNotFoundException("Role not found or inactive: " + dto.getRole()));
+
+        if (!Boolean.TRUE.equals(role.getIsActive())) {
             throw new RoleNotFoundException("Role not found or inactive: " + dto.getRole());
         }
 
@@ -94,8 +100,10 @@ public class GestionnaireService {
             gestionnaire.setAddress(dto.getAddress());
         }
         if (dto.getRole() != null) {
-            Role role = Role.find("code", dto.getRole()).firstResult();
-            if (role == null || !Boolean.TRUE.equals(role.getIsActive())) {
+            Role role = roleRepository.findByCode(dto.getRole())
+                    .orElseThrow(() -> new RoleNotFoundException("Role not found or inactive: " + dto.getRole()));
+
+            if (!Boolean.TRUE.equals(role.getIsActive())) {
                 throw new RoleNotFoundException("Role not found or inactive: " + dto.getRole());
             }
             gestionnaire.setRole(dto.getRole());
