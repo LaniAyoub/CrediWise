@@ -9,6 +9,7 @@ option java_multiple_files = true;
 service ClientService {
   rpc GetClientById (ClientRequest) returns (ClientResponse);
   rpc IncrementClientCycle (ClientRequest) returns (ClientCycleUpdateResponse);
+  rpc UpdateClientScoring (ClientScoringUpdateRequest) returns (ClientScoringUpdateResponse);
 }
 
 message ClientRequest {
@@ -75,4 +76,13 @@ message ClientResponse {
 message ClientCycleUpdateResponse {
   bool success = 1;
   string cycle = 2;
+}
+
+message ClientScoringUpdateRequest {
+  string id = 1;
+  string scoring = 2;
+}
+
+message ClientScoringUpdateResponse {
+  bool success = 1;
 }

@@ -19,6 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @ToString(exclude = "description")
 @EqualsAndHashCode(callSuper = true, of = "code") // Use code as unique business key
+
 public class Role extends PanacheEntity {
 
     @NotBlank(message = "Role code is mandatory")

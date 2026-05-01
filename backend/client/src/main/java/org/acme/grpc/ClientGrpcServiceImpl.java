@@ -109,6 +109,29 @@ public class ClientGrpcServiceImpl implements ClientService {
         });
     }
 
+    @Override
+    @Blocking
+    @Transactional
+    public Uni<ClientScoringUpdateResponse> updateClientScoring(ClientScoringUpdateRequest request) {
+        return Uni.createFrom().item(() -> {
+            UUID id;
+            try {
+                id = UUID.fromString(request.getId());
+            } catch (IllegalArgumentException e) {
+                return ClientScoringUpdateResponse.newBuilder().setSuccess(false).build();
+            }
+
+            Optional<Client> opt = clientRepository.findByIdOptional(id);
+            if (opt.isEmpty()) {
+                return ClientScoringUpdateResponse.newBuilder().setSuccess(false).build();
+            }
+
+            opt.get().setScoring(request.getScoring());
+
+            return ClientScoringUpdateResponse.newBuilder().setSuccess(true).build();
+        });
+    }
+
     private String safe(String value) {
         return value != null ? value : "";
     }
