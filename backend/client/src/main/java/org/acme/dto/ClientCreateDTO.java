@@ -55,6 +55,7 @@ public class ClientCreateDTO {
     private Long segmentId;
     private Long accountTypeId;
     private Long secteurActiviteId;
+    private Long activiteId;
     private Long sousActiviteId;
     private Long mappingRisqueActiviteId;
 

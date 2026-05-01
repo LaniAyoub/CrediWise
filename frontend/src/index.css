@@ -85,7 +85,12 @@
      Focus Ring (WCAG AA accessible)
      ───────────────────────────────────────────────────────────────────── */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-surface-900;
+    @apply focus:outline-none;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+  }
+
+  .dark .focus-ring {
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.2);
   }
 
   .focus-ring-inset {
@@ -115,7 +120,7 @@
   }
 
   .glass-card {
-    @apply bg-white/80 dark:bg-surface-800/50 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-2xl shadow-card dark:shadow-md;
+    @apply bg-white/80 dark:bg-surface-800/80 backdrop-blur-[16px] border border-white/20 dark:border-surface-700 rounded-2xl shadow-card dark:shadow-md;
   }
 
   /* Stat card - enhanced modern design */
@@ -127,7 +132,7 @@
      Status & Semantic Components
      ───────────────────────────────────────────────────────────────────── */
   .status-badge {
-    @apply inline-flex items-center px-3 py-1.5 rounded-md text-xs font-500 whitespace-nowrap;
+    @apply inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap;
   }
 
   /* Gradient text */
@@ -143,7 +148,7 @@
   }
 
   .table-row-hover {
-    @apply transition-smooth hover:bg-surface-50 dark:hover:bg-surface-700/50;
+    @apply transition-smooth hover:bg-[#f0fdf4] dark:hover:bg-[rgba(74,222,128,0.05)];
   }
 
   /* ─────────────────────────────────────────────────────────────────────

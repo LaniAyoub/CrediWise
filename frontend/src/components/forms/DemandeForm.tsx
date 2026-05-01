@@ -1,27 +1,48 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { Client } from "@/types/client.types";
 import type { Demande } from "@/types/demande.types";
+import { clientService } from "@/services/client.service";
 import { useAuth } from "@/hooks/useAuth";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import ClientSearchInput from "@/components/forms/ClientSearchInput";
 
+// Products 101/102/103 → ANALYSE workflow (full analysis steps + rules)
+// Products 104+ → CHECK_BEFORE_COMMITTEE workflow (checklist service, no analyse steps)
 const PRODUCT_OPTIONS = [
   { id: "101", label: "Crédit Micro Tatouir" },
   { id: "102", label: "Crédit TPE Mostakbali" },
   { id: "103", label: "Crédit PME Imtiez" },
-  { id: "104", label: "Crédit EL BEYA" },
+  { id: "104", label: "Product Auto" },
+  { id: "105", label: "Crédit EL BEYA" },
   { id: "110", label: "Crédit Agricole Saba" },
 ];
 
+const GUARANTEE_TYPE_OPTIONS = [ "Gage véhicule", "Fixed asset", "Nant Fds de commerce", "Aval salarié", "Caution solidaire", "Traite", "Stock", ];
+
+const ASSET_TYPE_OPTIONS = [
+  "BFR - MARCHANDISES",
+  "BFR - MATIERES PREMIERES",
+  "BFR - AUTRES",
+  "INVEST - IMMOBILIER",
+  "INVEST - AUTRES",
+  "PERSO - EDUCATION",
+  "PERSO - HABITAT",
+  "PERSO - URGENCE",
+  "PERSO - AUTRES",
+];
+
+
+
 const APPLICATION_CHANNELS = [
-  { value: "BRANCH", label: "Branch" },
-  { value: "MOBILE", label: "Mobile" },
-  { value: "WEB", label: "Web" },
-  { value: "PHONE", label: "Phone" },
+  { value: "AGENCY", label: "Agency" },
+  { value: "FIELD", label: "Field" },
+  { value: "CALL_CENTER", label: "Call Center" },
+  { value: "MYADVANS", label: "MyAdvans" },
   { value: "OTHER", label: "Other" },
 ];
 
@@ -66,30 +87,23 @@ type DemandeFormData = z.infer<typeof demandeSchema>;
 
 interface DemandeFormProps {
   onSubmit: (data: DemandeFormData) => void;
-  clients: Client[];
+  /** @deprecated Legacy prop kept so DemandesPage compiles without changes — no longer used for search */
+  clients?: Client[];
   isLoading: boolean;
   defaultValues?: Demande;
   isEdit?: boolean;
 }
 
-const clientLabel = (client: Client) => {
-  if (client.clientType === "PHYSICAL") {
-    return `${client.firstName || ""} ${client.lastName || ""}`.trim() || client.id;
-  }
-  return client.companyName || client.id;
-};
-
 const DemandeForm = ({
   onSubmit,
-  clients,
   isLoading,
   defaultValues,
   isEdit = false,
 }: DemandeFormProps) => {
   const { t } = useTranslation('demandes');
   const { user } = useAuth();
-  const [clientQuery, setClientQuery] = useState("");
-  const [hoveredField, setHoveredField] = useState<string | null>(null);
+  // Full client object fetched after selection (for snapshot display)
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   const {
     register,
@@ -149,35 +163,6 @@ const DemandeForm = ({
     name: "guarantees",
   });
 
-  const selectedClientId = watch("clientId");
-  const selectedClient = useMemo(
-    () => clients.find((c) => c.id === selectedClientId),
-    [clients, selectedClientId]
-  );
-
-  const filteredClients = useMemo(() => {
-    const q = clientQuery.trim().toLowerCase();
-    if (!q) return clients;
-    return clients.filter((client) => {
-      const fullName = `${client.firstName || ""} ${client.lastName || ""}`.toLowerCase();
-      return (
-        fullName.includes(q) ||
-        client.companyName?.toLowerCase().includes(q) ||
-        client.nationalId?.toLowerCase().includes(q) ||
-        client.primaryPhone?.toLowerCase().includes(q) ||
-        client.email?.toLowerCase().includes(q)
-      );
-    });
-  }, [clients, clientQuery]);
-
-  const showHint = (field: keyof DemandeFormData, hint: string) => {
-    const value = watch(field);
-    if (hoveredField !== field) return null;
-    if (typeof value === "string" && value.trim().length > 0) return null;
-    if (typeof value === "number" && Number.isFinite(value) && value > 0) return null;
-    return <p className="mt-1 text-xs text-brand-600">{hint}</p>;
-  };
-
   const watchApplicationChannel = watch("applicationChannel");
 
   const onFormSubmit = (data: DemandeFormData) => {
@@ -206,134 +191,89 @@ const DemandeForm = ({
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-1">
-      <div className="mb-6 rounded-lg border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 p-4 transition-colors">
-        <label htmlFor="client-search" className="block text-label text-surface-700 dark:text-surface-300 mb-2">
-          {t('form.searchClient')}
+      <div className="mb-6">
+        <ClientSearchInput
+          onSelect={async (clientId) => {
+            setValue("clientId", clientId, { shouldValidate: true });
+            try {
+              const res = await clientService.getById(clientId);
+              setSelectedClient(res.data);
+            } catch {
+              setSelectedClient(null);
+            }
+          }}
+          lockedClient={selectedClient}
+          onClear={() => {
+            setSelectedClient(null);
+            setValue("clientId", "", { shouldValidate: true });
+          }}
+          error={errors.clientId?.message}
+        />
+        <input type="hidden" {...register("clientId")} />
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+          {t('form.loanPurpose')}
+          <span className="text-rose-500 ml-0.5">*</span>
         </label>
-        <input
-          id="client-search"
-          value={clientQuery}
-          onChange={(e) => setClientQuery(e.target.value)}
-          placeholder={t('form.searchClientPlaceholder')}
-          className="block w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-700 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus-ring placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-colors"
-        />
-        <p className="mt-2 text-xs text-surface-600 dark:text-surface-400">{filteredClients.length} {t('form.clientsFound')}</p>
-      </div>
-
-      {!isEdit && clientQuery.trim() && filteredClients.length > 0 && (
-        <div className="mb-4 rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 p-2 max-h-44 overflow-y-auto transition-colors">
-          {filteredClients.slice(0, 8).map((client) => (
-            <button
-              key={client.id}
-              type="button"
-              className="w-full text-left px-3 py-2 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
-              onClick={() => {
-                setClientQuery(clientLabel(client));
-                setValue("clientId", client.id, { shouldValidate: true });
-              }}
-            >
-              <p className="text-sm text-surface-900 dark:text-surface-100">{clientLabel(client)}</p>
-              <p className="text-xs text-surface-500 dark:text-surface-400">{client.nationalId || client.primaryPhone || client.email || client.id}</p>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {!isEdit && clientQuery.trim() && filteredClients.length === 1 && !selectedClientId && (
-        <div className="mb-4">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              const only = filteredClients[0];
-              setValue("clientId", only.id, { shouldValidate: true });
-            }}
-          >
-            {t('form.useMatchedClient')}
-          </Button>
-        </div>
-      )}
-
-      {selectedClient && (
-        <div className="mb-4 rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 p-4 transition-colors">
-          <p className="text-xs font-semibold text-brand-700 dark:text-brand-300 uppercase mb-2">Selected Client</p>
-          <p className="text-sm font-medium text-surface-900 dark:text-surface-100">{clientLabel(selectedClient)}</p>
-          <p className="text-xs text-surface-500 mt-1">
-            {selectedClient.nationalId || selectedClient.primaryPhone || selectedClient.email}
-          </p>
-          {errors.clientId?.message && (
-            <p className="mt-1.5 text-xs text-red-500">{errors.clientId.message}</p>
-          )}
-          <input type="hidden" {...register("clientId")} />
-        </div>
-      )}
-      {!selectedClient && errors.clientId?.message && (
-        <p className="mt-2 text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-          {errors.clientId.message}
-        </p>
-      )}
-
-      {selectedClient && (
-        <div className="mb-4 rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/20 p-4 transition-colors">
-          <p className="text-sm font-semibold text-brand-700 dark:text-brand-300 mb-2">Client Snapshot (Auto-filled from database)</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-surface-700 dark:text-surface-300">
-            <p><span className="font-semibold">First Name:</span> {selectedClient.firstName || "—"}</p>
-            <p><span className="font-semibold">Last Name:</span> {selectedClient.lastName || "—"}</p>
-            <p><span className="font-semibold">Gender:</span> {selectedClient.gender || "—"}</p>
-            <p><span className="font-semibold">Segment:</span> {selectedClient.segmentLibelle || "—"}</p>
-            <p><span className="font-semibold">Business Sector:</span> {selectedClient.secteurActiviteLibelle || "—"}</p>
-            <p><span className="font-semibold">Business Activity:</span> {selectedClient.sousActiviteLibelle || "—"}</p>
-            <p><span className="font-semibold">IFC Risk Level:</span> {selectedClient.ifcLevelOfRisk || "—"}</p>
-          </div>
-        </div>
-      )}
-
-      <div
-        onMouseEnter={() => setHoveredField("loanPurpose")}
-        onMouseLeave={() => setHoveredField(null)}
-      >
-        <Input
-          label="Loan Purpose"
+        <textarea
           {...register("loanPurpose")}
-          error={errors.loanPurpose?.message}
-          placeholder="e.g. Equipment purchase for production line"
-          onFocus={() => setHoveredField("loanPurpose")}
-          onBlur={() => setHoveredField(null)}
+          rows={3}
+          placeholder={t('form.loanPurposePlaceholder')}
+          className="block w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 dark:focus:border-brand-400 placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-all resize-none"
         />
-        {showHint("loanPurpose", "Describe clearly why the client needs this loan.")}
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-        <div
-          onMouseEnter={() => setHoveredField("requestedAmount")}
-          onMouseLeave={() => setHoveredField(null)}
-        >
-          <Input
-            label="Requested Amount"
-            type="number"
-            min="0"
-            step="0.01"
-            {...register("requestedAmount")}
-            error={errors.requestedAmount?.message}
-            onFocus={() => setHoveredField("requestedAmount")}
-            onBlur={() => setHoveredField(null)}
-          />
-          {showHint("requestedAmount", "Enter a positive amount only (no negative values).")}
-        </div>
-        <Input
-          label="Duration (months)"
-          type="number"
-          min="1"
-          step="1"
-          {...register("durationMonths")}
-          error={errors.durationMonths?.message}
-        />
+        {errors.loanPurpose?.message && (
+          <p className="mt-1.5 text-xs text-red-500">{errors.loanPurpose.message}</p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
         <div className="mb-4">
-          <label htmlFor="productId" className="block text-sm font-medium text-surface-600 mb-1.5">
+          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+            {t('form.requestedAmount')}
+            <span className="text-rose-500 ml-0.5">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              {...register("requestedAmount")}
+              placeholder={t('form.requestedAmountPlaceholder')}
+              className="block w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 pr-14 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 dark:focus:border-brand-400 placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-all"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-surface-400 dark:text-surface-500 pointer-events-none">TND</span>
+          </div>
+          {errors.requestedAmount?.message && (
+            <p className="mt-1.5 text-xs text-red-500">{errors.requestedAmount.message}</p>
+          )}
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+            {t('form.durationMonths')}
+            <span className="text-rose-500 ml-0.5">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type="number"
+              min="1"
+              step="1"
+              {...register("durationMonths")}
+              placeholder={t('form.durationMonthsPlaceholder')}
+              className="block w-full rounded-xl border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 pr-14 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 dark:focus:border-brand-400 placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-all"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-surface-400 dark:text-surface-500 pointer-events-none">mois</span>
+          </div>
+          {errors.durationMonths?.message && (
+            <p className="mt-1.5 text-xs text-red-500">{errors.durationMonths.message}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+        <div className="mb-4">
+          <label htmlFor="productId" className="block text-sm font-medium text-surface-600 dark:text-surface-400 mb-1.5">
             {t('form.product')}
           </label>
           <select
@@ -349,39 +289,80 @@ const DemandeForm = ({
             ))}
           </select>
         </div>
-        <Input
-          label={t('form.assetType')}
-          {...register("assetType")}
-          error={errors.assetType?.message}
-          placeholder={t('form.assetTypePlaceholder')}
-        />
+        <div className="mb-4">
+          <label htmlFor="assetType" className="block text-sm font-medium text-surface-600 dark:text-surface-400 mb-1.5">
+            {t('form.assetType')}
+          </label>
+          <select
+            id="assetType"
+            className="block w-full rounded-lg border border-surface-200 dark:border-surface-700 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-900 dark:text-surface-100 focus-ring hover:border-surface-300 dark:hover:border-surface-600 focus:border-brand-500 dark:focus:border-brand-400 transition-all duration-200"
+            {...register("assetType")}
+          >
+            <option value="">{t('form.assetTypePlaceholder')}</option>
+            {ASSET_TYPE_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+          {errors.assetType?.message && (
+            <p className="mt-1.5 text-xs text-red-500">{errors.assetType.message}</p>
+          )}
+        </div>
       </div>
 
-      <div className="mb-4 rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/20 p-3 transition-colors">
-        <p className="text-sm font-semibold text-brand-700 dark:text-brand-300">{t('form.managerAssignment')}</p>
-        <p className="text-xs text-surface-600 dark:text-surface-400 mt-1">
-          {t('form.managerAutoAssigned')}
-        </p>
-        <p className="text-xs text-surface-700 dark:text-surface-300 mt-1">
-          {t('form.currentUser')} {user?.firstName || "—"} {user?.lastName || ""} ({user?.role || "—"})
-        </p>
+      {/* Manager Assignment — snapshot card */}
+      <div className="mb-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-4 transition-colors">
+        <div className="flex items-center gap-2 mb-2">
+          <svg className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">{t('form.managerAssignment')}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-emerald-600 dark:bg-emerald-700 flex items-center justify-center flex-shrink-0">
+            <span className="text-sm font-bold text-white">
+              {(user?.firstName?.[0] || "") + (user?.lastName?.[0] || "")}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate">
+              {user?.firstName || "—"} {user?.lastName || ""}
+            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 uppercase">
+                {user?.role || "—"}
+              </span>
+              <span className="text-xs text-surface-500 dark:text-surface-400">{t('form.managerAutoAssigned')}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="mb-4">
-        <Input
-          label={t('form.monthlyRepaymentCapacity')}
-          type="number"
-          min="0"
-          step="0.01"
-          {...register("monthlyRepaymentCapacity")}
-          error={errors.monthlyRepaymentCapacity?.message}
-          placeholder={t('form.monthlyRepaymentCapacityPlaceholder')}
-        />
+      {/* Monthly Repayment Capacity */}
+      <div className="mb-4 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800/50 p-4 transition-colors">
+        <label htmlFor="monthlyRepaymentCapacity" className="block text-sm font-semibold text-surface-800 dark:text-surface-200 mb-1">
+          {t('form.monthlyRepaymentCapacity')}
+        </label>
+        <p className="text-xs text-surface-500 dark:text-surface-400 mb-3">{t('form.monthlyRepaymentCapacityHint')}</p>
+        <div className="relative max-w-xs">
+          <input
+            id="monthlyRepaymentCapacity"
+            type="number"
+            min="0"
+            step="0.01"
+            {...register("monthlyRepaymentCapacity")}
+            placeholder={t('form.monthlyRepaymentCapacityPlaceholder')}
+            className="block w-full rounded-lg border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-700 px-4 py-2.5 pr-14 text-sm text-surface-900 dark:text-surface-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 dark:focus:border-brand-400 placeholder:text-surface-400 dark:placeholder:text-surface-500 transition-all"
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-surface-400 dark:text-surface-500 pointer-events-none">TND</span>
+        </div>
+        {errors.monthlyRepaymentCapacity?.message && (
+          <p className="mt-1.5 text-xs text-red-500">{errors.monthlyRepaymentCapacity.message}</p>
+        )}
       </div>
 
       {/* Application Channel Select */}
       <div className="mb-4">
-        <label htmlFor="applicationChannel" className="block text-sm font-medium text-surface-600 mb-1.5">
+        <label htmlFor="applicationChannel" className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
           {t('form.applicationChannel')}
         </label>
         <select

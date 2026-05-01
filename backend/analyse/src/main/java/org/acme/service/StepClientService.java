@@ -87,7 +87,102 @@ public class StepClientService {
         }
 
         // Build response
-        return buildResponse(clientData, agenceData, historique, warningMessage, false, null, null, null, managerData, dossier, Optional.empty());
+        return buildResponse(clientData, agenceData, historique, warningMessage, false, null, null, null, managerData, dossier, Optional.empty(), null, null, null, null);
+    }
+
+    /**
+     * Save Step 1 draft — persists snapshot + location without marking complete or advancing step.
+     * Safe to call multiple times.
+     */
+    @Transactional
+    public StepClientResponse save(Long dossierId, UUID callerGestionnaireId, StepClientRequest req) {
+        String location = req != null ? req.location : null;
+        String locationDomicile = req != null ? req.locationDomicile : null;
+        java.time.LocalDate dateVisite = parseDate(req != null ? req.dateVisite : null);
+        java.time.LocalDate dateFinalisation = parseDate(req != null ? req.dateFinalisation : null);
+        AnalyseDossier dossier = AnalyseDossier.findById(dossierId);
+        if (dossier == null) {
+            throw new IllegalArgumentException("Dossier introuvable: " + dossierId);
+        }
+        verifyAuthorization(dossier, callerGestionnaireId);
+
+        ClientResponse clientData = clientDataClient.fetchClient(dossier.clientId.toString());
+
+        Optional<AgenceResponse> agenceData = Optional.empty();
+        String warningMessage = null;
+        if (clientData.getBranchId() != null && !clientData.getBranchId().isBlank()) {
+            agenceData = agenceDataClient.fetchAgence(clientData.getBranchId());
+            if (agenceData.isEmpty()) {
+                warningMessage = "Service agence indisponible";
+            }
+        }
+
+        List<CreditHistoriqueItem> historique = historiqueClient.fetchHistorique(dossier.clientId.toString());
+
+        Optional<GestionnaireResponse> managerData = Optional.empty();
+        try {
+            managerData = gestionnaireDataClient.fetchGestionnaire(
+                UUID.fromString(clientData.getAssignedManagerId())
+            );
+        } catch (Exception e) {
+            Log.warn("Failed to fetch manager data: " + e.getMessage());
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        Optional<StepClient> existingStep = StepClient.find("dossier.id", dossierId).firstResultOptional();
+        StepClient stepClient;
+        if (existingStep.isPresent()) {
+            stepClient = existingStep.get();
+        } else {
+            stepClient = new StepClient();
+        }
+
+        mapClientDataToEntity(stepClient, clientData, dossier);
+
+        if (agenceData.isPresent()) {
+            mapAgenceDataToEntity(stepClient, agenceData.get());
+        } else {
+            stepClient.agenceDataAvailable = false;
+        }
+
+        try {
+            stepClient.historiqueCreditJson = MAPPER.writeValueAsString(historique);
+        } catch (Exception e) {
+            Log.warn("Error serializing historique: " + e.getMessage());
+            stepClient.historiqueCreditJson = "[]";
+        }
+
+        int validated = 0, rejected = 0;
+        for (CreditHistoriqueItem item : historique) {
+            if ("VALIDATED".equals(item.status())) validated++;
+            if ("REJECTED".equals(item.status())) rejected++;
+        }
+        stepClient.nombreDemandesPassees = historique.size();
+        stepClient.nombreDemandesApprouvees = validated;
+        stepClient.nombreDemandesRejetees = rejected;
+
+        // Save fields — do NOT mark complete, do NOT advance step
+        stepClient.location = location;
+        stepClient.locationDomicile = locationDomicile;
+        stepClient.dateVisite = dateVisite;
+        stepClient.dateFinalisation = dateFinalisation;
+        stepClient.dataFetchedAt = now;
+        stepClient.warningMessage = warningMessage;
+        if (managerData.isPresent()) {
+            stepClient.assignedManagerName = buildManagerName(managerData);
+            stepClient.assignedManagerEmail = buildManagerEmail(managerData);
+            stepClient.assignedManagerRole = buildManagerRole(managerData);
+        }
+
+        if (stepClient.id == null) {
+            stepClient.dossier = dossier;
+            stepClient.persist();
+        }
+
+        return buildResponse(clientData, agenceData, historique, warningMessage,
+            stepClient.isComplete, stepClient.confirmedBy, stepClient.confirmedAt, now,
+            managerData, dossier, Optional.empty(), location, locationDomicile, dateVisite, dateFinalisation);
     }
 
     /**
@@ -102,7 +197,11 @@ public class StepClientService {
      * @throws ServiceUnavailableException if client service is down
      */
     @Transactional
-    public StepClientResponse confirm(Long dossierId, UUID callerGestionnaireId) {
+    public StepClientResponse confirm(Long dossierId, UUID callerGestionnaireId, StepClientRequest req) {
+        String location = req != null ? req.location : null;
+        String locationDomicile = req != null ? req.locationDomicile : null;
+        java.time.LocalDate dateVisite = parseDate(req != null ? req.dateVisite : null);
+        java.time.LocalDate dateFinalisation = parseDate(req != null ? req.dateFinalisation : null);
         // Load dossier
         AnalyseDossier dossier = AnalyseDossier.findById(dossierId);
         if (dossier == null) {
@@ -194,6 +293,15 @@ public class StepClientService {
         stepClient.confirmedAt = now;
         stepClient.dataFetchedAt = now;
         stepClient.warningMessage = warningMessage;
+        stepClient.location = location;
+        stepClient.locationDomicile = locationDomicile;
+        stepClient.dateVisite = dateVisite;
+        stepClient.dateFinalisation = dateFinalisation;
+        if (managerData.isPresent()) {
+            stepClient.assignedManagerName = buildManagerName(managerData);
+            stepClient.assignedManagerEmail = buildManagerEmail(managerData);
+            stepClient.assignedManagerRole = buildManagerRole(managerData);
+        }
 
         if (stepClient.id == null) {
             stepClient.dossier = dossier;
@@ -207,7 +315,7 @@ public class StepClientService {
         dossier.updatedAt = now;
         // Entity is managed, changes will be persisted automatically
 
-        return buildResponse(clientData, agenceData, historique, warningMessage, true, callerGestionnaireId, stepClient.confirmedAt, now, managerData, dossier, confirmingGestionnaireData);
+        return buildResponse(clientData, agenceData, historique, warningMessage, true, callerGestionnaireId, stepClient.confirmedAt, now, managerData, dossier, confirmingGestionnaireData, location, locationDomicile, dateVisite, dateFinalisation);
     }
 
     /**
@@ -314,6 +422,7 @@ public class StepClientService {
         entity.segmentName = data.getSegment();
         entity.accountTypeName = data.getAccountType();
         entity.businessSectorName = data.getBusinessSector();
+        entity.businessActivityGroupName = data.getBusinessActivityGroup();
         entity.businessActivityName = data.getBusinessActivity();
 
         entity.clientCreatedAt = LocalDateTime.now(); // Placeholder
@@ -327,11 +436,18 @@ public class StepClientService {
         entity.agenceIsActive = data.getIsActive();
     }
 
+    private static java.time.LocalDate parseDate(String s) {
+        if (s == null || s.isBlank()) return null;
+        try { return java.time.LocalDate.parse(s); } catch (Exception e) { return null; }
+    }
+
     private StepClientResponse buildResponse(ClientResponse clientData, Optional<AgenceResponse> agenceData,
                                               List<CreditHistoriqueItem> historique, String warningMessage,
                                               Boolean isComplete, UUID confirmedBy, LocalDateTime confirmedAt,
                                               LocalDateTime dataFetchedAt, Optional<GestionnaireResponse> managerData,
-                                              AnalyseDossier dossier, Optional<GestionnaireResponse> confirmingGestionnaireData) {
+                                              AnalyseDossier dossier, Optional<GestionnaireResponse> confirmingGestionnaireData,
+                                              String location, String locationDomicile,
+                                              java.time.LocalDate dateVisite, java.time.LocalDate dateFinalisation) {
         return new StepClientResponse(
             java.util.UUID.fromString(clientData.getId()),
             clientData.getClientType(),
@@ -365,6 +481,7 @@ public class StepClientService {
             clientData.getSegment(), // segmentName
             clientData.getAccountType(), // accountTypeName
             clientData.getBusinessSector(), // businessSectorName
+            clientData.getBusinessActivityGroup(), // businessActivityGroupName
             clientData.getBusinessActivity(), // businessActivityName
             clientData.getBranchId(),
             java.util.UUID.fromString(clientData.getAssignedManagerId()),
@@ -392,9 +509,13 @@ public class StepClientService {
             dataFetchedAt,
             agenceData.isPresent(),
             warningMessage,
-            null, // location
+            location,
+            locationDomicile,
+            dateVisite,
+            dateFinalisation,
             dossier != null ? dossier.demandeCreatedAt : null, // demandeCreatedAt
             dossier != null ? dossier.status.toString() : null, // dossierStatus
+            dossier != null ? dossier.demandeId : null, // demandeId
             buildManagerName(managerData),
             buildManagerEmail(managerData),
             buildManagerRole(managerData)
@@ -435,6 +556,7 @@ public class StepClientService {
             entity.segmentName,
             entity.accountTypeName,
             entity.businessSectorName,
+            entity.businessActivityGroupName,
             entity.businessActivityName,
             entity.agenceId,
             entity.assignedManagerId,
@@ -463,8 +585,12 @@ public class StepClientService {
             entity.agenceDataAvailable,
             entity.warningMessage,
             entity.location,
+            entity.locationDomicile,
+            entity.dateVisite,
+            entity.dateFinalisation,
             entity.dossier != null ? entity.dossier.demandeCreatedAt : null,
             entity.dossier != null ? entity.dossier.status.toString() : null,
+            entity.dossier != null ? entity.dossier.demandeId : null,
             entity.assignedManagerName,
             entity.assignedManagerEmail,
             entity.assignedManagerRole
@@ -485,5 +611,15 @@ public class StepClientService {
 
     private String buildManagerRole(Optional<GestionnaireResponse> managerData) {
         return managerData.map(GestionnaireResponse::getRole).orElse(null);
+    }
+
+    /**
+     * DTO for incoming Step 1 save/confirm request
+     */
+    public static class StepClientRequest {
+        public String location;
+        public String locationDomicile;
+        public String dateVisite;       // ISO date string: yyyy-MM-dd
+        public String dateFinalisation; // ISO date string: yyyy-MM-dd
     }
 }

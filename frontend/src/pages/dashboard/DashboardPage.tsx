@@ -68,7 +68,7 @@ const DashboardPage = () => {
   // ── Demande analytics ──────────────────────────────────────────────────────
   const totalDemandes = demandes.length;
   const draftDemandes = demandes.filter((d) => d.status === 'DRAFT').length;
-  const submittedDemandes = demandes.filter((d) => d.status === 'SUBMITTED').length;
+  const inAnalysisDemandes = demandes.filter((d) => d.status === 'ANALYSE' || d.status === 'CHECK_BEFORE_COMMITTEE').length;
   const validatedDemandes = demandes.filter((d) => d.status === 'ANALYSE').length;
   const rejectedDemandes = demandes.filter((d) => d.status === 'REJECTED').length;
 
@@ -178,7 +178,7 @@ const DashboardPage = () => {
             <Card
               title={t('stats.totalRequests')}
               value={totalDemandes}
-              subtitle={`${submittedDemandes} submitted · ${validatedDemandes} approved`}
+              subtitle={`${inAnalysisDemandes} in analysis · ${validatedDemandes} approved`}
               color="brand"
               icon={
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -369,8 +369,8 @@ const DashboardPage = () => {
                       className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${
                         d.status === 'ANALYSE'
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                          : d.status === 'SUBMITTED'
-                            ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
+                          : d.status === 'CHECK_BEFORE_COMMITTEE'
+                            ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
                             : d.status === 'DRAFT'
                               ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                               : 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'

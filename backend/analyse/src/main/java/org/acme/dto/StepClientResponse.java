@@ -116,6 +116,9 @@ public record StepClientResponse(
     @JsonProperty("businessSectorName")
     String businessSectorName,
 
+    @JsonProperty("businessActivityGroupName")
+    String businessActivityGroupName,
+
     @JsonProperty("businessActivityName")
     String businessActivityName,
 
@@ -210,6 +213,15 @@ public record StepClientResponse(
     @JsonProperty("location")
     String location,
 
+    @JsonProperty("locationDomicile")
+    String locationDomicile,
+
+    @JsonProperty("dateVisite")
+    LocalDate dateVisite,
+
+    @JsonProperty("dateFinalisation")
+    LocalDate dateFinalisation,
+
     // ─── DEMANDE INFO ────────────────────────────────────────────
 
     @JsonProperty("demandeCreatedAt")
@@ -217,6 +229,9 @@ public record StepClientResponse(
 
     @JsonProperty("dossierStatus")
     String dossierStatus,
+
+    @JsonProperty("demandeId")
+    Long demandeId,
 
     // ─── MANAGER INFO ────────────────────────────────────────────
 

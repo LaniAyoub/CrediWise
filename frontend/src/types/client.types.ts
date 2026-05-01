@@ -56,6 +56,8 @@ export interface Client {
   accountTypeLibelle?: string;
   secteurActiviteId?: number;
   secteurActiviteLibelle?: string;
+  activiteId?: number;
+  activiteLibelle?: string;
   sousActiviteId?: number;
   sousActiviteLibelle?: string;
   mappingRisqueActiviteId?: number;
@@ -73,7 +75,7 @@ export interface Client {
   accountNumber?: string;
   accountTypeCustomName?: string;
   scoring?: string;
-  cycle?: string;
+  cycle?: number;
   cbsId?: string;
   attributes?: Record<string, unknown>;
 
@@ -118,6 +120,7 @@ export interface ClientCreateRequest {
   segmentId?: number;
   accountTypeId?: number;
   secteurActiviteId?: number;
+  activiteId?: number;
   sousActiviteId?: number;
   mappingRisqueActiviteId?: number;
 
@@ -131,7 +134,7 @@ export interface ClientCreateRequest {
   accountNumber?: string;
   accountTypeCustomName?: string;
   scoring?: string;
-  cycle?: string;
+  cycle?: number;
   cbsId?: string;
   attributes?: Record<string, unknown>;
 }
@@ -170,6 +173,7 @@ export interface ClientUpdateRequest {
   segmentId?: number;
   accountTypeId?: number;
   secteurActiviteId?: number;
+  activiteId?: number;
   sousActiviteId?: number;
   mappingRisqueActiviteId?: number;
 
@@ -183,9 +187,24 @@ export interface ClientUpdateRequest {
   accountNumber?: string;
   accountTypeCustomName?: string;
   scoring?: string;
-  cycle?: string;
+  cycle?: number;
   cbsId?: string;
   attributes?: Record<string, unknown>;
+}
+
+// ── Smart search result (lightweight, no gRPC enrichment) ───────────────────
+export interface ClientSearchResult {
+  id: string;
+  clientType: ClientType;
+  status: ClientStatus;
+  firstName?: string;
+  lastName?: string;
+  companyName?: string;
+  nationalId?: string;
+  primaryPhone?: string;
+  email?: string;
+  cbsId?: string;
+  agenceId?: string;
 }
 
 // ── List query params ────────────────────────────────────────────────────────

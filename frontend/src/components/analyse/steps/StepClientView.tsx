@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
+import { analyseService, handleAnalyseError } from '@/services/analyseService';
 import { getStatusKey } from '@/utils/statusMapping';
 import type { StepClientData } from '@/types/analyse';
 import AuditMetadataPanel from '@/components/analyse/AuditMetadataPanel';
@@ -7,124 +9,185 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 
 interface StepClientViewProps {
+  dossierId: number;
+  demandeId?: number | null;
   data: StepClientData;
-  onConfirmer: () => void;
-  isConfirming: boolean;
+  onConfirmed: (data: StepClientData) => void;
   onDirtyChange?: (dirty: boolean) => void;
+  saveRef?: React.MutableRefObject<(() => Promise<void>) | null>;
+  readOnly?: boolean;
 }
 
-const StepClientView: React.FC<StepClientViewProps> = ({ data, onConfirmer, isConfirming, onDirtyChange }) => {
-  const { t } = useTranslation(['analyse', 'clients']);
-  const [location, setLocation] = useState<string>(data.location || '');
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function calcAge(dateOfBirth: string | null | undefined): number | null {
+  if (!dateOfBirth) return null;
+  const dob = new Date(dateOfBirth);
+  if (isNaN(dob.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  if (
+    today.getMonth() < dob.getMonth() ||
+    (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate())
+  ) age--;
+  return age >= 0 ? age : null;
+}
 
-  // Notify parent of dirty state
+function fmtDate(iso?: string | null): string {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('fr-FR'); } catch { return '—'; }
+}
+
+// ── Info row component ────────────────────────────────────────────────────────
+const InfoRow = ({ label, value, wide = false }: { label: string; value: React.ReactNode; wide?: boolean }) => (
+  <div className={wide ? 'col-span-2' : ''}>
+    <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-widest mb-0.5">
+      {label}
+    </p>
+    <p className="text-sm font-medium text-surface-900 dark:text-surface-50">
+      {value === null || value === undefined || value === '' ? '—' : value}
+    </p>
+  </div>
+);
+
+// ── Editable text area ────────────────────────────────────────────────────────
+const EditableArea = ({
+  value,
+  onChange,
+  placeholder,
+  readOnly,
+  label,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  readOnly: boolean;
+  label: string;
+}) => (
+  <div>
+    <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-widest mb-1.5">
+      {label}
+    </p>
+    <textarea
+      value={value}
+      onChange={(e) => !readOnly && onChange(e.target.value)}
+      readOnly={readOnly}
+      placeholder={readOnly ? '' : placeholder}
+      rows={2}
+      className={`w-full px-3 py-2 text-sm border rounded-lg text-surface-900 dark:text-surface-50 bg-white dark:bg-surface-700 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none transition-colors resize-none ${
+        readOnly
+          ? 'border-transparent cursor-default'
+          : 'border-surface-300 dark:border-surface-600 focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500'
+      }`}
+    />
+  </div>
+);
+
+// ── Main component ────────────────────────────────────────────────────────────
+const StepClientView: React.FC<StepClientViewProps> = ({
+  dossierId,
+  demandeId,
+  data,
+  onConfirmed,
+  onDirtyChange,
+  saveRef,
+  readOnly = false,
+}) => {
+  const { t } = useTranslation('analyse');
+
+  const [saving, setSaving] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(data.isComplete);
+  const [confirmedAt, setConfirmedAt] = useState(data.confirmedAt);
+  const [confirmedByName, setConfirmedByName] = useState(data.confirmedByName);
+
+  // Editable fields
+  const [locationActivite, setLocationActivite] = useState(data.location || '');
+  const [locationDomicile, setLocationDomicile] = useState(data.locationDomicile || '');
+  const [dateVisite, setDateVisite] = useState(data.dateVisite || '');
+  const [dateFinalisation, setDateFinalisation] = useState(data.dateFinalisation || '');
+
+  // Saved snapshots for dirty detection
+  const [savedActivite, setSavedActivite] = useState(data.location || '');
+  const [savedDomicile, setSavedDomicile] = useState(data.locationDomicile || '');
+  const [savedDateVisite, setSavedDateVisite] = useState(data.dateVisite || '');
+  const [savedDateFinalisation, setSavedDateFinalisation] = useState(data.dateFinalisation || '');
+
+  const isDirty = !readOnly && (
+    locationActivite !== savedActivite ||
+    locationDomicile !== savedDomicile ||
+    dateVisite !== savedDateVisite ||
+    dateFinalisation !== savedDateFinalisation
+  );
+
   useEffect(() => {
-    const isDirty = location !== (data.location || '');
     onDirtyChange?.(isDirty);
-  }, [location, data.location, onDirtyChange]);
+    return () => onDirtyChange?.(false);
+  }, [isDirty, onDirtyChange]);
 
-  const formatDate = (dateString: string | null): string => {
-    if (!dateString) return '—';
+  const buildPayload = () => ({
+    location: locationActivite || null,
+    locationDomicile: locationDomicile || null,
+    dateVisite: dateVisite || null,
+    dateFinalisation: dateFinalisation || null,
+  });
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
     try {
-      return new Date(dateString).toLocaleDateString('fr-FR');
-    } catch {
-      return '—';
+      const result = await analyseService.saveStep1(dossierId, buildPayload());
+      setSavedActivite(result.data.location || '');
+      setSavedDomicile(result.data.locationDomicile || '');
+      setSavedDateVisite(result.data.dateVisite || '');
+      setSavedDateFinalisation(result.data.dateFinalisation || '');
+      toast.success(t('common.saved', 'Enregistré'));
+    } catch (e) {
+      toast.error(handleAnalyseError(e));
+    } finally {
+      setSaving(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dossierId, locationActivite, locationDomicile, dateVisite, dateFinalisation, t]);
+
+  useEffect(() => {
+    if (saveRef) saveRef.current = isDirty ? async () => { await handleSave(); } : null;
+  }, [isDirty, saveRef, handleSave]);
+
+  const handleConfirm = async () => {
+    setConfirming(true);
+    try {
+      const result = await analyseService.confirmerStep1(dossierId, buildPayload());
+      setIsConfirmed(true);
+      setConfirmedAt(result.data.confirmedAt);
+      setConfirmedByName(result.data.confirmedByName);
+      setSavedActivite(result.data.location || '');
+      setSavedDomicile(result.data.locationDomicile || '');
+      setSavedDateVisite(result.data.dateVisite || '');
+      setSavedDateFinalisation(result.data.dateFinalisation || '');
+      toast.success(t('step1.confirmedSuccess'));
+      onConfirmed(result.data);
+    } catch (e) {
+      toast.error(handleAnalyseError(e));
+    } finally {
+      setConfirming(false);
     }
   };
 
-  const formatCurrency = (value: number | null | string): string => {
-    if (value === null || value === undefined || value === '') return '—';
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(num)) return '—';
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'TND',
-      maximumFractionDigits: 2,
-    }).format(num);
-  };
+  const age = calcAge(data.dateOfBirth);
+  const effectiveDemandeId = demandeId ?? data.demandeId;
 
-  const renderFieldGrid = (
-    fields: Array<{ label: string; value: string | number | boolean | null }>
-  ) => {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {fields.map((field, idx) => (
-          <div key={idx}>
-            <p className="text-label text-surface-600 dark:text-surface-400 mb-1">{field.label}</p>
-            <p className="text-body text-surface-900 dark:text-surface-50">
-              {field.value === null || field.value === '' || field.value === undefined
-                ? '—'
-                : typeof field.value === 'boolean'
-                  ? field.value
-                    ? t('common.yes')
-                    : t('common.no')
-                  : field.value}
-            </p>
-          </div>
-        ))}
+  // ── Card header helper ──────────────────────────────────────────────────────
+  const CardHeader = ({ icon, title, children }: { icon: React.ReactNode; title: string; children?: React.ReactNode }) => (
+    <div className="flex items-center justify-between px-5 py-3.5 border-b border-surface-100 dark:border-surface-700/60 bg-surface-50/50 dark:bg-surface-800/30">
+      <div className="flex items-center gap-2.5">
+        <span className="text-brand-500 dark:text-brand-400">{icon}</span>
+        <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50">{title}</h3>
       </div>
-    );
-  };
-
-  // Build client fields dynamically based on type
-  const buildClientFields = () => {
-    const fields: Array<{ label: string; value: string | number | boolean | null }> = [
-      { label: t('clients:detailLabels.id'), value: data.clientId },
-      { label: t('clients:form.clientType'), value: data.clientType },
-      { label: t('clients:form.status'), value: data.status },
-    ];
-
-    // Physical person fields (PHYSICAL clients)
-    if (data.clientType === 'PHYSICAL') {
-      fields.push(
-        { label: t('clients:form.firstName'), value: data.firstName },
-        { label: t('clients:form.lastName'), value: data.lastName },
-        { label: t('clients:form.dateOfBirth'), value: formatDate(data.dateOfBirth) },
-        { label: t('clients:form.nationalId'), value: data.nationalId },
-        { label: t('clients:form.taxIdentifier'), value: data.taxIdentifier },
-        { label: t('clients:form.gender'), value: data.gender },
-        { label: t('clients:form.maritalStatus'), value: data.maritalStatus },
-        { label: t('clients:form.nationality'), value: data.nationality },
-        { label: t('clients:form.monthlyIncome'), value: formatCurrency(data.monthlyIncome) }
-      );
-    }
-
-    // Legal entity fields (LEGAL clients)
-    if (data.clientType === 'LEGAL') {
-      fields.push(
-        { label: t('clients:form.companyName'), value: data.companyName },
-        { label: t('clients:form.sigle'), value: data.sigle },
-        { label: t('clients:form.registrationNumber'), value: data.registrationNumber },
-        { label: t('clients:form.principalInterlocutor'), value: data.principalInterlocutor }
-      );
-    }
-
-    // Contact & address fields (all clients)
-    fields.push(
-      { label: t('clients:form.email'), value: data.email },
-      { label: t('clients:form.primaryPhone'), value: data.primaryPhone },
-      { label: t('clients:form.secondaryPhone'), value: data.secondaryPhone },
-      { label: t('clients:form.street'), value: data.addressStreet },
-      { label: t('clients:form.city'), value: data.addressCity },
-      { label: t('clients:form.postalCode'), value: data.addressPostal },
-      { label: t('clients:form.country'), value: data.addressCountry },
-      { label: t('clients:detailLabels.accountNumber'), value: data.accountNumber },
-      { label: t('clients:form.accountType'), value: data.accountTypeName || data.accountTypeCustomName },
-      { label: t('clients:detailLabels.segment'), value: data.segmentName },
-      { label: t('clients:detailLabels.businessSector'), value: data.businessSectorName },
-      { label: t('clients:detailLabels.businessActivity'), value: data.businessActivityName },
-      { label: t('clients:detailLabels.riskLevel'), value: data.ifcLevelOfRisk },
-      { label: t('clients:form.scoring'), value: data.scoring },
-      { label: t('clients:form.cycle'), value: data.cycle }
-    );
-
-    return fields;
-  };
-
-  const clientFields = buildClientFields();
+      {children}
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Warning banner */}
       {data.warningMessage && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4 flex gap-3">
@@ -135,198 +198,215 @@ const StepClientView: React.FC<StepClientViewProps> = ({ data, onConfirmer, isCo
         </div>
       )}
 
-      {/* Client Information Card */}
-      <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h3 className="text-heading text-surface-900 dark:text-surface-50">{t('step1.clientInfo')}</h3>
+      {/* ── Card 1: Informations Client ──────────────────────────────────────── */}
+      <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden">
+        <CardHeader
+          title={t('step1.clientInfo')}
+          icon={
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          }
+        />
+        <div className="p-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4">
+            <InfoRow label={t('step1.idClient')} value={data.clientId} />
+            <InfoRow label={t('step1.idDemande')} value={effectiveDemandeId ?? '—'} />
+            <InfoRow label={t('step1.nom')} value={data.lastName} />
+            <InfoRow label={t('step1.prenom')} value={data.firstName} />
+            <InfoRow label={t('step1.sexe')} value={data.gender} />
+            <InfoRow
+              label={t('step1.age')}
+              value={age !== null ? `${age} ans` : '—'}
+            />
+            <InfoRow label={t('step1.secteurActivite')} value={data.businessSectorName} />
+            <InfoRow label={t('step1.activite')} value={data.businessActivityGroupName} />
+            <InfoRow label={t('step1.sousActivite')} value={data.businessActivityName} />
+          </div>
         </div>
-        {renderFieldGrid(clientFields)}
       </div>
 
-      {/* General Information Card */}
-      <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <svg className="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <h3 className="text-heading text-surface-900 dark:text-surface-50">{t('step1.generalInformation') || 'General Information'}</h3>
-        </div>
-
-        {/* Agency Libellé */}
-        {data.agenceDataAvailable ? (
-          <div className="mb-4">
-            <p className="text-label text-surface-600 dark:text-surface-400 mb-1">{t('step1.agenceInfo')}</p>
-            <p className="text-body text-surface-900 dark:text-surface-50">{data.agenceLibelle || '—'}</p>
+      {/* ── Card 2: Informations Générales ───────────────────────────────────── */}
+      <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden">
+        <CardHeader
+          title={t('step1.generalInformation')}
+          icon={
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          }
+        >
+          {isConfirmed && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              {t('common.confirmed')}
+            </span>
+          )}
+        </CardHeader>
+        <div className="p-5">
+          {!data.agenceDataAvailable && (
+            <div className="mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
+              <p className="text-xs text-amber-700 dark:text-amber-300">{t('step1.agenceUnavailable')}</p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 mb-5">
+            <InfoRow label={t('step1.agence')} value={data.agenceLibelle} />
+            <InfoRow label={t('step1.gestionnaire')} value={data.assignedManagerName} />
+            <InfoRow label={t('step1.cycle')} value={data.cycle} />
+            <InfoRow label={t('step1.segment')} value={data.segmentName} />
+            <InfoRow label={t('step1.dateDemande')} value={fmtDate(data.demandeCreatedAt)} />
           </div>
-        ) : (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4 mb-4">
-            <p className="text-sm text-amber-700 dark:text-amber-300">{t('step1.agenceUnavailable')}</p>
-          </div>
-        )}
 
-        {/* Assigned Manager Name */}
-        <div className="border-t border-surface-200 dark:border-surface-700 pt-4 mb-4">
-          <p className="text-label text-surface-600 dark:text-surface-400 mb-1">Assigned Manager</p>
-          <p className="text-body text-surface-900 dark:text-surface-50">{data.assignedManagerName || '—'}</p>
+          {/* Editable dates */}
+          {!readOnly && (
+            <div className="pt-4 border-t border-surface-100 dark:border-surface-700/60 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-widest mb-1.5">
+                  {t('step1.dateVisite')}
+                </label>
+                <input
+                  type="date"
+                  value={dateVisite}
+                  onChange={(e) => setDateVisite(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-surface-300 dark:border-surface-600 rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-widest mb-1.5">
+                  {t('step1.dateFinalisation')}
+                </label>
+                <input
+                  type="date"
+                  value={dateFinalisation}
+                  onChange={(e) => setDateFinalisation(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-surface-300 dark:border-surface-600 rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition-colors"
+                />
+              </div>
+            </div>
+          )}
+          {readOnly && (dateVisite || dateFinalisation) && (
+            <div className="pt-4 border-t border-surface-100 dark:border-surface-700/60 grid grid-cols-2 gap-x-6 gap-y-4">
+              <InfoRow label={t('step1.dateVisite')} value={fmtDate(dateVisite)} />
+              <InfoRow label={t('step1.dateFinalisation')} value={fmtDate(dateFinalisation)} />
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Request Creation Date */}
-        <div className="border-t border-surface-200 dark:border-surface-700 pt-4 mb-4">
-          <p className="text-label text-surface-600 dark:text-surface-400 mb-1">{t('common.date')}</p>
-          <p className="text-body text-surface-900 dark:text-surface-50">{data.demandeCreatedAt ? formatDate(data.demandeCreatedAt) : '—'}</p>
-        </div>
-
-        {/* Dossier Status */}
-        <div className="border-t border-surface-200 dark:border-surface-700 pt-4 mb-4">
-          <p className="text-label text-surface-600 dark:text-surface-400 mb-1">{t('common.status')}</p>
-          <p className="text-body text-surface-900 dark:text-surface-50">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {data.dossierStatus ? t(getStatusKey(data.dossierStatus as any)) : '—'}
-          </p>
-        </div>
-
-        {/* Location Input */}
-        <div className="border-t border-surface-200 dark:border-surface-700 pt-4">
-          <label className="block text-label text-surface-600 dark:text-surface-400 mb-2">
-            Location
-          </label>
-          <input
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            disabled={data.isComplete}
-            placeholder="Enter location or address for this analysis..."
-            className={`w-full px-3 py-2 border rounded-lg text-surface-900 dark:text-surface-50 placeholder-surface-400 dark:placeholder-surface-500 focus:outline-none focus:ring-2 ${
-              data.isComplete
-                ? 'border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-900 cursor-not-allowed opacity-60'
-                : 'border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-700 focus:ring-emerald-500'
-            }`}
+      {/* ── Card 3: Localisation Client ─────────────────────────────────────── */}
+      <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden">
+        <CardHeader
+          title={t('step1.localisationClient')}
+          icon={
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          }
+        />
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <EditableArea
+            label={t('step1.domicileClient')}
+            value={locationDomicile}
+            onChange={setLocationDomicile}
+            placeholder={t('step1.domicilePlaceholder')}
+            readOnly={readOnly}
+          />
+          <EditableArea
+            label={t('step1.activiteClient')}
+            value={locationActivite}
+            onChange={setLocationActivite}
+            placeholder={t('step1.activitePlaceholder')}
+            readOnly={readOnly}
           />
         </div>
       </div>
 
-      {/* Credit History Card */}
-      <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <svg className="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          <h3 className="text-heading text-surface-900 dark:text-surface-50">{t('step1.creditHistory')}</h3>
-        </div>
+      {/* ── Card 4: Historique de Crédit ─────────────────────────────────────── */}
+      <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden">
+        <CardHeader
+          title={t('step1.creditHistory')}
+          icon={
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          }
+        />
+        <div className="p-5">
+          <div className="grid grid-cols-3 gap-3 mb-5">
+            <div className="bg-surface-50 dark:bg-surface-700/40 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-surface-900 dark:text-surface-50">{data.nombreDemandesPassees}</p>
+              <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">{t('step1.totalDemandes')}</p>
+            </div>
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{data.nombreDemandesApprouvees}</p>
+              <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">{t('step1.approved')}</p>
+            </div>
+            <div className="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-3 text-center">
+              <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">{data.nombreDemandesRejetees}</p>
+              <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">{t('step1.rejected')}</p>
+            </div>
+          </div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-surface-50 dark:bg-surface-700/50 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-surface-900 dark:text-surface-50">{data.nombreDemandesPassees}</p>
-            <p className="text-xs text-surface-600 dark:text-surface-400 mt-1">{t('step1.totalDemandes')}</p>
-          </div>
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{data.nombreDemandesApprouvees}</p>
-            <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">{t('step1.approved')}</p>
-          </div>
-          <div className="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">{data.nombreDemandesRejetees}</p>
-            <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">{t('step1.rejected')}</p>
-          </div>
-        </div>
-
-        {/* History Table */}
-        {data.nombreDemandesPassees === 0 ? (
-          <p className="text-sm text-surface-600 dark:text-surface-400 text-center py-8">{t('step1.noHistory')}</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-surface-200 dark:border-surface-700">
-                  <th className="text-left py-2 px-2 text-surface-600 dark:text-surface-400 font-medium">{t('step1.demandeNumber')}</th>
-                  <th className="text-left py-2 px-2 text-surface-600 dark:text-surface-400 font-medium">{t('step1.amount')}</th>
-                  <th className="text-left py-2 px-2 text-surface-600 dark:text-surface-400 font-medium">{t('step1.status')}</th>
-                  <th className="text-left py-2 px-2 text-surface-600 dark:text-surface-400 font-medium">{t('step1.date')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.historiqueCredits.map((item, idx) => (
-                  <tr key={idx} className="border-b border-surface-100 dark:border-surface-700/50 hover:bg-surface-50 dark:hover:bg-surface-700/30">
-                    <td className="py-3 px-2">{item.demandeId}</td>
-                    <td className="py-3 px-2">{item.requestedAmount}</td>
-                    <td className="py-3 px-2">
-                      <Badge
-                        variant={
-                          item.status === 'ANALYSE' || item.status === 'DISBURSE'
-                            ? 'success'
-                            : item.status === 'REJECTED'
-                              ? 'danger'
-                              : 'warning'
-                        }
-                      >
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {t(getStatusKey(item.status as any))}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-2 text-surface-600 dark:text-surface-400">{formatDate(item.createdAt)}</td>
+          {data.nombreDemandesPassees === 0 ? (
+            <p className="text-sm text-surface-500 dark:text-surface-400 text-center py-6">{t('step1.noHistory')}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-surface-200 dark:border-surface-700">
+                    {[t('step1.demandeNumber'), t('step1.amount'), t('step1.status'), t('step1.date')].map((h) => (
+                      <th key={h} className="text-left py-2 px-2 text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide">{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {data.historiqueCredits.map((item, idx) => (
+                    <tr key={idx} className="border-b border-surface-100 dark:border-surface-700/50 hover:bg-surface-50 dark:hover:bg-surface-700/30 transition-colors">
+                      <td className="py-3 px-2 text-surface-900 dark:text-surface-50">{item.demandeId}</td>
+                      <td className="py-3 px-2 text-surface-900 dark:text-surface-50">{item.requestedAmount}</td>
+                      <td className="py-3 px-2">
+                        <Badge variant={item.status === 'DISBURSE' ? 'success' : item.status === 'REJECTED' ? 'danger' : 'warning'}>
+                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                          {t(getStatusKey(item.status as any))}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-2 text-surface-500 dark:text-surface-400">{fmtDate(item.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* STATUS & AUDIT PANEL */}
-      <div className="space-y-4">
-        {/* Status Badge - Only show if complete AND has changes */}
-        {data.isComplete && location !== (data.location || '') && (
-          <div className="border-l-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border-amber-500">
-            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-              ⚠️ {t('common.modified')}
-            </p>
-          </div>
-        )}
+      {/* Audit panel */}
+      {isConfirmed && (confirmedAt || confirmedByName) && (
+        <AuditMetadataPanel confirmedAt={confirmedAt} confirmedByName={confirmedByName} />
+      )}
 
-        {/* Status Badge - Show confirmed if complete AND no changes */}
-        {data.isComplete && location === (data.location || '') && (data.confirmedAt || data.confirmedBy) && (
-          <div className="border-l-4 p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500">
-            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-              ✓ {t('common.confirmed')}
-            </p>
-          </div>
-        )}
-
-        {/* Audit Panel - Only show if complete */}
-        {data.isComplete && (data.confirmedAt || data.confirmedByName) && (
-          <AuditMetadataPanel
-            confirmedAt={data.confirmedAt}
-            confirmedByName={data.confirmedByName}
-          />
-        )}
-
-        {/* Action Buttons */}
-        {!data.isComplete && (
-          <div className="flex gap-3 pt-4">
-            <Button
-              onClick={onConfirmer}
-              disabled={isConfirming}
-              className="w-full sm:w-auto"
-            >
-              {isConfirming ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  {t('step1.confirming')}
-                </>
-              ) : (
-                <>
-                  {t('step1.confirmer')} →
-                </>
-              )}
+      {/* Action buttons */}
+      {!readOnly && (
+        <div className="flex items-center justify-end gap-3 pt-1">
+          {isDirty && (
+            <Button variant="outline" onClick={() => {
+              setLocationActivite(savedActivite);
+              setLocationDomicile(savedDomicile);
+              setDateVisite(savedDateVisite);
+              setDateFinalisation(savedDateFinalisation);
+            }} disabled={saving || confirming}>
+              {t('common.cancel')}
             </Button>
-          </div>
-        )}
-      </div>
+          )}
+          <Button variant="outline" onClick={handleSave} disabled={saving || confirming || !isDirty}>
+            {saving ? t('common.saving', 'Enregistrement...') : t('common.save', 'Enregistrer')}
+          </Button>
+          <Button onClick={handleConfirm} disabled={confirming || saving}>
+            {confirming ? t('step1.confirming') : isConfirmed ? t('step1.reconfirm') : t('step1.confirmer')}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

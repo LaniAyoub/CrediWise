@@ -1,6 +1,5 @@
 export type DossierStatus =
   | 'DRAFT'
-  | 'SUBMITTED'
   | 'ANALYSE'
   | 'CHECK_BEFORE_COMMITTEE'
   | 'CREDIT_RISK_ANALYSIS'
@@ -59,53 +58,244 @@ export interface StepClientData {
   sousActiviteId: string | null;
   mappingRisqueActiviteId: string | null;
   ifcLevelOfRisk: string | null;
-  segmentName: string | null;
-  accountTypeName: string | null;
   businessSectorName: string | null;
+  businessActivityGroupName: string | null;
   businessActivityName: string | null;
+  age: number | null;
+  // Demande fields
+  demandeId: number;
+  loanPurpose: string | null;
+  requestedAmount: number | null;
+  durationMonths: number | null;
+  productName: string | null;
+  applicationChannel: string | null;
+  bankingRestriction: boolean;
+  legalIssueOrAccountBlocked: boolean;
+  // General info
+  agenceName: string | null;
   agenceId: string | null;
-  assignedManagerId: string;
-  relationAvecClient: string | null;
-  relationAvecClientOther: string | null;
-  accountTypeCustomName: string | null;
-  scoring: string;
-  cycle: number;
-  cbsId: string | null;
-  clientCreatedAt: string;
-  clientUpdatedAt: string;
-
-  // Agence fields
-  agenceIdBranch: string | null;
-  agenceLibelle: string | null;
-  agenceWording: string | null;
-  agenceIsActive: boolean | null;
-
-  // Credit history
-  historiqueCredits: CreditHistoriqueItem[];
-  nombreDemandesPassees: number;
-  nombreDemandesApprouvees: number;
-  nombreDemandesRejetees: number;
-
-  // Metadata
-  isComplete: boolean;
-  confirmedBy: string | null;
-  confirmedByName: string | null;
-  confirmedAt: string | null;
-  dataFetchedAt: string | null;
-  agenceDataAvailable: boolean;
-  warningMessage: string | null;
-
-  // User Input
+  managerName: string | null;
+  cycleNumber: number | null;
+  segment: string | null;
+  dateDemande: string | null;
+  // Editable fields
   location: string | null;
-
-  // Demande Info
-  demandeCreatedAt: string | null;
+  locationDomicile: string | null;
+  dateVisite: string | null;
+  dateFinalisation: string | null;
+  // Confirmation
+  isConfirmed: boolean;
+  confirmedAt: string | null;
+  confirmedByName: string | null;
+  lastEditedAt: string | null;
+  lastEditedByName: string | null;
   dossierStatus: string | null;
+  // Credit history
+  creditHistory: CreditHistoriqueItem[];
+}
 
-  // Manager Info
-  assignedManagerName: string | null;
-  assignedManagerEmail: string | null;
-  assignedManagerRole: string | null;
+export interface StepDepense {
+  id: number | null;
+  categorie: string;
+  description: string;
+  cout: number;
+}
+
+export interface StepFinancement {
+  id: number | null;
+  description: string;
+  montant: number;
+}
+
+export interface StepObjetCreditData {
+  dossierId: number;
+  // Section A (from demande)
+  objetCredit: string | null;
+  montantDemande: number | null;
+  dureeEnMois: number | null;
+  typeProduit: string | null;
+  productId: string | null;
+  capaciteRemboursement: number | null;
+  requestedAmount: number | null;
+  // Section D
+  pertinenceProjet: string | null;
+  // Section B
+  depenses: StepDepense[];
+  // Section C
+  autresFinancements: StepFinancement[];
+  // Computed
+  coutTotal: number;
+  totalAutresFinancements: number;
+  isBalanced: boolean;
+  ecart: number;
+  // Confirmation
+  isConfirmed: boolean;
+  confirmedAt: string | null;
+  confirmedByName: string | null;
+  lastEditedAt: string | null;
+  lastEditedByName: string | null;
+}
+
+export interface StepObjetCreditRequest {
+  pertinenceProjet?: string | null;
+  depenses: { categorie: string; description: string; cout: number }[];
+  autresFinancements: { description: string; montant: number }[];
+}
+
+export interface ReferencePersonne {
+  id: number | null;
+  prenom: string;
+  nom: string;
+  telephone: string;
+  lienParente: string;
+}
+
+export interface EnqueteMoralite {
+  id: number | null;
+  lienAvecClient: string;
+  contact: string;
+  nomComplet: string;
+  amplitude: string;
+  opinion: string;
+}
+
+export interface PretEnCours {
+  id: number | null;
+  nomInstitution: string;
+  objetPret: string;
+  dureeEnMois: number | null;
+  montantInitial: number | null;
+  encoursSolde: number | null;
+  montantEcheance: number | null;
+  echeancesRestantes: number | null;
+  echeancesRetard: number | null;
+  joursRetardMax: number | null;
+}
+
+export interface CompteBancaire {
+  id: number | null;
+  banqueImf: string;
+  typeCompte: string;
+  solde: number | null;
+}
+
+export interface StepRisqueClientData {
+  dossierId: number;
+  situationFamiliale: string | null;
+  situationFamilialeAutre: string | null;
+  situationLogement: string | null;
+  situationLogementAutre: string | null;
+  dureeSejour: number | null;
+  ancienneteQuartier: number | null;
+  nombrePersonnesCharge: number | null;
+  nombreEnfants: number | null;
+  references: ReferencePersonne[];
+  enquetes: EnqueteMoralite[];
+  nombreCreditsAnterieurs: number | null;
+  noteCentraleRisque: string | null;
+  estGarant: boolean | null;
+  avisComite: string | null;
+  pretsCours: PretEnCours[];
+  analyseCredit: string | null;
+  comptesBancaires: CompteBancaire[];
+  analyseComptes: string | null;
+  isConfirmed: boolean;
+  confirmedAt: string | null;
+  confirmedByName: string | null;
+  lastEditedAt: string | null;
+  lastEditedByName: string | null;
+}
+
+export interface StepRisqueClientRequest {
+  situationFamiliale?: string | null;
+  situationFamilialeAutre?: string | null;
+  situationLogement?: string | null;
+  situationLogementAutre?: string | null;
+  dureeSejour?: number | null;
+  ancienneteQuartier?: number | null;
+  nombrePersonnesCharge?: number | null;
+  nombreEnfants?: number | null;
+  references?: { prenom: string; nom: string; telephone: string; lienParente: string }[];
+  enquetes?: { lienAvecClient: string; contact: string; nomComplet: string; amplitude: string; opinion: string }[];
+  nombreCreditsAnterieurs?: number | null;
+  noteCentraleRisque?: string | null;
+  estGarant?: boolean | null;
+  avisComite?: string | null;
+  pretsCours?: {
+    nomInstitution: string; objetPret: string; dureeEnMois?: number | null;
+    montantInitial?: number | null; encoursSolde?: number | null; montantEcheance?: number | null;
+    echeancesRestantes?: number | null; echeancesRetard?: number | null; joursRetardMax?: number | null;
+  }[];
+  analyseCredit?: string | null;
+  comptesBancaires?: { banqueImf: string; typeCompte: string; solde?: number | null }[];
+  analyseComptes?: string | null;
+}
+
+export interface PointDeVente {
+  id: number | null;
+  type: string;
+  propriete: string;
+  joursOuverture: string;
+  horaireOuverture: string;
+  surface: number | null;
+  emplacement: string;
+}
+
+export interface StepRisqueCommercialData {
+  dossierId: number;
+  nbAnneesExperienceEmploye: number | null;
+  nbAnneesExperienceManager: number | null;
+  autresActivites: boolean | null;
+  venteACredit: boolean | null;
+  pointsDeVente: PointDeVente[];
+  descriptionActiviteAnalyse: string | null;
+  isConfirmed: boolean;
+  confirmedAt: string | null;
+  confirmedByName: string | null;
+  lastEditedAt: string | null;
+  lastEditedByName: string | null;
+}
+
+export interface StepRisqueCommercialRequest {
+  nbAnneesExperienceEmploye?: number | null;
+  nbAnneesExperienceManager?: number | null;
+  autresActivites?: boolean | null;
+  venteACredit?: boolean | null;
+  pointsDeVente?: {
+    type: string; propriete: string; joursOuverture: string;
+    horaireOuverture: string; surface?: number | null; emplacement: string;
+  }[];
+  descriptionActiviteAnalyse?: string | null;
+}
+
+export interface StepChecklistData {
+  dossierId: number;
+  identityVerified: boolean;
+  incomeVerified: boolean;
+  businessVisitDone: boolean;
+  creditHistoryChecked: boolean;
+  guaranteesVerified: boolean;
+  legalCheckDone: boolean;
+  riskAssessmentDone: boolean;
+  applicationFormComplete: boolean;
+  observations: string | null;
+  isConfirmed: boolean;
+  confirmedAt: string | null;
+  confirmedByName: string | null;
+  lastEditedAt: string | null;
+  lastEditedByName: string | null;
+}
+
+export interface StepChecklistRequest {
+  identityVerified: boolean;
+  incomeVerified: boolean;
+  businessVisitDone: boolean;
+  creditHistoryChecked: boolean;
+  guaranteesVerified: boolean;
+  legalCheckDone: boolean;
+  riskAssessmentDone: boolean;
+  applicationFormComplete: boolean;
+  observations: string | null;
 }
 
 export interface AnalyseDossier {
@@ -115,78 +305,10 @@ export interface AnalyseDossier {
   gestionnaireId: string;
   status: DossierStatus;
   currentStep: number;
-  demandeCreatedAt: string | null;
   createdAt: string;
   updatedAt: string | null;
   completedAt: string | null;
-}
-
-// ═══ STEP 2: OBJET DU CRÉDIT ═══
-
-export type CategorieDepense =
-  | 'TERRAIN_BATIMENT'
-  | 'EQUIPEMENT'
-  | 'AMENAGEMENT'
-  | 'VEHICULE'
-  | 'INFORMATIQUE'
-  | 'STOCK_MARCHANDISES'
-  | 'FONDS_DE_ROULEMENT'
-  | 'FRAIS_DEMARRAGE'
-  | 'AUTRE';
-
-export interface DepenseProjetDto {
-  id?: number;
-  categorie: CategorieDepense;
-  description: string;
-  cout: number;
-}
-
-export interface FinancementAutreDto {
-  id?: number;
-  description: string;
-  montant: number;
-}
-
-export interface StepObjetCreditData {
-  // Section A (read-only snapshot from demande):
-  loanPurpose: string | null;
-  requestedAmount: number | null;
-  durationMonths: number | null;
-  productId: string | null;
-  productName: string | null;
-  monthlyRepaymentCapacity: number | null;
-
-  // Section D (Project relevance):
-  pertinenceProjet: string | null;
-
-  // Section B (Project expenses):
-  depenses: DepenseProjetDto[];
-  totalCostExpenses: number;
-
-  // Section C (Other financing):
-  financementAutre: FinancementAutreDto[];
-  totalOtherFinancing: number;
-
-  // Balance calculation:
-  isBalanced: boolean;
-  balanceMessage: string | null;
-
-  // Metadata:
-  isComplete: boolean;
-  confirmedBy: string | null;
-  confirmedByName: string | null;
-  confirmedAt: string | null;
-  dataFetchedAt: string | null;
-
-  // Dossier context:
-  dossierId: number;
-  demandeId: number;
-  dossierStatus: string;
   demandeCreatedAt: string | null;
-}
-
-export interface StepObjetCreditRequest {
-  pertinenceProjet?: string;
-  depenses: DepenseProjetDto[];
-  financementAutre: FinancementAutreDto[];
+  appliedRuleId: number | null;
+  appliedRuleVersion: number | null;
 }

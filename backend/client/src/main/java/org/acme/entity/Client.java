@@ -156,10 +156,12 @@ public class Client extends PanacheEntityBase {
     private SecteurActivite secteurActivite;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "activite_id")
+    private Activite activite;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sous_activite_id")
     private SousActivite sousActivite;
-
-    
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "mapping_risque_activite_id")
@@ -206,8 +208,8 @@ public class Client extends PanacheEntityBase {
     @Column(name = "scoring", length = 50)
     private String scoring;
 
-    @Column(name = "cycle", length = 50)
-    private String cycle;
+    @Column(name = "cycle")
+    private Integer cycle;
 
     // ─────────────────────────────────────────────
     // Core Banking System reference

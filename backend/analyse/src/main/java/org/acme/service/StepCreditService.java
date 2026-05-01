@@ -72,6 +72,86 @@ public class StepCreditService {
     }
 
     /**
+     * Save Step 2 draft — persists data without marking complete or advancing step.
+     * Safe to call multiple times (cascade replace on lists).
+     */
+    @Transactional
+    public StepCreditResponse save(Long dossierId, StepCreditRequest demandeData, UUID callerGestionnaireId) {
+        AnalyseDossier dossier = AnalyseDossier.findById(dossierId);
+        if (dossier == null) {
+            throw new IllegalArgumentException("Dossier introuvable: " + dossierId);
+        }
+
+        org.acme.grpc.DemandeDetail sectionAData = nouvelleDemandeDataClient.fetchDemandeById(dossier.demandeId);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        Optional<StepObjetCredit> existingStep = StepObjetCredit.find("dossier.id", dossierId).firstResultOptional();
+        StepObjetCredit stepCredit;
+        if (existingStep.isPresent()) {
+            stepCredit = existingStep.get();
+            stepCredit.depenses.clear();
+            stepCredit.financementAutre.clear();
+            io.quarkus.hibernate.orm.panache.Panache.getEntityManager().flush();
+        } else {
+            stepCredit = new StepObjetCredit();
+            stepCredit.dossier = dossier;
+        }
+
+        mapSectionAToEntity(stepCredit, sectionAData);
+        stepCredit.pertinenceProjet = demandeData != null ? demandeData.pertinenceProjet : null;
+
+        if (demandeData != null && demandeData.depenses != null) {
+            for (int i = 0; i < demandeData.depenses.size(); i++) {
+                var depenseReq = demandeData.depenses.get(i);
+                StepDépenseProjet depense = new StepDépenseProjet();
+                depense.stepObjetCredit = stepCredit;
+                depense.categorie = depenseReq.categorie;
+                depense.description = depenseReq.description;
+                depense.cout = new BigDecimal(depenseReq.cout);
+                depense.ordre = i + 1;
+                stepCredit.depenses.add(depense);
+            }
+        }
+
+        if (demandeData != null && demandeData.financementAutre != null) {
+            for (int i = 0; i < demandeData.financementAutre.size(); i++) {
+                var financementReq = demandeData.financementAutre.get(i);
+                StepFinancementAutre financement = new StepFinancementAutre();
+                financement.stepObjetCredit = stepCredit;
+                financement.description = financementReq.description;
+                financement.montant = new BigDecimal(financementReq.montant);
+                financement.ordre = i + 1;
+                stepCredit.financementAutre.add(financement);
+            }
+        }
+
+        stepCredit.recalculateTotals();
+        stepCredit.dataFetchedAt = now;
+        // Do NOT set isComplete=true, confirmedBy, confirmedAt — draft only
+        // Do NOT advance dossier.currentStep
+
+        if (stepCredit.id == null) {
+            stepCredit.persist();
+        }
+
+        Log.info("Step 2 draft saved for dossier: " + dossierId);
+
+        return buildResponse(
+            sectionAData,
+            stepCredit.depenses,
+            stepCredit.financementAutre,
+            stepCredit.isComplete,
+            stepCredit.confirmedBy,
+            stepCredit.confirmedByName,
+            stepCredit.confirmedAt,
+            now,
+            dossier,
+            stepCredit.pertinenceProjet
+        );
+    }
+
+    /**
      * Confirm Step 2 and advance to Step 3.
      * Saves Section A snapshot from demande, persists B and C data, updates dossier.
      *
@@ -113,6 +193,9 @@ public class StepCreditService {
             // Clear children for cascade replace
             stepCredit.depenses.clear();
             stepCredit.financementAutre.clear();
+            // Flush deletes immediately before inserts to avoid UK constraint violation
+            // on (step_objet_credit_id, ordre) when re-confirming
+            io.quarkus.hibernate.orm.panache.Panache.getEntityManager().flush();
         } else {
             stepCredit = new StepObjetCredit();
             stepCredit.dossier = dossier;

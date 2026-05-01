@@ -11,6 +11,7 @@ import enGestionnaires from '../locales/en/gestionnaires.json' assert { type: 'j
 import enClients from '../locales/en/clients.json' assert { type: 'json' };
 import enDemandes from '../locales/en/demandes.json' assert { type: 'json' };
 import enAnalyse from '../locales/en/analyse.json' assert { type: 'json' };
+import enAdministration from '../locales/en/administration.json' assert { type: 'json' };
 
 import frCommon from '../locales/fr/common.json' assert { type: 'json' };
 import frAuth from '../locales/fr/auth.json' assert { type: 'json' };
@@ -20,6 +21,7 @@ import frGestionnaires from '../locales/fr/gestionnaires.json' assert { type: 'j
 import frClients from '../locales/fr/clients.json' assert { type: 'json' };
 import frDemandes from '../locales/fr/demandes.json' assert { type: 'json' };
 import frAnalyse from '../locales/fr/analyse.json' assert { type: 'json' };
+import frAdministration from '../locales/fr/administration.json' assert { type: 'json' };
 
 const resources = {
   en: {
@@ -31,6 +33,7 @@ const resources = {
     clients: enClients,
     demandes: enDemandes,
     analyse: enAnalyse,
+    administration: enAdministration,
   },
   fr: {
     common: frCommon,
@@ -41,6 +44,7 @@ const resources = {
     clients: frClients,
     demandes: frDemandes,
     analyse: frAnalyse,
+    administration: frAdministration,
   },
 };
 
@@ -52,7 +56,7 @@ i18n
     resources,
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'auth', 'dashboard', 'agences', 'gestionnaires', 'clients', 'demandes', 'analyse'],
+    ns: ['common', 'auth', 'dashboard', 'agences', 'gestionnaires', 'clients', 'demandes', 'analyse', 'administration'],
     interpolation: {
       escapeValue: false, // React already protects from XSS
     },

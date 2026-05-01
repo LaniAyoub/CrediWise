@@ -4,6 +4,7 @@ import type {
   ClientCreateRequest,
   ClientUpdateRequest,
   ClientListParams,
+  ClientSearchResult,
 } from '@/types/client.types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,8 +28,20 @@ export const clientService = {
   },
 
   /**
+   * GET /api/clients/search?q=...&limit=12
+   * Smart fuzzy search across name, CIN, phone, email, cbsId.
+   * Returns ranked lightweight results for the dropdown.
+   */
+  smartSearch: (q: string, limit = 12) => {
+    return api.get<ClientSearchResult[]>('/api/clients/search', {
+      baseURL: CLIENT_API_BASE_URL,
+      params: { q, limit },
+    });
+  },
+
+  /**
    * GET /api/clients/search?national_id=...&primary_phone=...
-   * Search a client by national ID or primary phone. Returns 404 if not found.
+   * Legacy exact-match search kept for backwards compatibility.
    */
   search: (query: { national_id?: string; primary_phone?: string }) => {
     return api.get<Client>('/api/clients/search', { baseURL: CLIENT_API_BASE_URL, params: query });

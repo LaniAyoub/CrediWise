@@ -1,0 +1,1 @@
+ALTER TABLE demandes ALTER COLUMN status TYPE VARCHAR(32);

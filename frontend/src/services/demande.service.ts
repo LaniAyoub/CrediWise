@@ -28,22 +28,16 @@ export const demandeService = {
     return api.put<Demande>(`/api/demandes/${id}`, payload, { baseURL: DEMANDE_API_BASE_URL });
   },
 
+  // Atomically creates analysis dossier and routes by product:
+  // products 101,102,103 → ANALYSE | products 104,105 → CHECK_BEFORE_COMMITTEE
   submit: (id: number) => {
-    return api.post<Demande>(`/api/demandes/${id}/submit`, {}, { baseURL: DEMANDE_API_BASE_URL });
+    return api.post<StartAnalysisResponse>(`/api/demandes/${id}/submit`, {}, { baseURL: DEMANDE_API_BASE_URL });
   },
 
-  updateStatus: (id: number, status: Extract<DemandeStatut, "ANALYSE" | "REJECTED">) => {
+  updateStatus: (id: number, status: Exclude<DemandeStatut, "DRAFT">) => {
     return api.patch<Demande>(
       `/api/demandes/${id}/statut`,
       { status },
-      { baseURL: DEMANDE_API_BASE_URL }
-    );
-  },
-
-  startAnalysis: (id: number) => {
-    return api.post<StartAnalysisResponse>(
-      `/api/demandes/${id}/start-analysis`,
-      {},
       { baseURL: DEMANDE_API_BASE_URL }
     );
   },

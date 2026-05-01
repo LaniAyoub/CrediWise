@@ -8,8 +8,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.acme.dto.ClientCreateDTO;
 import org.acme.dto.ClientResponseDTO;
+import org.acme.dto.ClientSearchResultDTO;
 import org.acme.dto.ClientUpdateDTO;
-import org.acme.entity.Client;
 import org.acme.entity.enums.ClientStatus;
 import org.acme.repository.ClientRepository;
 import org.acme.service.ClientService;
@@ -19,7 +19,6 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Path("/api/clients")
@@ -79,29 +78,53 @@ public class ClientResource {
     public ClientResponseDTO get(@PathParam("id") UUID id) {
         return clientService.getById(id);
     }
+    /**
+     * Smart multi-field fuzzy search.
+     * GET /api/clients/search?q=...&limit=10
+     *
+     * Matches against firstName, lastName, companyName, nationalId,
+     * primaryPhone, email, cbsId using PostgreSQL trigram similarity.
+     * Results are ranked by relevance score (best match first).
+     *
+     * Legacy params national_id / primary_phone still work for backwards
+     * compatibility with existing callers.
+     */
     @GET
     @Path("/search")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response searchClient(@QueryParam("national_id") String nationalId, @QueryParam("primary_phone") String primaryPhone) {
-    // Check if nationalId is provided and not blank
-    if (nationalId != null && !nationalId.isBlank()) {
-        return clientRepository.findByNationalId(nationalId)
-                .map(client -> Response.ok(client).build())
-                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
-    }
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @Operation(summary = "Smart fuzzy search for clients")
+    public Response searchClients(
+            @QueryParam("q")            String q,
+            @QueryParam("limit")        @DefaultValue("12") int limit,
+            // Legacy exact-match params kept for backwards compatibility
+            @QueryParam("national_id")  String nationalId,
+            @QueryParam("primary_phone") String primaryPhone) {
 
-    // If not, check if primaryPhone is provided and not blank
-    if (primaryPhone != null && !primaryPhone.isBlank()) {
-        return clientRepository.findByPrimaryPhone(primaryPhone)
-                .map(client -> Response.ok(client).build())
-                .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
-    }
+        // ── Legacy exact-match path ───────────────────────────────────────────
+        if (q == null || q.isBlank()) {
+            if (nationalId != null && !nationalId.isBlank()) {
+                return clientRepository.findByNationalId(nationalId)
+                        .map(c -> Response.ok(c).build())
+                        .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+            }
+            if (primaryPhone != null && !primaryPhone.isBlank()) {
+                return clientRepository.findByPrimaryPhone(primaryPhone)
+                        .map(c -> Response.ok(c).build())
+                        .orElseGet(() -> Response.status(Response.Status.NOT_FOUND).build());
+            }
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"error\":\"Parameter 'q' is required\"}")
+                    .build();
+        }
 
-    // If neither is provided, return a bad request
-    return Response.status(Response.Status.BAD_REQUEST)
-                   .entity("{\"error\":\"Please provide a valid national_id or primary_phone to search.\"}")
-                   .build();
-}
+        // ── Smart search path ─────────────────────────────────────────────────
+        if (q.length() < 2) {
+            return Response.ok(List.of()).build();
+        }
+        int safeLimit = Math.min(Math.max(limit, 1), 50);
+        List<ClientSearchResultDTO> results = clientRepository.smartSearch(q.trim(), safeLimit);
+        return Response.ok(results).build();
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // UPDATE

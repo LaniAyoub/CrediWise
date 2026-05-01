@@ -16,7 +16,7 @@ const Table = ({ headers, children, emptyMessage, isEmpty = false }: TableProps)
       <div className="overflow-x-auto">
         <table className="w-full table-auto divide-y divide-surface-200 dark:divide-surface-700">
           <thead>
-            <tr className="bg-surface-50 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
+            <tr className="bg-surface-100 dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700">
               {headers.map((header) => (
                 <th
                   key={header}

@@ -62,11 +62,12 @@ public class ClientGrpcServiceImpl implements ClientService {
                     .setSegment(c.getSegment() != null ? safe(c.getSegment().getLibelle()) : "")
                     .setAccountType(c.getAccountType() != null ? safe(c.getAccountType().getLibelle()) : "")
                     .setBusinessSector(c.getSecteurActivite() != null ? safe(c.getSecteurActivite().getLibelle()) : "")
+                    .setBusinessActivityGroup(c.getActivite() != null ? safe(c.getActivite().getLibelle()) : "")
                     .setBusinessActivity(c.getSousActivite() != null ? safe(c.getSousActivite().getLibelle()) : "")
                     .setBranchId(safe(c.getAgenceId()))
                     .setAssignedManagerId(c.getAssignedManagerId() != null ? c.getAssignedManagerId().toString() : "")
                     .setScoring(safe(c.getScoring()))
-                    .setCycle(safe(c.getCycle()))
+                    .setCycle(c.getCycle() != null ? String.valueOf(c.getCycle()) : "0")
                     .setIfcLevelOfRisk(c.getRiskLevel() != null ? safe(c.getRiskLevel().getIfcLevelOfRisk()) : "");
 
             return b.build();
@@ -97,22 +98,13 @@ public class ClientGrpcServiceImpl implements ClientService {
             }
 
             Client client = opt.get();
-            int currentCycle = 0;
-            try {
-                String cycle = client.getCycle();
-                if (cycle != null && !cycle.isBlank()) {
-                    currentCycle = Integer.parseInt(cycle.trim());
-                }
-            } catch (NumberFormatException ignored) {
-                currentCycle = 0;
-            }
-
+            int currentCycle = client.getCycle() != null ? client.getCycle() : 0;
             int nextCycle = currentCycle + 1;
-            client.setCycle(String.valueOf(nextCycle));
+            client.setCycle(nextCycle);
 
             return ClientCycleUpdateResponse.newBuilder()
                     .setSuccess(true)
-                    .setCycle(client.getCycle())
+                    .setCycle(String.valueOf(nextCycle))
                     .build();
         });
     }

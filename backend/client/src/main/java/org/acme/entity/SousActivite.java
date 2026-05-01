@@ -23,6 +23,10 @@ public class SousActivite extends PanacheEntityBase {
     @JoinColumn(name = "id_secteur_activite", nullable = false)
     private SecteurActivite secteurActivite;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_activite")
+    private Activite activite;
+
     @NotBlank
     @Column(nullable = false)
     private String libelle;

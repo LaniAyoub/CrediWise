@@ -1,6 +1,5 @@
 export type DemandeStatut =
   | "DRAFT"
-  | "SUBMITTED"
   | "ANALYSE"
   | "CHECK_BEFORE_COMMITTEE"
   | "CREDIT_RISK_ANALYSIS"
@@ -36,6 +35,8 @@ export interface Demande {
   managerName?: string;
   branchName?: string;
 
+  cycle?: number;
+  businessSector?: string;
   loanPurpose?: string;
   requestedAmount?: number;
   durationMonths?: number;
@@ -101,6 +102,6 @@ export interface DemandeListParams {
 export interface StartAnalysisResponse {
   demandeId: number;
   demandeStatus: DemandeStatut;
-  dossierId: number;
+  dossierId: number | null;
   message: string;
 }

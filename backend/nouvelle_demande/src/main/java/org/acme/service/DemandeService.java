@@ -11,6 +11,7 @@ import org.acme.dto.*;
 import org.acme.entity.Demande;
 import org.acme.entity.Guarantee;
 import org.acme.entity.Guarantor;
+import org.acme.entity.Product;
 import org.acme.entity.enums.DemandeStatut;
 import org.acme.exception.DemandeNotFoundException;
 import org.acme.grpc.ClientGrpcClient;
@@ -82,7 +83,8 @@ public class DemandeService {
         demande.email = nullIfBlank(client.getEmail());
         demande.primaryPhone = nullIfBlank(client.getPrimaryPhone());
         demande.scoring = nullIfBlank(client.getScoring());
-        demande.cycle = nullIfBlank(client.getCycle());
+        String clientCycle = client.getCycle();
+        demande.cycle = (clientCycle == null || clientCycle.isBlank()) ? "0" : clientCycle.trim();
         demande.segment = nullIfBlank(client.getSegment());
         demande.accountType = nullIfBlank(client.getAccountType());
         demande.businessSector = nullIfBlank(client.getBusinessSector());
@@ -94,7 +96,7 @@ public class DemandeService {
         demande.requestedAmount = req.getRequestedAmount();
         demande.durationMonths = req.getDurationMonths();
         demande.productId = req.getProductId();
-        demande.productName = null; // Set if you have a local product lookup
+        demande.productName = resolveProductName(req.getProductId(), null);
         demande.assetType = req.getAssetType();
         demande.monthlyRepaymentCapacity = req.getMonthlyRepaymentCapacity();
         demande.applicationChannel = req.getApplicationChannel();
@@ -131,6 +133,7 @@ public class DemandeService {
     // READ
     // ─────────────────────────────────────────────────────────────────────────
 
+    @Transactional
     public DemandeResponse getById(Long id) {
         Demande demande = demandeRepository.findByIdOptional(id)
                 .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
@@ -167,63 +170,72 @@ public class DemandeService {
         validateTransition(demande.status, newStatut);
         demande.status = newStatut;
 
-        if (previousStatut == DemandeStatut.SUBMITTED && newStatut == DemandeStatut.ANALYSE) {
+        // Increment client cycle when the credit is fully disbursed (accepted end state)
+        if (previousStatut == DemandeStatut.READY_TO_DISBURSE && newStatut == DemandeStatut.DISBURSE) {
             boolean updated = clientGrpcClient.incrementClientCycle(demande.clientId.toString());
             if (!updated) {
-                throw new BadRequestException("Failed to increment client cycle for client: " + demande.clientId);
+                Log.warn("Failed to increment client cycle for client: " + demande.clientId);
             }
         }
         return toResponse(demande);
     }
 
-    @Transactional
-    public DemandeResponse submit(Long id) {
-        return updateStatut(id, DemandeStatut.SUBMITTED);
-    }
-
     // ─────────────────────────────────────────────────────────────────────────
-    // START ANALYSIS (atomic: create dossier + update status SUBMITTED → ANALYSE)
+    // SUBMIT (atomic: create dossier + route to ANALYSE or CHECK_BEFORE_COMMITTEE)
+    // Products 101,102,103 → ANALYSE | Products 104,105 → CHECK_BEFORE_COMMITTEE
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
-    public StartAnalysisResponse startAnalysis(Long id, String authorizationHeader) {
-        // 1. Load demande
+    public StartAnalysisResponse submit(Long id, String authorizationHeader) {
         Demande demande = demandeRepository.findByIdOptional(id)
                 .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
 
-        // 2. Validate status is SUBMITTED
-        if (demande.status != DemandeStatut.SUBMITTED) {
-            throw new BadRequestException("Can only start analysis from SUBMITTED status, current: " + demande.status);
+        if (demande.status != DemandeStatut.DRAFT) {
+            throw new BadRequestException("Can only submit from DRAFT status, current: " + demande.status);
         }
 
-        // 3. Create analysis dossier (will fail if analyse service is down)
-        // IMPORTANT: Pass ANALYSE status, not SUBMITTED — dossier status must match demande status
-        String createdAtStr = demande.createdAt != null
-                ? demande.createdAt.toString()
-                : null;
-        Long dossierId = analyseServiceClient.createDossier(
-                id,
-                demande.clientId.toString(),
-                DemandeStatut.ANALYSE.toString(),
-                createdAtStr,
-                authorizationHeader
-        );
+        DemandeStatut targetStatus = resolveTargetStatus(demande.productId);
 
-        Log.info("Created analysis dossier " + dossierId + " for demande " + id);
+        // Products 101, 102, 103 → ANALYSE: create dossier in analyse microservice
+        // All other products     → CHECK_BEFORE_COMMITTEE: no analyse dossier (pending future checklist service)
+        if (targetStatus == DemandeStatut.ANALYSE) {
+            String createdAtStr = demande.createdAt != null ? demande.createdAt.toString() : null;
+            Long dossierId = analyseServiceClient.createDossier(
+                    id,
+                    demande.clientId.toString(),
+                    targetStatus.toString(),
+                    createdAtStr,
+                    authorizationHeader
+            );
+            Log.infof("Submitted demande %d: dossier %d created, status → ANALYSE (product: %s)",
+                    id, dossierId, demande.productId);
+            demande.status = DemandeStatut.ANALYSE;
+            return new StartAnalysisResponse(
+                    id,
+                    DemandeStatut.ANALYSE.toString(),
+                    dossierId,
+                    "Submitted: dossier " + dossierId + " created, status set to ANALYSE"
+            );
+        } else {
+            // CHECK_BEFORE_COMMITTEE — no analyse dossier; checklist microservice pending
+            Log.infof("Submitted demande %d: status → CHECK_BEFORE_COMMITTEE (product: %s, no analyse dossier)",
+                    id, demande.productId);
+            demande.status = DemandeStatut.CHECK_BEFORE_COMMITTEE;
+            return new StartAnalysisResponse(
+                    id,
+                    DemandeStatut.CHECK_BEFORE_COMMITTEE.toString(),
+                    null,
+                    "Submitted: status set to CHECK_BEFORE_COMMITTEE (checklist service pending)"
+            );
+        }
+    }
 
-        // 4. Update demande status to ANALYSE (atomic with dossier creation)
-        // Entity is managed, change will be persisted automatically by transaction
-        demande.status = DemandeStatut.ANALYSE;
-
-        Log.info("Updated demande " + id + " status to ANALYSE");
-
-        // 5. Return response with both demande and dossier info
-        return new StartAnalysisResponse(
-                id,
-                DemandeStatut.ANALYSE.toString(),
-                dossierId,
-                "Analysis started: dossier " + dossierId + " created and demande status updated to ANALYSE"
-        );
+    private DemandeStatut resolveTargetStatus(String productId) {
+        if (productId == null) return DemandeStatut.CHECK_BEFORE_COMMITTEE;
+        return switch (productId.trim()) {
+            case "101", "102", "103" -> DemandeStatut.ANALYSE;
+            default -> DemandeStatut.CHECK_BEFORE_COMMITTEE;
+        };
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -271,8 +283,7 @@ public class DemandeService {
 
     private void validateTransition(DemandeStatut current, DemandeStatut next) {
         boolean valid = switch (current) {
-            case DRAFT -> next == DemandeStatut.SUBMITTED;
-            case SUBMITTED -> next == DemandeStatut.ANALYSE || next == DemandeStatut.REJECTED;
+            case DRAFT -> next == DemandeStatut.ANALYSE || next == DemandeStatut.CHECK_BEFORE_COMMITTEE || next == DemandeStatut.REJECTED;
             case ANALYSE -> next == DemandeStatut.CHECK_BEFORE_COMMITTEE || next == DemandeStatut.REJECTED;
             case CHECK_BEFORE_COMMITTEE -> next == DemandeStatut.CREDIT_RISK_ANALYSIS || next == DemandeStatut.REJECTED;
             case CREDIT_RISK_ANALYSIS -> next == DemandeStatut.COMMITTEE || next == DemandeStatut.REJECTED;
@@ -330,7 +341,7 @@ public class DemandeService {
                 .email(d.email)
                 .primaryPhone(d.primaryPhone)
                 .scoring(d.scoring)
-                .cycle(d.cycle)
+                .cycle(parseCycle(d.cycle))
                 .segment(d.segment)
                 .accountType(d.accountType)
                 .businessSector(d.businessSector)
@@ -342,7 +353,7 @@ public class DemandeService {
                 .requestedAmount(d.requestedAmount)
                 .durationMonths(d.durationMonths)
                 .productId(d.productId)
-                .productName(d.productName)
+                .productName(resolveProductName(d.productId, d.productName))
                 .assetType(d.assetType)
                 .monthlyRepaymentCapacity(d.monthlyRepaymentCapacity)
                 .applicationChannel(d.applicationChannel)
@@ -360,6 +371,27 @@ public class DemandeService {
                 .deletedBy(d.deletedBy)
                 .deletedAt(d.deletedAt)
                 .build();
+    }
+
+    private Integer parseCycle(String cycle) {
+        if (cycle == null || cycle.isBlank()) return 0;
+        try { return Integer.parseInt(cycle.trim()); } catch (NumberFormatException e) { return 0; }
+    }
+
+    private String resolveProductName(String productId, String storedName) {
+        if (storedName != null && !storedName.isBlank()) {
+            return storedName;
+        }
+        if (productId == null || productId.isBlank()) {
+            return null;
+        }
+        try {
+            Product product = Product.<Product>find("productId", productId).firstResult();
+            return (product != null) ? product.name : null;
+        } catch (Exception e) {
+            Log.warnf("Could not resolve product name for productId=%s: %s", productId, e.getMessage());
+            return null;
+        }
     }
 
     private String nullIfBlank(String s) {

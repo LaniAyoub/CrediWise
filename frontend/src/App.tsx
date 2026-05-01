@@ -16,6 +16,7 @@ const DemandesPage = lazy(() => import('./pages/demandes/DemandesPage'));
 const DossierListPage = lazy(() => import('./pages/analyse/DossierListPage'));
 const DossierAnalysePage = lazy(() => import('./pages/analyse/DossierAnalysePage'));
 const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'));
+const AdministrationPage = lazy(() => import('./pages/administration/AdministrationPage'));
 
 // Roles allowed to manage agences & gestionnaires
 const ADMIN_ROLES = ['SUPER_ADMIN', 'TECH_USER'];
@@ -76,6 +77,14 @@ function App() {
                 element={
                   <RoleGuard allowedRoles={ADMIN_ROLES}>
                     <GestionnairesPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/administration"
+                element={
+                  <RoleGuard allowedRoles={['SUPER_ADMIN']}>
+                    <AdministrationPage />
                   </RoleGuard>
                 }
               />

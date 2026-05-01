@@ -143,6 +143,9 @@ public class StepClient extends PanacheEntity {
     @Column(name = "business_sector_name", length = 200)
     public String businessSectorName;
 
+    @Column(name = "business_activity_group_name", length = 200)
+    public String businessActivityGroupName;
+
     @Column(name = "business_activity_name", length = 200)
     public String businessActivityName;
 
@@ -248,8 +251,21 @@ public class StepClient extends PanacheEntity {
     // USER INPUT
     // ─────────────────────────────────────────────────────────────
 
+    /** Activité client — business/activity location noted by analyst */
     @Column(name = "location", length = 500)
     public String location;
+
+    /** Domicile client — home/domicile location noted by analyst */
+    @Column(name = "location_domicile", length = 500)
+    public String locationDomicile;
+
+    /** Date de visite — date the analyst visited the client */
+    @Column(name = "date_visite")
+    public LocalDate dateVisite;
+
+    /** Date de finalisation — date the analysis was finalised */
+    @Column(name = "date_finalisation")
+    public LocalDate dateFinalisation;
 
     // ─────────────────────────────────────────────────────────────
     // ASSIGNED MANAGER INFO

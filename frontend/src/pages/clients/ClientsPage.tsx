@@ -755,6 +755,10 @@ const ClientsPage = () => {
                 value: viewingClient.secteurActiviteLibelle,
               },
               {
+                label: t('detailLabels.activityGroup'),
+                value: viewingClient.activiteLibelle,
+              },
+              {
                 label: t('detailLabels.businessActivity'),
                 value: viewingClient.sousActiviteLibelle,
               },

@@ -67,6 +67,9 @@ message ClientResponse {
 
   // Risk level
   string ifc_level_of_risk = 33;
+
+  // Activity group (intermediate level between sector and sous_activite)
+  string business_activity_group = 34;
 }
 
 message ClientCycleUpdateResponse {

@@ -54,6 +54,20 @@ export const referenceService = {
   },
 
   /**
+   * GET /api/activites?secteurActiviteId=:id
+   * Get activités by secteur d'activité
+   */
+  async getActivitesBySecteur(
+    secteurActiviteId: number
+  ): Promise<ReferenceItem[]> {
+    const response = await api.get<ReferenceItem[]>("/api/activites", {
+      baseURL: CLIENT_API_BASE_URL,
+      params: { secteurActiviteId },
+    });
+    return response.data;
+  },
+
+  /**
    * GET /api/sous-activites?secteurActiviteId=:id
    * Get sous-activités by secteur d'activité
    */
@@ -63,6 +77,20 @@ export const referenceService = {
     const response = await api.get<ReferenceItem[]>("/api/sous-activites", {
       baseURL: CLIENT_API_BASE_URL,
       params: { secteurActiviteId },
+    });
+    return response.data;
+  },
+
+  /**
+   * GET /api/sous-activites?activiteId=:id
+   * Get sous-activités by activite
+   */
+  async getSousActivitesByActivite(
+    activiteId: number
+  ): Promise<ReferenceItem[]> {
+    const response = await api.get<ReferenceItem[]>("/api/sous-activites", {
+      baseURL: CLIENT_API_BASE_URL,
+      params: { activiteId },
     });
     return response.data;
   },

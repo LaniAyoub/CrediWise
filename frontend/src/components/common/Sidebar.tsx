@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 // Roles that can manage agences & gestionnaires
 const ADMIN_ROLES = ['SUPER_ADMIN', 'TECH_USER'];
 
+const SUPER_ADMIN_ONLY = ['SUPER_ADMIN'];
+
 interface NavItem {
   path: string;
   label: string;
@@ -72,6 +74,16 @@ const allNavItems: NavItem[] = [
     ),
   },
   {
+    path: '/administration',
+    label: 'Administration',
+    roles: SUPER_ADMIN_ONLY,
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+      </svg>
+    ),
+  },
+  {
     path: '/profile',
     label: 'Profile',
     icon: (
@@ -129,9 +141,15 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
         icon: allNavItems[5].icon,
       },
       {
+        path: '/administration',
+        label: t('navigation.administration'),
+        roles: SUPER_ADMIN_ONLY,
+        icon: allNavItems[6].icon,
+      },
+      {
         path: '/profile',
         label: t('navigation.profile'),
-        icon: allNavItems[6].icon,
+        icon: allNavItems[7].icon,
       },
     ];
 
@@ -154,21 +172,20 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
       <aside
         className={`
           fixed top-0 left-0 z-40 h-screen
-          bg-gradient-to-b from-navy-950 via-navy-950 to-surface-900
-          dark:from-surface-900 dark:via-surface-900 dark:to-surface-800
-          border-r border-white/5 dark:border-surface-700 shadow-sidebar
+          bg-surface-50 dark:bg-surface-900
+          border-r border-surface-200 dark:border-surface-700 shadow-sidebar
           transition-all duration-300 ease-in-out
           flex flex-col
           ${isCollapsed ? '-translate-x-full lg:translate-x-0 lg:w-20' : 'translate-x-0 w-60'}
         `}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-5 h-16 border-b border-white/10 flex-shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center flex-shrink-0">
+        <div className="flex items-center gap-3 px-5 h-16 border-b border-surface-200 dark:border-surface-700 flex-shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-sm">CW</span>
           </div>
           {!isCollapsed && (
-            <span className="text-white font-bold text-lg tracking-tight animate-fade-in">
+            <span className="text-surface-900 dark:text-surface-50 font-bold text-lg tracking-tight animate-fade-in">
               CrediWise
             </span>
           )}
@@ -184,10 +201,10 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-500 transition-smooth
                 ${
                   isActive
-                    ? 'border-l-4 border-brand-500 bg-brand-500/15 text-brand-300'
-                    : 'text-surface-400 hover:text-white hover:bg-white/5 dark:hover:bg-surface-800'
+                    ? 'border-l-[3px] border-brand-600 bg-[#f0fdf4] text-[#15803d] dark:bg-[rgba(74,222,128,0.1)] dark:text-[#4ade80] dark:border-brand-600'
+                    : 'text-surface-500 hover:text-surface-900 hover:bg-surface-100 dark:text-surface-400 dark:hover:text-surface-50 dark:hover:bg-surface-800'
                 }
-                ${isCollapsed ? 'justify-center lg:px-0 lg:border-l-0 lg:border-t-2 lg:border-t-brand-500' : ''}
+                ${isCollapsed ? 'justify-center lg:px-0 lg:border-l-0 lg:border-t-[3px] lg:border-t-brand-600' : ''}
                 `
               }
               title={isCollapsed ? item.label : undefined}
@@ -201,10 +218,10 @@ const Sidebar = ({ isCollapsed, onToggle }: SidebarProps) => {
         </nav>
 
         {/* Collapse toggle — desktop only */}
-        <div className="hidden lg:block px-3 py-4 border-t border-white/10">
+        <div className="hidden lg:block px-3 py-4 border-t border-surface-200 dark:border-surface-700">
           <button
             onClick={onToggle}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-surface-400 dark:text-surface-500 hover:text-white dark:hover:text-surface-300 hover:bg-white/5 dark:hover:bg-white/10 transition-colors text-sm"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-surface-500 dark:text-surface-400 hover:text-surface-900 hover:bg-surface-100 dark:hover:text-surface-50 dark:hover:bg-surface-800 transition-colors text-sm"
           >
             <svg
               className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}

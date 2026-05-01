@@ -1,5 +1,5 @@
 import api from './api';
-import type { AnalyseDossier, StepClientData, StepObjetCreditData, StepObjetCreditRequest } from '@/types/analyse';
+import type { AnalyseDossier, StepClientData, StepObjetCreditData, StepObjetCreditRequest, StepRisqueClientData, StepRisqueClientRequest, StepRisqueCommercialData, StepRisqueCommercialRequest } from '@/types/analyse';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ANALYSE_API_BASE_URL = (import.meta as any).env.VITE_ANALYSE_API_URL || 'http://localhost:8084';
@@ -44,10 +44,18 @@ export const analyseService = {
     );
   },
 
-  confirmerStep1: (dossierId: number) => {
+  saveStep1: (dossierId: number, payload: { location?: string | null; locationDomicile?: string | null; dateVisite?: string | null; dateFinalisation?: string | null }) => {
+    return api.post<StepClientData>(
+      `/analyses/dossiers/${dossierId}/steps/1/sauvegarder`,
+      payload,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  confirmerStep1: (dossierId: number, payload: { location?: string | null; locationDomicile?: string | null; dateVisite?: string | null; dateFinalisation?: string | null }) => {
     return api.post<StepClientData>(
       `/analyses/dossiers/${dossierId}/steps/1/confirmer`,
-      {},
+      payload,
       { baseURL: ANALYSE_API_BASE_URL }
     );
   },
@@ -66,6 +74,14 @@ export const analyseService = {
     );
   },
 
+  saveStep2: (dossierId: number, data: StepObjetCreditRequest) => {
+    return api.post<StepObjetCreditData>(
+      `/analyses/dossiers/${dossierId}/steps/2/sauvegarder`,
+      data,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
   confirmStep2: (dossierId: number, data: StepObjetCreditRequest) => {
     return api.post<StepObjetCreditData>(
       `/analyses/dossiers/${dossierId}/steps/2/confirmer`,
@@ -77,6 +93,66 @@ export const analyseService = {
   getStep2: (dossierId: number) => {
     return api.get<StepObjetCreditData>(
       `/analyses/dossiers/${dossierId}/steps/2`,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  previewStep3: (dossierId: number) => {
+    return api.get<StepRisqueClientData>(
+      `/analyses/dossiers/${dossierId}/steps/3/preview`,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  saveStep3: (dossierId: number, data: StepRisqueClientRequest) => {
+    return api.post<StepRisqueClientData>(
+      `/analyses/dossiers/${dossierId}/steps/3/sauvegarder`,
+      data,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  confirmStep3: (dossierId: number, data: StepRisqueClientRequest) => {
+    return api.post<StepRisqueClientData>(
+      `/analyses/dossiers/${dossierId}/steps/3/confirmer`,
+      data,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  getStep3: (dossierId: number) => {
+    return api.get<StepRisqueClientData>(
+      `/analyses/dossiers/${dossierId}/steps/3`,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  previewStep4: (dossierId: number) => {
+    return api.get<StepRisqueCommercialData>(
+      `/analyses/dossiers/${dossierId}/steps/4/preview`,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  saveStep4: (dossierId: number, data: StepRisqueCommercialRequest) => {
+    return api.post<StepRisqueCommercialData>(
+      `/analyses/dossiers/${dossierId}/steps/4/sauvegarder`,
+      data,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  confirmStep4: (dossierId: number, data: StepRisqueCommercialRequest) => {
+    return api.post<StepRisqueCommercialData>(
+      `/analyses/dossiers/${dossierId}/steps/4/confirmer`,
+      data,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  getStep4: (dossierId: number) => {
+    return api.get<StepRisqueCommercialData>(
+      `/analyses/dossiers/${dossierId}/steps/4`,
       { baseURL: ANALYSE_API_BASE_URL }
     );
   },

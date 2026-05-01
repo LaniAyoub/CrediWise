@@ -12,14 +12,12 @@ const Badge = ({ children, variant = 'neutral', size = 'sm' }: BadgeProps) => {
    * - success: emerald palette for positive/completed states
    * - warning: amber palette for caution/pending states
    * - danger: rose palette for error/critical states
-   * - info: brand palette for informational states
-   * - neutral: surface palette for default states
    */
   const variantClasses: Record<string, string> = {
-    success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    warning: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-    danger: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
-    info: 'bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300',
+    success: 'bg-[#dcfce7] text-[#166534] dark:bg-[#14532d] dark:text-[#bbf7d0]',
+    warning: 'bg-[#fef9c3] text-[#854d0e] dark:bg-[#422006] dark:text-[#fde68a]',
+    danger: 'bg-[#fee2e2] text-[#991b1b] dark:bg-[#450a0a] dark:text-[#fca5a5]',
+    info: 'bg-[#dbeafe] text-[#1e40af] dark:bg-[#1e3a5f] dark:text-[#bfdbfe]',
     neutral: 'bg-surface-100 text-surface-700 dark:bg-surface-800 dark:text-surface-300',
   };
 

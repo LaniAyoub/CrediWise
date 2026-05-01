@@ -1,0 +1,43 @@
+{
+  "title": "Administration",
+  "subtitle": "Gestion des règles d'affichage et des produits",
+  "regles": {
+    "title": "Ajouter un produit / Règles d'affichage de LaF",
+    "subtitle": "Définir les règles de navigation par produit, opération et montant",
+    "addRow": "+ Ajouter une règle",
+    "noRules": "Aucune règle définie. Cliquez sur « + Ajouter une règle » pour commencer.",
+    "saving": "Enregistrement…",
+    "saved": "Règle enregistrée",
+    "updated": "Règle mise à jour (nouvelle version créée)",
+    "deleted": "Règle supprimée",
+    "edit": "Modifier cette règle",
+    "deleteConfirm": "Supprimer cette règle ?",
+    "editingNote": "Modification en cours — une nouvelle version sera créée. Les dossiers existants resteront liés à l'ancienne version.",
+    "versionLegend": "v1, v2… = numéro de version. La modification d'une règle crée une nouvelle version et conserve l'historique.",
+    "columns": {
+      "pays": "Pays",
+      "idProduit": "ID Produit",
+      "nomProduit": "Nom Produit",
+      "opInf": "Op ≥",
+      "borneInf": "Borne inférieure",
+      "opSup": "Op ≤",
+      "borneSup": "Borne supérieure",
+      "navigation": "Navigation",
+      "version": "Version",
+      "actions": "Actions"
+    },
+    "navigation": {
+      "lt5k": "< 5k",
+      "gt5k": "> 5k",
+      "placeholder": "Choisir…"
+    },
+    "selectProduct": "Choisir un produit…",
+    "errors": {
+      "loadFailed": "Impossible de charger les règles",
+      "saveFailed": "Impossible d'enregistrer la règle",
+      "updateFailed": "Impossible de mettre à jour la règle",
+      "deleteFailed": "Impossible de supprimer la règle",
+      "productLoadFailed": "Impossible de charger les produits"
+    }
+  }
+}

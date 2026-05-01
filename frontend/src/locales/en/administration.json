@@ -1,0 +1,43 @@
+{
+  "title": "Administration",
+  "subtitle": "Manage display rules and products",
+  "regles": {
+    "title": "Add product / LaF Display Rules",
+    "subtitle": "Define navigation rules by product, operation and amount",
+    "addRow": "+ Add rule",
+    "noRules": "No rules defined. Click « + Add rule » to get started.",
+    "saving": "Saving…",
+    "saved": "Rule saved",
+    "updated": "Rule updated (new version created)",
+    "deleted": "Rule deleted",
+    "edit": "Edit this rule",
+    "deleteConfirm": "Delete this rule?",
+    "editingNote": "Editing in progress — a new version will be created. Existing dossiers will remain linked to the previous version.",
+    "versionLegend": "v1, v2… = version number. Editing a rule creates a new version and preserves history.",
+    "columns": {
+      "pays": "Country",
+      "idProduit": "Product ID",
+      "nomProduit": "Product Name",
+      "opInf": "Op ≥",
+      "borneInf": "Lower bound",
+      "opSup": "Op ≤",
+      "borneSup": "Upper bound",
+      "navigation": "Navigation",
+      "version": "Version",
+      "actions": "Actions"
+    },
+    "navigation": {
+      "lt5k": "< 5k",
+      "gt5k": "> 5k",
+      "placeholder": "Choose…"
+    },
+    "selectProduct": "Choose a product…",
+    "errors": {
+      "loadFailed": "Failed to load rules",
+      "saveFailed": "Failed to save rule",
+      "updateFailed": "Failed to update rule",
+      "deleteFailed": "Failed to delete rule",
+      "productLoadFailed": "Failed to load products"
+    }
+  }
+}

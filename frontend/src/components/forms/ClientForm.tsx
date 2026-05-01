@@ -77,6 +77,7 @@ const clientSchema = z
     segmentId: z.string().min(1, "Segment is required"),
     accountTypeId: z.string().min(1, "Account type is required"),
     secteurActiviteId: z.string().min(1, "Business sector is required"),
+    activiteId: z.string().min(1, "Activity group is required"),
     sousActiviteId: z.string().min(1, "Business activity is required"),
 
     // Update-only
@@ -271,6 +272,13 @@ const clientSchema = z
         message: "Business sector is required",
       });
     }
+    if (!data.activiteId || data.activiteId.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["activiteId"],
+        message: "Activity group is required",
+      });
+    }
     if (!data.sousActiviteId || data.sousActiviteId.trim() === "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -361,6 +369,7 @@ const ClientForm = ({
   const [segments, setSegments] = useState<ReferenceItem[]>([]);
   const [accountTypes, setAccountTypes] = useState<ReferenceItem[]>([]);
   const [secteurActivites, setSecteurActivites] = useState<ReferenceItem[]>([]);
+  const [activites, setActivites] = useState<ReferenceItem[]>([]);
   const [sousActivites, setSousActivites] = useState<ReferenceItem[]>([]);
   const [loadingRef, setLoadingRef] = useState(true);
 
@@ -402,11 +411,12 @@ const ClientForm = ({
           accountNumber: defaultValues.accountNumber || "",
           accountTypeCustomName: defaultValues.accountTypeCustomName || "",
           scoring: defaultValues.scoring || "",
-          cycle: defaultValues.cycle || "",
+          cycle: defaultValues.cycle != null ? String(defaultValues.cycle) : "",
           cbsId: defaultValues.cbsId || "",
           segmentId: defaultValues.segmentId?.toString() || "",
           accountTypeId: defaultValues.accountTypeId?.toString() || "",
           secteurActiviteId: defaultValues.secteurActiviteId?.toString() || "",
+          activiteId: defaultValues.activiteId?.toString() || "",
           sousActiviteId: defaultValues.sousActiviteId?.toString() || "",
         }
       : {
@@ -441,6 +451,7 @@ const ClientForm = ({
           segmentId: "",
           accountTypeId: "",
           secteurActiviteId: "",
+          activiteId: "",
           sousActiviteId: "",
         },
   });
@@ -450,36 +461,19 @@ const ClientForm = ({
     const fetchReferenceData = async () => {
       try {
         setLoadingRef(true);
-        const [seg, acc, sec, sous] = await Promise.all([
-          referenceService.getSegments().catch(err => {
-            console.error("Segments error:", err);
-            return [];
-          }),
-          referenceService.getAccountTypes().catch(err => {
-            console.error("Account types error:", err);
-            return [];
-          }),
-          referenceService.getSecteurActivites().catch(err => {
-            console.error("Secteur activites error:", err);
-            return [];
-          }),
-          referenceService.getSousActivites().catch(err => {
-            console.error("Sous activites error:", err);
-            return [];
-          }),
+        const [seg, acc, sec] = await Promise.all([
+          referenceService.getSegments().catch(err => { console.error("Segments error:", err); return []; }),
+          referenceService.getAccountTypes().catch(err => { console.error("Account types error:", err); return []; }),
+          referenceService.getSecteurActivites().catch(err => { console.error("Secteur activites error:", err); return []; }),
         ]);
-
         setSegments(seg || []);
         setAccountTypes(acc || []);
         setSecteurActivites(sec || []);
-        setSousActivites(sous || []);
       } catch (error) {
         console.error("Error loading reference data:", error);
-        // Set empty arrays to avoid rendering errors
         setSegments([]);
         setAccountTypes([]);
         setSecteurActivites([]);
-        setSousActivites([]);
       } finally {
         setLoadingRef(false);
       }
@@ -487,29 +481,50 @@ const ClientForm = ({
     fetchReferenceData();
   }, []);
 
-  // ── Filter sous-activités by selected secteur ──────────────────────────────
+  // ── Cascade: secteur → activite ──────────────────────────────────────────
   const selectedSecteurId = watch("secteurActiviteId");
+  const selectedActiviteId = watch("activiteId");
   const selectedAccountTypeId = watch("accountTypeId");
   const selectedRelation = watch("relationAvecClient");
+
   useEffect(() => {
     if (selectedSecteurId && selectedSecteurId.trim()) {
-      const fetchFiltered = async () => {
+      const fetchActivites = async () => {
         try {
-          const result = await referenceService.getSousActivitesBySecteur(
-            parseInt(selectedSecteurId)
-          );
+          const result = await referenceService.getActivitesBySecteur(parseInt(selectedSecteurId));
+          setActivites(result || []);
+        } catch (error) {
+          console.error("Error loading activités:", error);
+          setActivites([]);
+        }
+      };
+      fetchActivites();
+    } else {
+      setActivites([]);
+      setValue("activiteId", "");
+      setSousActivites([]);
+      setValue("sousActiviteId", "");
+    }
+  }, [selectedSecteurId, setValue]);
+
+  // ── Cascade: activite → sous-activite ────────────────────────────────────
+  useEffect(() => {
+    if (selectedActiviteId && selectedActiviteId.trim()) {
+      const fetchSousActivites = async () => {
+        try {
+          const result = await referenceService.getSousActivitesByActivite(parseInt(selectedActiviteId));
           setSousActivites(result || []);
         } catch (error) {
           console.error("Error loading sous-activités:", error);
           setSousActivites([]);
         }
       };
-      fetchFiltered();
+      fetchSousActivites();
     } else {
       setSousActivites([]);
       setValue("sousActiviteId", "");
     }
-  }, [selectedSecteurId, setValue]);
+  }, [selectedActiviteId, setValue]);
 
   useEffect(() => {
     if (selectedAccountTypeId !== "4") {
@@ -820,7 +835,7 @@ const ClientForm = ({
 
             <div className="h-px bg-brand-200 dark:bg-brand-800" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Business Sector */}
               <div>
                 <label htmlFor="secteurActiviteId" className="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">
@@ -832,54 +847,73 @@ const ClientForm = ({
                   {...register("secteurActiviteId")}
                 >
                   <option value="">{t('form.chooseSector')}</option>
-                  {secteurActivites.length > 0 ? (
-                    secteurActivites.map((sec) => (
-                      <option key={sec.id} value={sec.id}>
-                        {sec.libelle ? sec.libelle.charAt(0).toUpperCase() + sec.libelle.slice(1) : `Sector ${sec.id}`}
-                      </option>
-                    ))
-                  ) : (
-                    <option disabled>{t('form.noSectors')}</option>
-                  )}
+                  {secteurActivites.map((sec) => (
+                    <option key={sec.id} value={sec.id}>
+                      {sec.libelle}
+                    </option>
+                  ))}
                 </select>
                 {errors.secteurActiviteId && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.secteurActiviteId.message}</p>}
               </div>
 
-              {/* Business Activity */}
+              {/* Activity Group */}
               <div>
-                <label htmlFor="sousActiviteId" className="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">
-                  {t('form.businessActivity')}
+                <label htmlFor="activiteId" className="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">
+                  {t('form.activityGroup')}
                 </label>
                 <select
-                  id="sousActiviteId"
+                  id="activiteId"
                   disabled={!selectedSecteurId || selectedSecteurId.trim() === ""}
                   className={`w-full rounded-lg border px-4 py-3 text-sm transition-all ${
                     !selectedSecteurId || selectedSecteurId.trim() === ""
                       ? "border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-surface-400 dark:text-surface-500 cursor-not-allowed"
                       : "border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 hover:border-surface-400 dark:hover:border-surface-500 focus:border-brand-500 dark:focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900/50"
                   }`}
-                  {...register("sousActiviteId")}
+                  {...register("activiteId")}
                 >
                   <option value="">
                     {selectedSecteurId && selectedSecteurId.trim()
-                      ? t('form.chooseActivity')
+                      ? t('form.chooseActivityGroup')
                       : t('form.selectSectorFirst')}
                   </option>
-                  {selectedSecteurId && selectedSecteurId.trim() && sousActivites.length > 0 ? (
-                    sousActivites.map((sous) => (
-                      <option key={sous.id} value={sous.id}>
-                        {sous.libelle ? sous.libelle.charAt(0).toUpperCase() + sous.libelle.slice(1) : `Activity ${sous.id}`}
-                      </option>
-                    ))
-                  ) : selectedSecteurId && selectedSecteurId.trim() ? (
-                    <option disabled>{t('form.noActivities')}</option>
-                  ) : null}
+                  {activites.map((act) => (
+                    <option key={act.id} value={act.id}>{act.libelle}</option>
+                  ))}
+                </select>
+                {errors.activiteId && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.activiteId.message}</p>}
+              </div>
+
+              {/* Business Sub-Activity */}
+              <div>
+                <label htmlFor="sousActiviteId" className="block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">
+                  {t('form.businessActivity')}
+                </label>
+                <select
+                  id="sousActiviteId"
+                  disabled={!selectedActiviteId || selectedActiviteId.trim() === ""}
+                  className={`w-full rounded-lg border px-4 py-3 text-sm transition-all ${
+                    !selectedActiviteId || selectedActiviteId.trim() === ""
+                      ? "border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-surface-400 dark:text-surface-500 cursor-not-allowed"
+                      : "border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-100 hover:border-surface-400 dark:hover:border-surface-500 focus:border-brand-500 dark:focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-900/50"
+                  }`}
+                  {...register("sousActiviteId")}
+                >
+                  <option value="">
+                    {selectedActiviteId && selectedActiviteId.trim()
+                      ? t('form.chooseActivity')
+                      : t('form.selectActivityGroupFirst')}
+                  </option>
+                  {sousActivites.map((sous) => (
+                    <option key={sous.id} value={sous.id}>{sous.libelle}</option>
+                  ))}
                 </select>
                 {errors.sousActiviteId && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{errors.sousActiviteId.message}</p>}
                 {!errors.sousActiviteId && (
                   <p className="mt-1 text-xs text-surface-500">
                     {!selectedSecteurId || selectedSecteurId.trim() === ""
                       ? t('form.selectSectorMessage')
+                      : !selectedActiviteId || selectedActiviteId.trim() === ""
+                      ? t('form.selectActivityGroupMessage')
                       : t('form.selectActivityMessage')}
                   </p>
                 )}

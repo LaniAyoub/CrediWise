@@ -33,14 +33,14 @@ public class AgenceResource {
     }
 
     @GET
-    @RolesAllowed({"SUPER_ADMIN", "TECH_USER"})
+    @RolesAllowed({"SUPER_ADMIN", "TECH_USER", "FRONT_OFFICE", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "READ_ONLY"})
     public List<AgenceResponseDTO> list() {
         return agenceService.listAll();
     }
 
     @GET
     @Path("/{id}")
-    @RolesAllowed({"SUPER_ADMIN", "TECH_USER"})
+    @RolesAllowed({"SUPER_ADMIN", "TECH_USER", "FRONT_OFFICE", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "READ_ONLY"})
     public AgenceResponseDTO get(@PathParam("id") String id) {
         return agenceService.getById(id);
     }

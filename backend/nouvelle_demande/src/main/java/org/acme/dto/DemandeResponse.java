@@ -39,7 +39,7 @@ public class DemandeResponse {
     public String email;
     public String primaryPhone;
     public String scoring;
-    public String cycle;
+    public Integer cycle;
     public String segment;
     public String accountType;
     public String businessSector;

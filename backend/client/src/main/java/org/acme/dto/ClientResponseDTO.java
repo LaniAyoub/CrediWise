@@ -55,6 +55,8 @@ public class ClientResponseDTO {
     private String accountTypeLibelle;
     private Long secteurActiviteId;
     private String secteurActiviteLibelle;
+    private Long activiteId;
+    private String activiteLibelle;
     private Long sousActiviteId;
     private String sousActiviteLibelle;
     private Long mappingRisqueActiviteId;
@@ -72,7 +74,7 @@ public class ClientResponseDTO {
     private String accountNumber;
     private String accountTypeCustomName;
     private String scoring;
-    private String cycle;
+    private Integer cycle;
     private String cbsId;
     private Map<String, Object> attributes;
 

@@ -10,6 +10,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import org.acme.dto.ReferenceItemDTO;
 import org.acme.entity.AccountType;
+import org.acme.entity.Activite;
 import org.acme.entity.SecteurActivite;
 import org.acme.entity.Segment;
 import org.acme.entity.SousActivite;
@@ -56,13 +57,35 @@ public class ReferenceDataResource {
     }
 
     @GET
+    @Path("/activites")
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @Operation(summary = "List activites, optionally filtered by secteurActiviteId")
+    public List<ReferenceItemDTO> getActivites(@QueryParam("secteurActiviteId") Long secteurActiviteId) {
+        PanacheQuery<Activite> query = (secteurActiviteId == null)
+                ? Activite.findAll(Sort.by("libelle"))
+                : Activite.find("secteurActivite.id = ?1", Sort.by("libelle"), secteurActiviteId);
+
+        return query.list().stream()
+                .map(item -> new ReferenceItemDTO(item.getId(), item.getLibelle()))
+                .toList();
+    }
+
+    @GET
     @Path("/sous-activites")
     @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
-    @Operation(summary = "List sous activites, optionally filtered by secteurActiviteId")
-    public List<ReferenceItemDTO> getSousActivites(@QueryParam("secteurActiviteId") Long secteurActiviteId) {
-        PanacheQuery<SousActivite> query = (secteurActiviteId == null)
-                ? SousActivite.findAll(Sort.by("libelle"))
-                : SousActivite.find("secteurActivite.id = ?1", Sort.by("libelle"), secteurActiviteId);
+    @Operation(summary = "List sous activites, optionally filtered by secteurActiviteId or activiteId")
+    public List<ReferenceItemDTO> getSousActivites(
+            @QueryParam("secteurActiviteId") Long secteurActiviteId,
+            @QueryParam("activiteId") Long activiteId) {
+
+        PanacheQuery<SousActivite> query;
+        if (activiteId != null) {
+            query = SousActivite.find("activite.id = ?1", Sort.by("libelle"), activiteId);
+        } else if (secteurActiviteId != null) {
+            query = SousActivite.find("secteurActivite.id = ?1", Sort.by("libelle"), secteurActiviteId);
+        } else {
+            query = SousActivite.findAll(Sort.by("libelle"));
+        }
 
         return query.list().stream()
                 .map(item -> new ReferenceItemDTO(item.getId(), item.getLibelle()))

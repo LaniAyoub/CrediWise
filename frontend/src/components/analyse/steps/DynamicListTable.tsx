@@ -22,6 +22,7 @@ interface DynamicListTableProps {
   totalLabel: string;
   totalValue: number;
   fieldPrefix: string;
+  readOnly?: boolean;
 }
 
 const DynamicListTable: React.FC<DynamicListTableProps> = ({
@@ -39,6 +40,7 @@ const DynamicListTable: React.FC<DynamicListTableProps> = ({
   totalLabel,
   totalValue,
   fieldPrefix,
+  readOnly = false,
 }) => {
   const { t } = useTranslation('analyse');
 
@@ -48,7 +50,7 @@ const DynamicListTable: React.FC<DynamicListTableProps> = ({
     return fieldErrors?.[index]?.[fieldName]?.message as string | undefined;
   };
 
-  const canDelete = fields.length > minRows;
+  const canDelete = !readOnly && fields.length > minRows;
 
   return (
     <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-6 shadow-sm">
@@ -86,7 +88,8 @@ const DynamicListTable: React.FC<DynamicListTableProps> = ({
                       <select
                         {...register(`${fieldPrefix}.${index}.categorie`)}
                         defaultValue=""
-                        className="w-full px-3 py-2 text-body border border-surface-300 dark:border-surface-600 rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        disabled={readOnly}
+                        className={`w-full px-3 py-2 text-body border rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${readOnly ? 'border-transparent cursor-default' : 'border-surface-300 dark:border-surface-600'}`}
                       >
                         <option value="" disabled>
                           -- Choisir une catégorie --
@@ -111,9 +114,10 @@ const DynamicListTable: React.FC<DynamicListTableProps> = ({
                   <td className="px-3 py-4">
                     <input
                       type="text"
-                      placeholder={descriptionPlaceholder}
+                      placeholder={readOnly ? '' : descriptionPlaceholder}
+                      disabled={readOnly}
                       {...register(`${fieldPrefix}.${index}.description`)}
-                      className="w-full px-3 py-2 text-body border border-surface-300 dark:border-surface-600 rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className={`w-full px-3 py-2 text-body border rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${readOnly ? 'border-transparent cursor-default' : 'border-surface-300 dark:border-surface-600'}`}
                     />
                     {getFieldError(index, 'description') && (
                       <p className="text-xs text-rose-500 mt-1">
@@ -128,10 +132,11 @@ const DynamicListTable: React.FC<DynamicListTableProps> = ({
                       type="number"
                       step="0.01"
                       min="0"
+                      disabled={readOnly}
                       {...register(`${fieldPrefix}.${index}.${showCategoryDropdown ? 'cout' : 'montant'}`, {
                         valueAsNumber: true,
                       })}
-                      className="w-full px-3 py-2 text-body border border-surface-300 dark:border-surface-600 rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 text-right focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className={`w-full px-3 py-2 text-body border rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 text-right focus:outline-none focus:ring-2 focus:ring-emerald-500 ${readOnly ? 'border-transparent cursor-default' : 'border-surface-300 dark:border-surface-600'}`}
                     />
                     {getFieldError(index, showCategoryDropdown ? 'cout' : 'montant') && (
                       <p className="text-xs text-rose-500 mt-1">
@@ -195,13 +200,15 @@ const DynamicListTable: React.FC<DynamicListTableProps> = ({
       )}
 
       {/* Append Button */}
-      <button
-        type="button"
-        onClick={onAppend}
-        className="px-4 py-2 text-sm font-medium border border-surface-300 dark:border-surface-600 rounded-lg text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
-      >
-        {appendLabel}
-      </button>
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={onAppend}
+          className="px-4 py-2 text-sm font-medium border border-surface-300 dark:border-surface-600 rounded-lg text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
+        >
+          {appendLabel}
+        </button>
+      )}
     </div>
   );
 };

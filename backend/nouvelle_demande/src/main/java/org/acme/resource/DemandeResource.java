@@ -83,41 +83,30 @@ public class DemandeResource {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SUBMIT  (DRAFT → SUBMITTED, prints PDF after)
+    // SUBMIT  (DRAFT → ANALYSE or CHECK_BEFORE_COMMITTEE, creates dossier atomically)
+    // Products 101,102,103 → ANALYSE | Products 104,105 → CHECK_BEFORE_COMMITTEE
     // ─────────────────────────────────────────────────────────────────────────
 
     @POST
     @Path("/{id}/submit")
     @RolesAllowed({"SUPER_ADMIN", "CRO", "FRONT_OFFICE"})
-    @Operation(summary = "Submit a DRAFT demande — locks editing, ready for PDF print")
-    public DemandeResponse submit(@PathParam("id") Long id) {
-        return demandeService.submit(id);
+    @Operation(summary = "Submit a DRAFT demande — creates analysis dossier and routes by product")
+    public Response submit(@PathParam("id") Long id, @Context HttpHeaders headers) {
+        String authorizationHeader = headers.getHeaderString(HttpHeaders.AUTHORIZATION);
+        StartAnalysisResponse result = demandeService.submit(id, authorizationHeader);
+        return Response.ok(result).build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // STATUS UPDATE  (SUBMITTED → VALIDATED / REJECTED, reviewers only)
+    // STATUS UPDATE  (manual transitions for reviewers / workflow engine)
     // ─────────────────────────────────────────────────────────────────────────
 
     @PATCH
     @Path("/{id}/statut")
     @RolesAllowed({"SUPER_ADMIN", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST"})
-    @Operation(summary = "Validate or reject a SUBMITTED demande")
+    @Operation(summary = "Manually update demande status (workflow transitions)")
     public DemandeResponse updateStatut(@PathParam("id") Long id, @Valid StatutUpdateRequest req) {
         return demandeService.updateStatut(id, req.getStatus());
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // START ANALYSIS  (SUBMITTED → ANALYSE + create dossier, atomic transaction)
-    // ─────────────────────────────────────────────────────────────────────────
-
-    @POST
-    @Path("/{id}/start-analysis")
-    @RolesAllowed({"SUPER_ADMIN", "CRO", "FRONT_OFFICE"})
-    @Operation(summary = "Start analysis: create dossier + update status to ANALYSE (atomic)")
-    public Response startAnalysis(@PathParam("id") Long id, @Context HttpHeaders headers) {
-        String authorizationHeader = headers.getHeaderString(HttpHeaders.AUTHORIZATION);
-        StartAnalysisResponse result = demandeService.startAnalysis(id, authorizationHeader);
-        return Response.ok(result).build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

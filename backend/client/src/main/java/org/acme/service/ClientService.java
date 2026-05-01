@@ -7,6 +7,7 @@ import org.acme.dto.ClientCreateDTO;
 import org.acme.dto.ClientResponseDTO;
 import org.acme.dto.ClientUpdateDTO;
 import org.acme.entity.*;
+import org.acme.entity.Activite;
 import org.acme.entity.enums.ClientStatus;
 import org.acme.entity.enums.RelationAvecClient;
 import org.acme.exception.ClientAlreadyExistsException;
@@ -208,7 +209,11 @@ public class ClientService {
         client.setAccountTypeCustomName(dto.getAccountTypeCustomName());
         client.setScoring(dto.getScoring());
         String cycleValue = dto.getCycle();
-        client.setCycle((cycleValue == null || cycleValue.isBlank()) ? "0" : cycleValue.trim());
+        int parsedCycle = 0;
+        if (cycleValue != null && !cycleValue.isBlank()) {
+            try { parsedCycle = Integer.parseInt(cycleValue.trim()); } catch (NumberFormatException ignored) {}
+        }
+        client.setCycle(parsedCycle);
         client.setCbsId(dto.getCbsId());
         client.setAttributes(dto.getAttributes());
         client.setAgenceId(dto.getAgenceId());
@@ -246,16 +251,30 @@ public class ClientService {
                     .orElseThrow(() -> new BadRequestException("Business sector not found: " + dto.getSecteurActiviteLibelle()));
             client.setSecteurActivite(secteur);
         }
+        if (dto.getActiviteId() != null) {
+            Activite activite = Activite.findById(dto.getActiviteId());
+            if (activite == null) {
+                throw new BadRequestException("Activity group not found: " + dto.getActiviteId());
+            }
+            client.setActivite(activite);
+        }
         if (dto.getSousActiviteId() != null) {
             SousActivite sousActivite = SousActivite.findById(dto.getSousActiviteId());
             if (sousActivite == null) {
                 throw new BadRequestException("Business activity not found: " + dto.getSousActiviteId());
             }
             client.setSousActivite(sousActivite);
+            // Auto-set activite from sous_activite if not explicitly provided
+            if (dto.getActiviteId() == null && sousActivite.getActivite() != null) {
+                client.setActivite(sousActivite.getActivite());
+            }
         } else if (dto.getSousActiviteLibelle() != null && !dto.getSousActiviteLibelle().isBlank()) {
             SousActivite sousActivite = clientRepository.findSousActiviteByLibelle(dto.getSousActiviteLibelle())
                     .orElseThrow(() -> new BadRequestException("Business activity not found: " + dto.getSousActiviteLibelle()));
             client.setSousActivite(sousActivite);
+            if (dto.getActiviteId() == null && sousActivite.getActivite() != null) {
+                client.setActivite(sousActivite.getActivite());
+            }
         }
         if (dto.getMappingRisqueActiviteId() != null) {
             MappingRisqueActivite risk = MappingRisqueActivite.findById(dto.getMappingRisqueActiviteId());
@@ -331,8 +350,15 @@ public class ClientService {
         if (dto.getSecteurActiviteId() != null) {
             client.setSecteurActivite(SecteurActivite.findById(dto.getSecteurActiviteId()));
         }
+        if (dto.getActiviteId() != null) {
+            client.setActivite(Activite.findById(dto.getActiviteId()));
+        }
         if (dto.getSousActiviteId() != null) {
-            client.setSousActivite(SousActivite.findById(dto.getSousActiviteId()));
+            SousActivite sa = SousActivite.findById(dto.getSousActiviteId());
+            client.setSousActivite(sa);
+            if (dto.getActiviteId() == null && sa != null && sa.getActivite() != null) {
+                client.setActivite(sa.getActivite());
+            }
         }
         if (dto.getMappingRisqueActiviteId() != null) {
             MappingRisqueActivite risk = MappingRisqueActivite.findById(dto.getMappingRisqueActiviteId());
@@ -459,6 +485,8 @@ public class ClientService {
                 .accountTypeLibelle(c.getAccountType() != null ? c.getAccountType().getLibelle() : null)
                 .secteurActiviteId(c.getSecteurActivite() != null ? c.getSecteurActivite().getId() : null)
                 .secteurActiviteLibelle(c.getSecteurActivite() != null ? c.getSecteurActivite().getLibelle() : null)
+                .activiteId(c.getActivite() != null ? c.getActivite().getId() : null)
+                .activiteLibelle(c.getActivite() != null ? c.getActivite().getLibelle() : null)
                 .sousActiviteId(c.getSousActivite() != null ? c.getSousActivite().getId() : null)
                 .sousActiviteLibelle(c.getSousActivite() != null ? c.getSousActivite().getLibelle() : null)
                 .mappingRisqueActiviteId(c.getRiskLevel() != null ? c.getRiskLevel().getId() : null)

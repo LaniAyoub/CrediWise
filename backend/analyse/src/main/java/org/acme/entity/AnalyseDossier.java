@@ -68,6 +68,18 @@ public class AnalyseDossier extends PanacheEntity {
     @Column(name = "demande_created_at")
     public LocalDateTime demandeCreatedAt;
 
+    /**
+     * ID of the RegleAffichage that was active when this dossier was first analysed.
+     * Nullable — null for dossiers created before versioning was introduced.
+     * When the referenced rule has isActive=false, the UI shows an "old rule" warning.
+     */
+    @Column(name = "applied_rule_id")
+    public Long appliedRuleId;
+
+    /** Version number of the applied rule at time of capture (snapshot, denormalised). */
+    @Column(name = "applied_rule_version")
+    public Integer appliedRuleVersion;
+
     // ─────────────────────────────────────────────────────────────
     // Finders
     // ─────────────────────────────────────────────────────────────
@@ -83,7 +95,6 @@ public class AnalyseDossier extends PanacheEntity {
     public static java.util.List<AnalyseDossier> findAllActive() {
         // Find dossiers in analysis phase (not yet completed or rejected)
         return find("status IN ?1", java.util.Arrays.asList(
-            DossierStatus.SUBMITTED,
             DossierStatus.ANALYSE,
             DossierStatus.CHECK_BEFORE_COMMITTEE,
             DossierStatus.CREDIT_RISK_ANALYSIS,
