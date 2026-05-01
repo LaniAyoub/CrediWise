@@ -96,7 +96,7 @@ class ClientServiceTest {
         doNothing().when(clientRepository).persist(any(Client.class));
 
         ClientResponseDTO result = clientService.create(dto, ACTOR_ID);
-        assertThat(result.getCycle()).isEqualTo("0");
+        assertThat(result.getCycle()).isEqualTo(0);
     }
 
     @Test
