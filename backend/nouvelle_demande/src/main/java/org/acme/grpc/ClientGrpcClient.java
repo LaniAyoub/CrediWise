@@ -25,4 +25,14 @@ public class ClientGrpcClient {
         ).await().indefinitely();
         return response.getSuccess();
     }
+
+    public boolean updateClientScoring(String id, String scoring) {
+        ClientScoringUpdateResponse response = clientService.updateClientScoring(
+                ClientScoringUpdateRequest.newBuilder()
+                        .setId(id)
+                        .setScoring(scoring)
+                        .build()
+        ).await().indefinitely();
+        return response.getSuccess();
+    }
 }

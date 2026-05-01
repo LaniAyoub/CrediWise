@@ -35,6 +35,9 @@ public class DemandeService {
     ClientGrpcClient clientGrpcClient;
 
     @Inject
+    ScoringCalculator scoringCalculator;
+
+    @Inject
     JsonWebToken jwt;
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -117,6 +120,12 @@ public class DemandeService {
             }
         }
         demandeRepository.persist(demande);
+
+        // ── 4. Calcul du score et mise à jour de clients.scoring ────────────
+        String scoringResult = scoringCalculator.compute(demande);
+        demande.scoring = scoringResult;
+        clientGrpcClient.updateClientScoring(req.getClientId().toString(), scoringResult);
+
         return toResponse(demande);
     }
 
