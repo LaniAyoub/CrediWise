@@ -1,0 +1,286 @@
+@startuml CrediWise_DiagrammeClasses
+
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontSize 11
+skinparam classFontName Calibri
+skinparam packageStyle rectangle
+skinparam packageBorderColor #2E74B5
+skinparam packageBackgroundColor #F2F7FC
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #2E74B5
+skinparam classHeaderBackgroundColor #1F508A
+skinparam classFontColor #000000
+skinparam ArrowColor #1F508A
+skinparam ArrowThickness 1.5
+skinparam linetype ortho
+
+' ─────────────────────────────────────────────────
+' Package : Gestion des Utilisateurs
+' ─────────────────────────────────────────────────
+package "Gestion des Utilisateurs" {
+
+  enum Role {
+    SUPER_ADMIN
+    TECH_USER
+    GESTIONNAIRE
+    CRO
+    FRONT_OFFICE
+    BRANCH_DM
+    HEAD_OFFICE_DM
+    RISK_ANALYST
+    READ_ONLY
+  }
+
+  enum StatutCompte {
+    ACTIF
+    INACTIF
+    SUSPENDU
+  }
+
+  class Gestionnaire {
+    - id          : Long
+    - nom         : String
+    - prenom      : String
+    - email       : String
+    - motDePasse  : String
+    - role        : Role
+    - statut      : StatutCompte
+    - dateCreation: LocalDateTime
+    --
+    + seConnecter() : String
+    + seDeconnecter() : void
+    + reinitialiserMotDePasse(newPwd : String) : void
+  }
+
+  class Agence {
+    - id          : Long
+    - nom         : String
+    - code        : String
+    - adresse     : String
+    - dateCreation: LocalDateTime
+    --
+    + getGestionnaires() : List<Gestionnaire>
+  }
+}
+
+' ─────────────────────────────────────────────────
+' Package : Gestion des Clients
+' ─────────────────────────────────────────────────
+package "Gestion des Clients" {
+
+  enum StatutClient {
+    ACTIF
+    INACTIF
+    SUSPENDU
+    CLOTURE
+  }
+
+  enum TypeClient {
+    PHYSIQUE
+    MORALE
+  }
+
+  abstract class Client {
+    - id                  : Long
+    - typeClient          : TypeClient
+    - email               : String
+    - telephonePrincipal  : String
+    - telephoneSecondaire : String
+    - adresse             : String
+    - typeCompte          : String
+    - segment             : String
+    - secteur             : String
+    - activiteCommerciale : String
+    - statut              : StatutClient
+    - dateCreation        : LocalDateTime
+    --
+    + {abstract} getIdentifiantPrincipal() : String
+    + mettreAJour() : void
+    + changerStatut(statut : StatutClient) : void
+  }
+
+  class PersonnePhysique {
+    - nom                    : String
+    - prenom                 : String
+    - dateNaissance          : LocalDate
+    - genre                  : String
+    - etatCivil              : String
+    - nationalite            : String
+    - numeroIdentiteNationale: String
+    - revenuMensuel          : BigDecimal
+    --
+    + getIdentifiantPrincipal() : String
+    + getNomComplet() : String
+  }
+
+  class PersonneMorale {
+    - raisonSociale          : String
+    - sigle                  : String
+    - numeroRegistreCommerce : String
+    - activitePrincipale     : String
+    - nomContactPrincipal    : String
+    - prenomContactPrincipal : String
+    --
+    + getIdentifiantPrincipal() : String
+    + getDenominationSociale() : String
+  }
+
+  class ClientSnapshot {
+    - id            : Long
+    - donneesClient : String
+    - dateCapture   : LocalDateTime
+    --
+    + getDonnees() : Map<String, Object>
+  }
+}
+
+' ─────────────────────────────────────────────────
+' Package : Gestion des Demandes de Crédit
+' ─────────────────────────────────────────────────
+package "Gestion des Demandes de Crédit" {
+
+  enum StatutDemande {
+    BROUILLON
+    SOUMISE
+    VALIDEE
+    REJETEE
+  }
+
+  class Demande {
+    - id              : Long
+    - objetCredit     : String
+    - montantDemande  : BigDecimal
+    - dureeEnMois     : Integer
+    - statut          : StatutDemande
+    - dateCreation    : LocalDateTime
+    - dateSoumission  : LocalDateTime
+    - cheminPdf       : String
+    - commentaire     : String
+    --
+    + soumettre() : void
+    + valider(commentaire : String) : void
+    + rejeter(commentaire : String) : void
+    + genererPDF() : byte[]
+    + estModifiable() : boolean
+  }
+
+  class Garantie {
+    - id          : Long
+    - type        : String
+    - montant     : BigDecimal
+    - description : String
+    --
+    + getValeurGarantie() : BigDecimal
+  }
+
+  class Garant {
+    - id               : Long
+    - nom              : String
+    - prenom           : String
+    - telephone        : String
+    - lienAvecClient   : String
+    - revenuMensuel    : BigDecimal
+    --
+    + getNomComplet() : String
+  }
+
+  class Produit {
+    - id           : Long
+    - nom          : String
+    - description  : String
+    - tauxInteret  : BigDecimal
+    - dureeMaxMois : Integer
+    --
+    + calculerMensualite(montant : BigDecimal, duree : Integer) : BigDecimal
+  }
+
+  class StatutHistorique {
+    - id              : Long
+    - ancienStatut    : StatutDemande
+    - nouveauStatut   : StatutDemande
+    - commentaire     : String
+    - horodatage      : LocalDateTime
+    - acteurId        : Long
+  }
+}
+
+' ─────────────────────────────────────────────────
+' Package : Audit et Traçabilité
+' ─────────────────────────────────────────────────
+package "Audit et Traçabilité" {
+
+  class EvenementAuth {
+    - id              : Long
+    - typeEvenement   : String
+    - adresseIP       : String
+    - navigateur      : String
+    - typeTerminal    : String
+    - systemeExploit  : String
+    - roleUtilisateur : String
+    - agenceId        : Long
+    - agenceNom       : String
+    - statut          : String
+    - raisonEchec     : String
+    - tempsReponseMs  : Long
+    - traceId         : String
+    - horodatage      : LocalDateTime
+    --
+    + estReussi() : boolean
+  }
+
+  class EvenementClient {
+    - id          : Long
+    - action      : String
+    - clientId    : Long
+    - acteurId    : Long
+    - details     : String
+    - horodatage  : LocalDateTime
+    --
+    + getResume() : String
+  }
+
+  class EvenementDemande {
+    - id              : Long
+    - action          : String
+    - demandeId       : Long
+    - ancienStatut    : StatutDemande
+    - nouveauStatut   : StatutDemande
+    - acteurId        : Long
+    - commentaire     : String
+    - horodatage      : LocalDateTime
+    --
+    + getResume() : String
+  }
+}
+
+' ─────────────────────────────────────────────────
+' Relations
+' ─────────────────────────────────────────────────
+
+' Utilisateurs
+Gestionnaire "n" --> "1"  Agence          : appartient à >
+Gestionnaire "1" --> "1"  Role            : possède >
+Gestionnaire "1" --> "1"  StatutCompte    : a >
+
+' Héritage Clients
+Client <|-- PersonnePhysique
+Client <|-- PersonneMorale
+Client "1" --> "1" StatutClient            : a >
+Client "1" --> "1" TypeClient              : est de type >
+
+' Demandes
+Client          "1" --> "0..*" Demande         : fait >
+Demande         "1" --> "1"    StatutDemande   : a >
+Demande         "1" *--> "0..*" Garantie       : contient >
+Demande         "1" *--> "0..*" Garant         : associe >
+Demande         "n" --> "n"    Produit         : sélectionne >
+Demande         "1" *--> "1"   ClientSnapshot  : capture >
+Demande         "1" --> "0..*" StatutHistorique : trace >
+
+' Audit
+Gestionnaire    "1" --> "0..*" EvenementAuth   : génère >
+Client          "1" --> "0..*" EvenementClient : tracé par >
+Demande         "1" --> "0..*" EvenementDemande : suivie par >
+
+@enduml

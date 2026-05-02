@@ -1,0 +1,195 @@
+@startuml CrediWise_CasDUtilisationGeneral
+
+!theme plain
+left to right direction
+
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam packageBorderColor     #1F508A
+skinparam packageBackgroundColor #FAFBFE
+skinparam packageFontSize        11
+skinparam packageFontStyle       bold
+skinparam packageFontColor       #1F508A
+
+skinparam usecaseBorderColor     #2E74B5
+skinparam usecaseBackgroundColor #EBF3FB
+skinparam usecaseFontSize        10
+skinparam usecaseFontColor       #1A1A1A
+skinparam usecaseBorderThickness 1.5
+
+skinparam actorBorderColor       #1F508A
+skinparam actorBackgroundColor   #D6E4F7
+skinparam actorFontSize          10
+skinparam actorFontStyle         bold
+skinparam actorFontColor         #1A1A1A
+
+skinparam ArrowColor             #1F508A
+skinparam ArrowThickness         1.2
+skinparam ArrowFontSize          9
+skinparam ArrowFontColor         #555555
+
+'----------------------------------------------
+' ACTEURS cote gauche (roles admin)
+'----------------------------------------------
+actor "Super\nAdministrateur" as SA
+actor "Utilisateur\nTechnique" as TU
+
+'----------------------------------------------
+' FRONTIERE DU SYSTEME
+'----------------------------------------------
+rectangle "Systeme CrediWise" {
+
+  package "Authentification" {
+    (Se connecter)   as UC1
+    (Se deconnecter) as UC2
+  }
+
+  package "Gestion des Utilisateurs\net des Agences" {
+    (Gerer les comptes\ngestionnaires) as UC3
+    (Activer ou desactiver\nun compte)  as UC4
+    (Gerer les agences)                as UC5
+    (Attribuer un role)                as UC6
+    (Reinitialiser un\nmot de passe)   as UC7
+  }
+
+  package "Gestion des Clients" {
+    (Creer une fiche client)    as UC8
+    (Rechercher un client)      as UC9
+    (Mettre a jour un client)   as UC10
+    (Changer le statut\nclient) as UC11
+  }
+
+  package "Gestion des Demandes\nde Credit" {
+    (Creer une demande\nen brouillon)     as UC12
+    (Ajouter garanties\net garants)       as UC13
+    (Selectionner des\nproduits)          as UC14
+    (Soumettre une demande)               as UC15
+    (Consulter la liste\ndes demandes)    as UC16
+    (Valider une demande)                 as UC17
+    (Rejeter une demande)                 as UC18
+    (Exporter la demande\nen PDF)         as UC19
+  }
+
+  package "Audit et Tracabilite" {
+    (Consulter journaux\nauthentification) as UC20
+    (Consulter journaux\nd'operations)     as UC21
+    (Consulter historique\ndemande)        as UC22
+  }
+
+  package "Observabilite" {
+    (Consulter metriques\net tableaux de bord) as UC23
+  }
+
+}
+
+'----------------------------------------------
+' ACTEURS cote droit (roles operationnels)
+'----------------------------------------------
+actor "CRO"                 as CRO
+actor "Agent\nFront Office" as FO
+actor "Decideur\nd'Agence"  as BDM
+actor "Decideur\nau Siege"  as HDM
+actor "Analyste\nRisque"    as RA
+actor "Auditeur"            as AUD
+
+'----------------------------------------------
+' RELATIONS include / extend
+'----------------------------------------------
+UC12 ..> UC9  : <<include>>
+UC15 ..> UC13 : <<include>>
+UC15 ..> UC14 : <<include>>
+UC19 ..> UC15 : <<extend>>
+
+'----------------------------------------------
+' AUTHENTIFICATION (tous les acteurs)
+'----------------------------------------------
+SA  --> UC1
+SA  --> UC2
+TU  --> UC1
+TU  --> UC2
+CRO --> UC1
+CRO --> UC2
+FO  --> UC1
+FO  --> UC2
+BDM --> UC1
+BDM --> UC2
+HDM --> UC1
+HDM --> UC2
+RA  --> UC1
+RA  --> UC2
+AUD --> UC1
+AUD --> UC2
+
+'----------------------------------------------
+' GESTION UTILISATEURS ET AGENCES
+'----------------------------------------------
+SA --> UC3
+SA --> UC4
+SA --> UC5
+SA --> UC6
+SA --> UC7
+TU --> UC3
+TU --> UC4
+TU --> UC5
+TU --> UC7
+
+'----------------------------------------------
+' GESTION DES CLIENTS
+'----------------------------------------------
+SA  --> UC8
+SA  --> UC9
+SA  --> UC10
+SA  --> UC11
+CRO --> UC8
+CRO --> UC9
+CRO --> UC10
+FO  --> UC8
+FO  --> UC9
+
+'----------------------------------------------
+' GESTION DES DEMANDES DE CREDIT
+'----------------------------------------------
+SA  --> UC12
+SA  --> UC16
+SA  --> UC17
+SA  --> UC18
+SA  --> UC19
+CRO --> UC12
+CRO --> UC13
+CRO --> UC14
+CRO --> UC15
+CRO --> UC16
+CRO --> UC19
+FO  --> UC12
+FO  --> UC13
+FO  --> UC14
+FO  --> UC15
+FO  --> UC16
+FO  --> UC19
+BDM --> UC16
+BDM --> UC17
+BDM --> UC18
+HDM --> UC16
+HDM --> UC17
+HDM --> UC18
+RA  --> UC16
+RA  --> UC17
+RA  --> UC18
+
+'----------------------------------------------
+' AUDIT ET TRACABILITE
+'----------------------------------------------
+SA  --> UC20
+SA  --> UC21
+SA  --> UC22
+AUD --> UC20
+AUD --> UC21
+AUD --> UC22
+
+'----------------------------------------------
+' OBSERVABILITE
+'----------------------------------------------
+SA  --> UC23
+TU  --> UC23
+
+@enduml
