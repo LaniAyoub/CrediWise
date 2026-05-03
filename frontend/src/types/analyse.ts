@@ -398,8 +398,8 @@ export interface ScoringResult {
   decisionDSS: DecisionType;
   // Final
   decisionSysteme: DecisionType;
-  // Breakdown
-  scoreDetails: Record<string, number>;
+  // Breakdown — only available when freshly computed, not when loaded from DB
+  scoreDetails?: Record<string, number>;
 }
 
 export interface ScoringRequestPayload {
