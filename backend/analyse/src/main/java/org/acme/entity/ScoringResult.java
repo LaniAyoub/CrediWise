@@ -25,6 +25,12 @@ import java.util.UUID;
         @Index(name = "idx_scoring_decision", columnList = "decision_systeme")
     }
 )
+@SequenceGenerator(
+    name = "scoring_results_seq_gen",
+    sequenceName = "scoring_results_seq",
+    initialValue = 1,
+    allocationSize = 50
+)
 @Getter
 @Setter
 @NoArgsConstructor

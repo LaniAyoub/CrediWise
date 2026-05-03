@@ -188,9 +188,25 @@ export const analyseService = {
   },
 
   computeScoring: (payload: ScoringRequestPayload) => {
+    // Ensure all required fields are present before sending
+    const validPayload = {
+      demandeId: payload.demandeId,
+      clientId: payload.clientId || undefined,
+      dateOfBirth: payload.dateOfBirth,
+      requestDate: payload.requestDate,
+      bankingEntryDate: payload.bankingEntryDate || undefined,
+      maritalStatus: payload.maritalStatus || undefined,
+      monthlyIncome: payload.monthlyIncome,
+      requestedAmount: payload.requestedAmount,
+      durationMonths: payload.durationMonths,
+      interestRate: payload.interestRate || undefined,
+      hasSavingsAccount: payload.hasSavingsAccount || undefined,
+      bankingRestriction: payload.bankingRestriction ?? false,
+      legalIssueOrAccountBlocked: payload.legalIssueOrAccountBlocked ?? false,
+    };
     return api.post<ScoringResult>(
       `/api/scoring`,
-      payload,
+      validPayload,
       { baseURL: ANALYSE_API_BASE_URL }
     );
   },
@@ -204,20 +220,47 @@ export const analyseService = {
 };
 
 export const handleAnalyseError = (error: unknown): string => {
-  const err = error as { response?: { status: number; data?: { message?: string } } };
+  const err = error as {
+    response?: {
+      status: number;
+      statusText?: string;
+      data?: { message?: string; error?: string }
+    },
+    message?: string;
+    code?: string;
+  };
   const status = err.response?.status;
-  const message = err.response?.data?.message;
+  const message = err.response?.data?.message || err.response?.data?.error;
+  const statusText = err.response?.statusText;
 
-  switch (status) {
-    case 404:
-      return 'Dossier introuvable';
-    case 403:
-      return 'Accès non autorisé';
-    case 409:
-      return 'Un dossier existe déjà pour cette demande';
-    case 503:
-      return 'Service indisponible — veuillez réessayer';
-    default:
-      return message || 'Erreur lors du chargement';
+  // Specific status codes
+  if (status === 404) {
+    return 'Dossier ou ressource introuvable';
   }
+  if (status === 401) {
+    return 'Non authentifié — Veuillez vous reconnecter';
+  }
+  if (status === 403) {
+    return 'Accès non autorisé';
+  }
+  if (status === 409) {
+    return 'Un dossier existe déjà pour cette demande';
+  }
+  if (status === 500) {
+    return message || 'Erreur serveur — Veuillez réessayer plus tard';
+  }
+  if (status === 503) {
+    return 'Service indisponible — veuillez réessayer';
+  }
+
+  // Network/timeout errors
+  if (err.code === 'ECONNABORTED') {
+    return 'Requête dépassée — Veuillez réessayer';
+  }
+  if (!err.response) {
+    return 'Erreur réseau — Vérifiez votre connexion';
+  }
+
+  // Fallback to server message or generic error
+  return message || statusText || 'Erreur lors du chargement';
 };
