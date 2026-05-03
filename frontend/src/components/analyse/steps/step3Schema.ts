@@ -18,6 +18,7 @@ export const enqueteMoraliteSchema = z.object({
   lienAvecClient: z.string().min(1, 'Lien requis'),
   contact: z.string().min(8).max(20),
   nomComplet: z.string().min(1, 'Nom requis'),
+  idAmplitude: z.string().nullable().optional(),
   amplitude: z.string().nullable().optional(),
   opinion: z.string().min(1, 'Opinion requise'),
 });

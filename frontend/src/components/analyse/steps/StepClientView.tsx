@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { analyseService, handleAnalyseError } from '@/services/analyseService';
 import { getStatusKey } from '@/utils/statusMapping';
-import type { StepClientData } from '@/types/analyse';
+import type { StepClientData, ScoringResult, DecisionType } from '@/types/analyse';
 import AuditMetadataPanel from '@/components/analyse/AuditMetadataPanel';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -36,6 +36,72 @@ function fmtDate(iso?: string | null): string {
   if (!iso) return '—';
   try { return new Date(iso).toLocaleDateString('fr-FR'); } catch { return '—'; }
 }
+
+// ── Scoring helpers ───────────────────────────────────────────────────────────
+const DECISION_COLORS: Record<DecisionType, string> = {
+  ACCEPTE:   'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+  A_ETUDIER: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+  REFUSE:    'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800',
+};
+
+const DECISION_BANNER: Record<DecisionType, string> = {
+  ACCEPTE:   'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-200',
+  A_ETUDIER: 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200',
+  REFUSE:    'bg-rose-50 dark:bg-rose-900/20 border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-200',
+};
+
+const DECISION_ICON: Record<DecisionType, React.ReactNode> = {
+  ACCEPTE: (
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  A_ETUDIER: (
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+    </svg>
+  ),
+  REFUSE: (
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+};
+
+// Score gauge: colored zones (REFUSE 0-305, A_ETUDIER 305-375, ACCEPTE 375-1000)
+const ScoreGauge = ({ score }: { score: number }) => {
+  const pct = Math.min(100, Math.max(0, score / 10));
+  const markerColor = score >= 375 ? 'bg-emerald-600' : score >= 305 ? 'bg-amber-500' : 'bg-rose-600';
+  return (
+    <div className="space-y-2">
+      {/* Bar */}
+      <div className="relative h-5 rounded-full overflow-hidden flex">
+        <div className="h-full bg-rose-200 dark:bg-rose-900/50"   style={{ width: '30.5%' }} />
+        <div className="h-full bg-amber-200 dark:bg-amber-900/50" style={{ width: '7%' }} />
+        <div className="h-full bg-emerald-200 dark:bg-emerald-900/50" style={{ width: '62.5%' }} />
+        {/* Marker */}
+        <div
+          className={`absolute top-1 bottom-1 w-1 rounded-full ${markerColor} shadow`}
+          style={{ left: `calc(${pct}% - 2px)` }}
+        />
+      </div>
+      {/* Score value + threshold labels */}
+      <div className="relative text-[10px] text-surface-500 dark:text-surface-400 select-none" style={{ height: '20px' }}>
+        <span className="absolute left-0">0</span>
+        <span className="absolute" style={{ left: '30.5%', transform: 'translateX(-50%)' }}>305</span>
+        <span className="absolute" style={{ left: '37.5%', transform: 'translateX(-50%)' }}>375</span>
+        <span className="absolute right-0">1000</span>
+        {/* Floating score value */}
+        <span
+          className="absolute -top-6 text-xs font-bold text-surface-800 dark:text-surface-100 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-600 rounded px-1"
+          style={{ left: `clamp(0px, calc(${pct}% - 16px), calc(100% - 40px))` }}
+        >
+          {Math.round(score)}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 // ── Info row component ────────────────────────────────────────────────────────
 const InfoRow = ({ label, value, wide = false }: { label: string; value: React.ReactNode; wide?: boolean }) => (
@@ -96,7 +162,14 @@ const StepClientView: React.FC<StepClientViewProps> = ({
 
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(data.isComplete);
+
+  // Scoring state
+  const [scoring, setScoring] = useState<ScoringResult | null>(null);
+  const [scoringLoading, setScoringLoading] = useState(false);
+  const [scoringError, setScoringError] = useState<string | null>(null);
+
+  const effectiveDemandeId = demandeId ?? data.demandeId;
+  const [isConfirmed, setIsConfirmed] = useState(data.isComplete ?? data.isConfirmed ?? false);
   const [confirmedAt, setConfirmedAt] = useState(data.confirmedAt);
   const [confirmedByName, setConfirmedByName] = useState(data.confirmedByName);
 
@@ -130,6 +203,67 @@ const StepClientView: React.FC<StepClientViewProps> = ({
     dateVisite: dateVisite || null,
     dateFinalisation: dateFinalisation || null,
   });
+
+  // Scoring
+  const canScore = !!(
+    data.dateOfBirth &&
+    data.monthlyIncome != null &&
+    data.requestedAmount != null &&
+    data.durationMonths != null
+  );
+
+  const computeScore = useCallback(async () => {
+    if (!canScore) return;
+    setScoringLoading(true);
+    setScoringError(null);
+    try {
+      const requestDate = (data.dateDemande || data.demandeCreatedAt || new Date().toISOString()).split('T')[0];
+      const res = await analyseService.computeScoring({
+        demandeId: effectiveDemandeId ?? data.demandeId,
+        clientId: data.clientId,
+        dateOfBirth: data.dateOfBirth!.split('T')[0],
+        requestDate,
+        maritalStatus: data.situationFamiliale || null,
+        monthlyIncome: data.monthlyIncome!,
+        requestedAmount: data.requestedAmount!,
+        durationMonths: data.durationMonths!,
+        bankingRestriction: data.bankingRestriction ?? false,
+        legalIssueOrAccountBlocked: data.legalIssueOrAccountBlocked ?? false,
+      });
+      setScoring(res.data);
+    } catch {
+      setScoringError(t('step1.scoring.error'));
+    } finally {
+      setScoringLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canScore, data, effectiveDemandeId, t]);
+
+  // Load saved scoring from DB on mount; fallback to compute if not found
+  useEffect(() => {
+    if (!canScore || !effectiveDemandeId) return;
+
+    const loadScoring = async () => {
+      setScoringLoading(true);
+      setScoringError(null);
+      try {
+        const res = await analyseService.getScoring(effectiveDemandeId);
+        setScoring(res.data);
+      } catch (err: any) {
+        // 404 means scoring hasn't been calculated yet — compute it
+        if (err.response?.status === 404) {
+          computeScore();
+        } else {
+          setScoringError(t('step1.scoring.error'));
+        }
+      } finally {
+        setScoringLoading(false);
+      }
+    };
+
+    loadScoring();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSave = useCallback(async () => {
     setSaving(true);
@@ -173,7 +307,6 @@ const StepClientView: React.FC<StepClientViewProps> = ({
   };
 
   const age = calcAge(data.dateOfBirth);
-  const effectiveDemandeId = demandeId ?? data.demandeId;
 
   // ── Card header helper ──────────────────────────────────────────────────────
   const CardHeader = ({ icon, title, children }: { icon: React.ReactNode; title: string; children?: React.ReactNode }) => (
@@ -322,61 +455,164 @@ const StepClientView: React.FC<StepClientViewProps> = ({
         </div>
       </div>
 
-      {/* ── Card 4: Historique de Crédit ─────────────────────────────────────── */}
+      {/* ── Card 4: Scoring Crédit ──────────────────────────────────────────────── */}
       <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden">
         <CardHeader
-          title={t('step1.creditHistory')}
+          title={t('step1.scoring.title')}
           icon={
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           }
-        />
-        <div className="p-5">
-          <div className="grid grid-cols-3 gap-3 mb-5">
-            <div className="bg-surface-50 dark:bg-surface-700/40 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-surface-900 dark:text-surface-50">{data.nombreDemandesPassees}</p>
-              <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">{t('step1.totalDemandes')}</p>
-            </div>
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{data.nombreDemandesApprouvees}</p>
-              <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">{t('step1.approved')}</p>
-            </div>
-            <div className="bg-rose-50 dark:bg-rose-900/20 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">{data.nombreDemandesRejetees}</p>
-              <p className="text-xs text-rose-700 dark:text-rose-300 mt-1">{t('step1.rejected')}</p>
-            </div>
-          </div>
+        >
+          <button
+            type="button"
+            onClick={computeScore}
+            disabled={scoringLoading || !canScore}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-surface-200 dark:border-surface-600 bg-white dark:bg-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {scoringLoading ? (
+              <>
+                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {t('step1.scoring.computing')}
+              </>
+            ) : scoring ? t('step1.scoring.recompute') : t('step1.scoring.compute')}
+          </button>
+        </CardHeader>
 
-          {data.nombreDemandesPassees === 0 ? (
-            <p className="text-sm text-surface-500 dark:text-surface-400 text-center py-6">{t('step1.noHistory')}</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-surface-200 dark:border-surface-700">
-                    {[t('step1.demandeNumber'), t('step1.amount'), t('step1.status'), t('step1.date')].map((h) => (
-                      <th key={h} className="text-left py-2 px-2 text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wide">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.historiqueCredits.map((item, idx) => (
-                    <tr key={idx} className="border-b border-surface-100 dark:border-surface-700/50 hover:bg-surface-50 dark:hover:bg-surface-700/30 transition-colors">
-                      <td className="py-3 px-2 text-surface-900 dark:text-surface-50">{item.demandeId}</td>
-                      <td className="py-3 px-2 text-surface-900 dark:text-surface-50">{item.requestedAmount}</td>
-                      <td className="py-3 px-2">
-                        <Badge variant={item.status === 'DISBURSE' ? 'success' : item.status === 'REJECTED' ? 'danger' : 'warning'}>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {t(getStatusKey(item.status as any))}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-2 text-surface-500 dark:text-surface-400">{fmtDate(item.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className="p-5">
+          {/* Missing data warning */}
+          {!canScore && (
+            <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
+              <svg className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="text-xs text-amber-700 dark:text-amber-300">{t('step1.scoring.missingData')}</p>
             </div>
+          )}
+
+          {/* Loading spinner */}
+          {scoringLoading && (
+            <div className="flex items-center justify-center py-10 gap-3 text-sm text-surface-500 dark:text-surface-400">
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {t('step1.scoring.computing')}
+            </div>
+          )}
+
+          {/* Error */}
+          {!scoringLoading && scoringError && (
+            <div className="flex items-center gap-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-700 rounded-lg p-3">
+              <svg className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-xs text-rose-700 dark:text-rose-300">{scoringError}</p>
+            </div>
+          )}
+
+          {/* Scoring result */}
+          {!scoringLoading && !scoringError && scoring && (
+            <div className="space-y-5">
+
+              {/* ── Final decision banner ── */}
+              <div className={`flex items-center gap-4 p-4 rounded-xl border-2 ${DECISION_BANNER[scoring.decisionSysteme]}`}>
+                <div className="flex-shrink-0">{DECISION_ICON[scoring.decisionSysteme]}</div>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-widest opacity-70">{t('step1.scoring.finalDecision')}</p>
+                  <p className="text-xl font-bold mt-0.5">{t(`step1.scoring.decisions.${scoring.decisionSysteme}`)}</p>
+                  <p className="text-xs mt-1 opacity-80">{t(`step1.scoring.decisionExpl.${scoring.decisionSysteme}`)}</p>
+                </div>
+                <div className="flex-shrink-0 text-right">
+                  <p className="text-3xl font-black">{Math.round(scoring.scoreAjuste)}</p>
+                  <p className="text-xs opacity-70">/ 1000</p>
+                </div>
+              </div>
+
+              {/* ── Score gauge ── */}
+              <div>
+                <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-widest mb-3">
+                  {t('step1.scoring.scoreAjuste')}
+                </p>
+                <ScoreGauge score={scoring.scoreAjuste} />
+                <p className="text-[10px] text-surface-400 dark:text-surface-500 mt-3 text-center">{t('step1.scoring.thresholds')}</p>
+              </div>
+
+              {/* ── Two columns: DRG + Score details ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                {/* DRG table */}
+                <div>
+                  <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-widest mb-2">
+                    {t('step1.scoring.drgTitle')}
+                  </p>
+                  <div className="rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
+                    {(
+                      [
+                        { key: 'drgAge',        label: t('step1.scoring.drgAge'),        expl: t('step1.scoring.drgAgeExpl'),        val: scoring.drgAge },
+                        { key: 'drgAnciennete', label: t('step1.scoring.drgAnciennete'), expl: t('step1.scoring.drgAncienneteExpl'), val: scoring.drgAnciennete },
+                        { key: 'drgBudget',     label: t('step1.scoring.drgBudget'),     expl: t('step1.scoring.drgBudgetExpl'),     val: scoring.drgBudget },
+                        { key: 'drgFichage',    label: t('step1.scoring.drgFichage'),    expl: t('step1.scoring.drgFichageExpl'),    val: scoring.drgFichage },
+                        { key: 'drgOffre',      label: t('step1.scoring.drgOffre'),      expl: t('step1.scoring.drgOffreExpl'),      val: scoring.drgOffre },
+                      ] as const
+                    ).map((row, i) => (
+                      <div key={row.key} className={`flex items-center justify-between px-3 py-2 gap-2 ${i > 0 ? 'border-t border-surface-100 dark:border-surface-700' : ''}`}>
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-surface-800 dark:text-surface-100 truncate">{row.label}</p>
+                          <p className="text-[10px] text-surface-400 dark:text-surface-500 truncate">{row.expl}</p>
+                        </div>
+                        <span className={`flex-shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${DECISION_COLORS[row.val]}`}>
+                          {t(`step1.scoring.decisions.${row.val}`)}
+                        </span>
+                      </div>
+                    ))}
+                    {/* Combined DRG */}
+                    <div className="flex items-center justify-between px-3 py-2 gap-2 border-t-2 border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-700/40">
+                      <p className="text-xs font-bold text-surface-800 dark:text-surface-100">{t('step1.scoring.decisionDRG')}</p>
+                      <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${DECISION_COLORS[scoring.decisionDRG]}`}>
+                        {t(`step1.scoring.decisions.${scoring.decisionDRG}`)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Score details */}
+                <div>
+                  <p className="text-[10px] font-semibold text-surface-400 dark:text-surface-500 uppercase tracking-widest mb-2">
+                    {t('step1.scoring.dssTitle')} — {t('step1.scoring.scoreDetails.title')}
+                  </p>
+                  <div className="rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
+                    {Object.entries(scoring.scoreDetails).map(([key, val], i) => (
+                      <div key={key} className={`flex items-center justify-between px-3 py-2 gap-2 ${i > 0 ? 'border-t border-surface-100 dark:border-surface-700' : ''}`}>
+                        <p className="text-xs text-surface-700 dark:text-surface-300 truncate">
+                          {t(`step1.scoring.scoreDetails.${key}`, key)}
+                        </p>
+                        <span className={`flex-shrink-0 text-xs font-mono font-semibold ${val > 0 ? 'text-emerald-600 dark:text-emerald-400' : val < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-surface-400 dark:text-surface-500'}`}>
+                          {val > 0 ? '+' : ''}{val.toFixed(5)}
+                        </span>
+                      </div>
+                    ))}
+                    {/* DSS decision */}
+                    <div className="flex items-center justify-between px-3 py-2 gap-2 border-t-2 border-surface-200 dark:border-surface-600 bg-surface-50 dark:bg-surface-700/40">
+                      <p className="text-xs font-bold text-surface-800 dark:text-surface-100">{t('step1.scoring.decisionDSS')}</p>
+                      <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${DECISION_COLORS[scoring.decisionDSS]}`}>
+                        {t(`step1.scoring.decisions.${scoring.decisionDSS}`)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* Not yet computed */}
+          {!scoringLoading && !scoringError && !scoring && canScore && (
+            <p className="text-sm text-surface-400 dark:text-surface-500 text-center py-8">
+              {t('step1.scoring.compute')} →
+            </p>
           )}
         </div>
       </div>

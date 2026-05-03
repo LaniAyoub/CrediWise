@@ -12,6 +12,7 @@ import org.acme.dto.StepClientResponse;
 import org.acme.dto.StepCreditResponse;
 import org.acme.dto.StepRisqueClientResponse;
 import org.acme.dto.StepRisqueCommercialResponse;
+import org.acme.dto.StepRisqueFinancierResponse;
 import org.acme.entity.AnalyseDossier;
 import org.acme.entity.enums.DossierStatus;
 import org.acme.exception.ServiceUnavailableException;
@@ -19,6 +20,7 @@ import org.acme.service.StepClientService;
 import org.acme.service.StepCreditService;
 import org.acme.service.StepRisqueClientService;
 import org.acme.service.StepRisqueCommercialService;
+import org.acme.service.StepRisqueFinancierService;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import java.util.*;
@@ -46,6 +48,9 @@ public class AnalyseDossierResource {
 
     @Inject
     StepRisqueCommercialService stepRisqueCommercialService;
+
+    @Inject
+    StepRisqueFinancierService stepRisqueFinancierService;
 
     // ─────────────────────────────────────────────────────────────
     // Dossier CRUD
@@ -583,6 +588,102 @@ public class AnalyseDossierResource {
         try {
             UUID gestionnaireId = UUID.fromString(jwt.getSubject());
             StepRisqueCommercialResponse response = stepRisqueCommercialService.get(dossierId, gestionnaireId);
+            return Response.ok(response).build();
+        } catch (IllegalArgumentException e) {
+            return errorResponse(404, e.getMessage(), "DOSSIER_NOT_FOUND");
+        } catch (SecurityException e) {
+            return errorResponse(403, "Accès refusé", "FORBIDDEN");
+        } catch (jakarta.ws.rs.WebApplicationException e) {
+            return e.getResponse();
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // STEP 5: RISQUE FINANCIER
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Preview Step 5 data.
+     * GET /analyses/dossiers/{dossierId}/steps/5/preview
+     */
+    @GET
+    @Path("/dossiers/{dossierId}/steps/5/preview")
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    public Response previewStep5(@PathParam("dossierId") Long dossierId) {
+        try {
+            UUID gestionnaireId = UUID.fromString(jwt.getSubject());
+            StepRisqueFinancierResponse response = stepRisqueFinancierService.preview(dossierId, gestionnaireId);
+            return Response.ok(response).build();
+        } catch (IllegalArgumentException e) {
+            return errorResponse(404, e.getMessage(), "DOSSIER_NOT_FOUND");
+        } catch (SecurityException e) {
+            return errorResponse(403, "Accès refusé", "FORBIDDEN");
+        }
+    }
+
+    /**
+     * Save draft Step 5 data.
+     * POST /analyses/dossiers/{dossierId}/steps/5/sauvegarder
+     */
+    @POST
+    @Path("/dossiers/{dossierId}/steps/5/sauvegarder")
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM"})
+    public Response saveStep5(
+        @PathParam("dossierId") Long dossierId,
+        StepRisqueFinancierService.StepRisqueFinancierRequest request
+    ) {
+        try {
+            UUID gestionnaireId = UUID.fromString(jwt.getSubject());
+            StepRisqueFinancierService.StepRisqueFinancierRequest safeReq =
+                request != null ? request : new StepRisqueFinancierService.StepRisqueFinancierRequest();
+            StepRisqueFinancierResponse response = stepRisqueFinancierService.save(dossierId, safeReq, gestionnaireId);
+            return Response.ok(response).build();
+        } catch (IllegalArgumentException e) {
+            return errorResponse(400, e.getMessage(), "INVALID_REQUEST");
+        } catch (SecurityException e) {
+            return errorResponse(403, "Accès refusé", "FORBIDDEN");
+        } catch (jakarta.ws.rs.WebApplicationException e) {
+            return e.getResponse();
+        }
+    }
+
+    /**
+     * Confirm Step 5 data and advance to Step 6.
+     * POST /analyses/dossiers/{dossierId}/steps/5/confirmer
+     */
+    @POST
+    @Path("/dossiers/{dossierId}/steps/5/confirmer")
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM"})
+    public Response confirmStep5(
+        @PathParam("dossierId") Long dossierId,
+        StepRisqueFinancierService.StepRisqueFinancierRequest request
+    ) {
+        try {
+            UUID gestionnaireId = UUID.fromString(jwt.getSubject());
+            StepRisqueFinancierService.StepRisqueFinancierRequest safeReq =
+                request != null ? request : new StepRisqueFinancierService.StepRisqueFinancierRequest();
+            StepRisqueFinancierResponse response = stepRisqueFinancierService.confirm(dossierId, safeReq, gestionnaireId);
+            return Response.ok(response).build();
+        } catch (IllegalArgumentException e) {
+            return errorResponse(400, e.getMessage(), "INVALID_REQUEST");
+        } catch (SecurityException e) {
+            return errorResponse(403, "Accès refusé", "FORBIDDEN");
+        } catch (jakarta.ws.rs.WebApplicationException e) {
+            return e.getResponse();
+        }
+    }
+
+    /**
+     * Get saved Step 5 data.
+     * GET /analyses/dossiers/{dossierId}/steps/5
+     */
+    @GET
+    @Path("/dossiers/{dossierId}/steps/5")
+    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    public Response getStep5(@PathParam("dossierId") Long dossierId) {
+        try {
+            UUID gestionnaireId = UUID.fromString(jwt.getSubject());
+            StepRisqueFinancierResponse response = stepRisqueFinancierService.get(dossierId, gestionnaireId);
             return Response.ok(response).build();
         } catch (IllegalArgumentException e) {
             return errorResponse(404, e.getMessage(), "DOSSIER_NOT_FOUND");

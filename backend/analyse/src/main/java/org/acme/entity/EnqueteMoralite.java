@@ -45,6 +45,10 @@ public class EnqueteMoralite extends PanacheEntity {
     @Column(name = "nom_complet", nullable = false, columnDefinition = "TEXT")
     public String nomComplet;
 
+    // nullable — ID/reference for amplitude tracking
+    @Column(name = "id_amplitude", length = 100)
+    public String idAmplitude;
+
     // nullable — how long the contact has known the client
     @Column(columnDefinition = "TEXT")
     public String amplitude;

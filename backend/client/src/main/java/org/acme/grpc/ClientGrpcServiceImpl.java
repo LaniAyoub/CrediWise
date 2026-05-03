@@ -68,7 +68,7 @@ public class ClientGrpcServiceImpl implements ClientService {
                     .setAssignedManagerId(c.getAssignedManagerId() != null ? c.getAssignedManagerId().toString() : "")
                     .setScoring(safe(c.getScoring()))
                     .setCycle(c.getCycle() != null ? String.valueOf(c.getCycle()) : "0")
-                    .setIfcLevelOfRisk(c.getRiskLevel() != null ? safe(c.getRiskLevel().getIfcLevelOfRisk()) : "");
+                    .setIfcLevelOfRisk(c.getSousActivite() != null ? safe(c.getSousActivite().getIfcLevelOfRisk()) : "");
 
             return b.build();
         });

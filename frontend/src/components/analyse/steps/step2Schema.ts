@@ -14,9 +14,6 @@ const CATEGORIES = [
 
 export const depenseRowSchema = z.object({
   id: z.number().optional(),
-  categorie: z.enum(CATEGORIES, {
-    message: 'Catégorie requise',
-  }),
   description: z
     .string()
     .min(1, 'Description requise')

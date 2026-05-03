@@ -228,6 +228,7 @@ public class StepRisqueClientService {
             entity.lienAvecClient = item.lienAvecClient;
             entity.contact = item.contact;
             entity.nomComplet = item.nomComplet;
+            entity.idAmplitude = item.idAmplitude;
             entity.amplitude = item.amplitude;
             entity.opinion = item.opinion;
             entity.ordre = i;
@@ -329,7 +330,7 @@ public class StepRisqueClientService {
 
         List<StepRisqueClientResponse.EnqueteMoraliteItem> enqueteItems = step.enquetesMoralite.stream()
             .map(e -> new StepRisqueClientResponse.EnqueteMoraliteItem(
-                e.id, e.lienAvecClient, e.contact, e.nomComplet, e.amplitude, e.opinion, e.ordre))
+                e.id, e.lienAvecClient, e.contact, e.nomComplet, e.idAmplitude, e.amplitude, e.opinion, e.ordre))
             .collect(Collectors.toList());
 
         List<StepRisqueClientResponse.PretCoursItem> pretItems = step.pretsCours.stream()
@@ -421,6 +422,7 @@ public class StepRisqueClientService {
             public String lienAvecClient;
             public String contact;
             public String nomComplet;
+            public String idAmplitude;  // nullable
             public String amplitude;   // nullable
             public String opinion;
         }

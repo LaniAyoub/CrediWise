@@ -233,6 +233,15 @@ public record StepClientResponse(
     @JsonProperty("demandeId")
     Long demandeId,
 
+    @JsonProperty("requestedAmount")
+    BigDecimal requestedAmount,
+
+    @JsonProperty("durationMonths")
+    Integer durationMonths,
+
+    @JsonProperty("loanPurpose")
+    String loanPurpose,
+
     // ─── MANAGER INFO ────────────────────────────────────────────
 
     @JsonProperty("assignedManagerName")

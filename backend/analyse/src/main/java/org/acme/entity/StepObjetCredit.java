@@ -58,6 +58,9 @@ public class StepObjetCredit extends PanacheEntity {
     @Column(name = "product_name", length = 200)
     public String productName;
 
+    @Column(name = "asset_type", length = 100)
+    public String assetType;
+
     @Column(name = "monthly_repayment_capacity", precision = 15, scale = 2)
     public BigDecimal monthlyRepaymentCapacity;
 

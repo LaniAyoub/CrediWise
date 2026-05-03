@@ -490,7 +490,7 @@ public class ClientService {
                 .sousActiviteId(c.getSousActivite() != null ? c.getSousActivite().getId() : null)
                 .sousActiviteLibelle(c.getSousActivite() != null ? c.getSousActivite().getLibelle() : null)
                 .mappingRisqueActiviteId(c.getRiskLevel() != null ? c.getRiskLevel().getId() : null)
-                .ifcLevelOfRisk(c.getRiskLevel() != null ? c.getRiskLevel().getIfcLevelOfRisk() : null)
+                .ifcLevelOfRisk(c.getSousActivite() != null ? c.getSousActivite().getIfcLevelOfRisk() : null)
                 .agenceId(c.getAgenceId())
                 .agenceLibelle(agenceLibelle)
                 .assignedManagerId(c.getAssignedManagerId())

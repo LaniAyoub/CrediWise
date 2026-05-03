@@ -268,7 +268,33 @@ public class DemandeService {
         if (req.consentText != null) demande.consentText = req.consentText;
         if (req.bankingRestriction != null) demande.bankingRestriction = req.bankingRestriction;
         if (req.legalIssueOrAccountBlocked != null) demande.legalIssueOrAccountBlocked = req.legalIssueOrAccountBlocked;
-        // Guarantors and guarantees update logic can be added as needed
+
+        // Update guarantors (clear and recreate)
+        if (req.getGuarantors() != null) {
+            demande.guarantors.clear();
+            for (GuarantorDto g : req.getGuarantors()) {
+                Guarantor guarantor = new Guarantor();
+                guarantor.demande = demande;
+                guarantor.name = g.name;
+                guarantor.amplitudeId = g.amplitudeId;
+                guarantor.clientRelationship = g.clientRelationship;
+                demande.guarantors.add(guarantor);
+            }
+        }
+
+        // Update guarantees (clear and recreate)
+        if (req.getGuarantees() != null) {
+            demande.guarantees.clear();
+            for (GuaranteeDto g : req.getGuarantees()) {
+                Guarantee guarantee = new Guarantee();
+                guarantee.demande = demande;
+                guarantee.owner = g.owner;
+                guarantee.type = g.type;
+                guarantee.estimatedValue = g.estimatedValue;
+                demande.guarantees.add(guarantee);
+            }
+        }
+
         return toResponse(demande);
     }
 

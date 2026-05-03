@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -58,7 +58,7 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
   const { t } = useTranslation('analyse');
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(initialData.isComplete);
+  const [isConfirmed, setIsConfirmed] = useState(initialData.isConfirmed);
   const [confirmedAt, setConfirmedAt] = useState(initialData.confirmedAt);
   const [confirmedByName, setConfirmedByName] = useState(initialData.confirmedByName);
 
@@ -66,13 +66,12 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
     pertinenceProjet: data.pertinenceProjet || '',
     // Normalize to pure form types — no fake rows, no extra API fields
     depenses: data.depenses.map(d => ({
-      id: d.id,
-      categorie: d.categorie,
+      id: d.id ?? undefined,
       description: d.description || '',
       cout: Number(d.cout) || 0,
     })),
-    financementAutre: data.financementAutre.map(f => ({
-      id: f.id,
+    financementAutre: (data.autresFinancements ?? data.financementAutre ?? []).map(f => ({
+      id: f.id ?? undefined,
       description: f.description || '',
       montant: Number(f.montant) || 0,
     })),
@@ -99,11 +98,17 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
     return () => onDirtyChange?.(false);
   }, [isDirty, readOnly, onDirtyChange]);
 
+  const toRequest = (values: import('./step2Schema').Step2FormValues): import('@/types/analyse').StepObjetCreditRequest => ({
+    pertinenceProjet: values.pertinenceProjet,
+    depenses: values.depenses.map(d => ({ description: d.description, cout: d.cout })),
+    autresFinancements: values.financementAutre.map(f => ({ description: f.description, montant: f.montant })),
+  });
+
   // Save draft — does NOT confirm, does NOT advance step
   const handleSave = handleSubmit(async (values) => {
     setSaving(true);
     try {
-      const result = await analyseService.saveStep2(dossierId, values);
+      const result = await analyseService.saveStep2(dossierId, toRequest(values));
       reset(buildDefaults(result.data));
       toast.success(t('common.saved', 'Saved'));
     } catch (e) {
@@ -135,7 +140,7 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
   const handleConfirm = handleSubmit(async (values) => {
     setConfirming(true);
     try {
-      const result = await analyseService.confirmStep2(dossierId, values);
+      const result = await analyseService.confirmStep2(dossierId, toRequest(values));
       setIsConfirmed(true);
       setConfirmedAt(result.data.confirmedAt);
       setConfirmedByName(result.data.confirmedByName);
@@ -151,6 +156,31 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
 
   // Cancel reverts form to last confirmed state (defaultValues)
   const handleCancel = () => reset();
+
+  // Auto-resize textarea behavior for pertinenceProjet
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const resize = () => {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 600) + 'px'; // limit max height
+    };
+    resize();
+    const observer = new MutationObserver(resize);
+    observer.observe(el, { childList: true, characterData: true, subtree: true });
+    window.addEventListener('resize', resize);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  const handleTextareaInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
+    const el = e.currentTarget;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 600) + 'px';
+  };
 
   return (
     <div className="space-y-5">
@@ -178,10 +208,10 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1 uppercase tracking-wide">
-                {t('fields.objetCredit')}
+                {t('fields.typeObjet')}
               </p>
               <p className="text-sm text-surface-900 dark:text-surface-50 bg-surface-50 dark:bg-surface-700/40 px-3 py-2 rounded-lg">
-                {initialData.loanPurpose || '—'}
+                {initialData.assetType || '—'}
               </p>
             </div>
             <div>
@@ -200,65 +230,176 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
                 {initialData.durationMonths ? `${initialData.durationMonths} mois` : '—'}
               </p>
             </div>
-            <div>
-              <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1 uppercase tracking-wide">
-                {t('fields.typeProduit')}
-              </p>
-              <p className="text-sm text-surface-900 dark:text-surface-50 bg-surface-50 dark:bg-surface-700/40 px-3 py-2 rounded-lg">
-                {initialData.productName || '—'}
-              </p>
-            </div>
-            <div className="sm:col-span-2">
-              <p className="text-xs font-medium text-surface-500 dark:text-surface-400 mb-1 uppercase tracking-wide">
-                {t('fields.capaciteRemboursement')}
-              </p>
-              <p className="text-sm font-semibold text-surface-900 dark:text-surface-50 bg-surface-50 dark:bg-surface-700/40 px-3 py-2 rounded-lg">
-                {formatAmount(initialData.monthlyRepaymentCapacity || 0)}
-              </p>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* SECTION B: Project Expenses */}
-      <DynamicListTable
-        title={t('step2.sectionB')}
-        showCategoryDropdown={true}
-        descriptionPlaceholder={t('step2.depensePlaceholder') || 'Détail de la dépense'}
-        amountLabel={t('fields.cout')}
-        fields={depensesField.fields}
-        register={register}
-        errors={errors}
-        onAppend={() =>
-          depensesField.append(defaultDepense)
-        }
-        onRemove={depensesField.remove}
-        appendLabel={t('step2.addDepense')}
-        minRows={1}
-        totalLabel={t('step2.coutTotal')}
-        totalValue={coutTotalLive}
-        fieldPrefix="depenses"
-        readOnly={readOnly}
-      />
+      {/* SECTION B & C: Project Analysis Section */}
+      <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden">
+        <div className="flex items-center gap-3 px-6 py-4 border-b border-surface-100 dark:border-surface-700/60">
+          <svg className="w-4 h-4 text-surface-400 dark:text-surface-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+            {t('step2.sectionAnalyseProjet')}
+          </h3>
+        </div>
+        <div className="p-6 space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left column: Project Expenses */}
+            <div className="bg-surface-50 dark:bg-surface-700/20 rounded-lg p-6">
+              <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-4">
+                {t('step2.sectionB')}
+              </h4>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-surface-200 dark:border-surface-700">
+                      <th className="text-left text-label text-surface-600 dark:text-surface-400 font-medium pb-3 px-3">
+                        {t('fields.depense')}
+                      </th>
+                      <th className="text-right text-label text-surface-600 dark:text-surface-400 font-medium pb-3 px-3">
+                        {t('fields.cout')}
+                      </th>
+                      <th className="w-12 pb-3" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {depensesField.fields.map((field, index) => (
+                      <React.Fragment key={field.id}>
+                        <tr className="border-b border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-700/50 transition-colors">
+                          <td className="px-3 py-4">
+                            <input
+                              type="text"
+                              placeholder={readOnly ? '' : 'Détail de la dépense'}
+                              disabled={readOnly}
+                              {...register(`depenses.${index}.description`)}
+                              className={`w-full px-3 py-2 text-body border rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${readOnly ? 'border-transparent cursor-default' : 'border-surface-300 dark:border-surface-600'}`}
+                            />
+                          </td>
+                          <td className="px-3 py-4 text-right">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              disabled={readOnly}
+                              {...register(`depenses.${index}.cout` as const, { valueAsNumber: true })}
+                              className={`w-full px-3 py-2 text-body border rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 text-right focus:outline-none focus:ring-2 focus:ring-emerald-500 ${readOnly ? 'border-transparent cursor-default' : 'border-surface-300 dark:border-surface-600'}`}
+                            />
+                          </td>
+                          <td className="px-3 py-4 text-center">
+                            {!readOnly && (
+                              <button
+                                type="button"
+                                onClick={() => depensesField.remove(index)}
+                                className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => depensesField.append(defaultDepense)}
+                  className="mt-4 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
+                >
+                  + {t('step2.addDepense')}
+                </button>
+              )}
+              <div className="mt-4 pt-4 border-t border-surface-200 dark:border-surface-700">
+                <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                  {t('step2.coutTotal')}: <span className="text-emerald-600 dark:text-emerald-400">{formatAmount(coutTotalLive)}</span>
+                </p>
+              </div>
+            </div>
 
-      {/* SECTION C: Other Financing */}
-      <DynamicListTable
-        title={t('step2.sectionC')}
-        showCategoryDropdown={false}
-        descriptionPlaceholder={t('step2.financementPlaceholder') || 'Ex: apport personnel, prêt familial…'}
-        amountLabel={t('fields.montant')}
-        fields={financementsField.fields}
-        register={register}
-        errors={errors}
-        onAppend={() => financementsField.append({ description: '', montant: 0 })}
-        onRemove={financementsField.remove}
-        appendLabel={t('step2.addFinancement')}
-        minRows={0}
-        totalLabel={t('step2.totalAutres')}
-        totalValue={totalAutresLive}
-        fieldPrefix="financementAutre"
-        readOnly={readOnly}
-      />
+            {/* Right column: Other Financing */}
+            <div className="bg-surface-50 dark:bg-surface-700/20 rounded-lg p-6">
+              <h4 className="text-sm font-semibold text-surface-900 dark:text-surface-50 mb-4">
+                {t('step2.sectionC')}
+              </h4>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-surface-200 dark:border-surface-700">
+                      <th className="text-left text-label text-surface-600 dark:text-surface-400 font-medium pb-3 px-3">
+                        {t('fields.description')}
+                      </th>
+                      <th className="text-right text-label text-surface-600 dark:text-surface-400 font-medium pb-3 px-3">
+                        {t('fields.montant')}
+                      </th>
+                      <th className="w-12 pb-3" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {financementsField.fields.map((field, index) => (
+                      <React.Fragment key={field.id}>
+                        <tr className="border-b border-surface-200 dark:border-surface-700 hover:bg-surface-100 dark:hover:bg-surface-700/50 transition-colors">
+                          <td className="px-3 py-4">
+                            <input
+                              type="text"
+                              placeholder={readOnly ? '' : 'Ex: apport personnel, prêt familial…'}
+                              disabled={readOnly}
+                              {...register(`financementAutre.${index}.description`)}
+                              className={`w-full px-3 py-2 text-body border rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${readOnly ? 'border-transparent cursor-default' : 'border-surface-300 dark:border-surface-600'}`}
+                            />
+                          </td>
+                          <td className="px-3 py-4 text-right">
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              disabled={readOnly}
+                              {...register(`financementAutre.${index}.montant` as const, { valueAsNumber: true })}
+                              className={`w-full px-3 py-2 text-body border rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 text-right focus:outline-none focus:ring-2 focus:ring-emerald-500 ${readOnly ? 'border-transparent cursor-default' : 'border-surface-300 dark:border-surface-600'}`}
+                            />
+                          </td>
+                          <td className="px-3 py-4 text-center">
+                            {!readOnly && (
+                              <button
+                                type="button"
+                                onClick={() => financementsField.remove(index)}
+                                className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => financementsField.append({ description: '', montant: 0 })}
+                  className="mt-4 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
+                >
+                  + {t('step2.addFinancement')}
+                </button>
+              )}
+              <div className="mt-4 pt-4 border-t border-surface-200 dark:border-surface-700">
+                <p className="text-sm font-semibold text-surface-900 dark:text-surface-50">
+                  {t('step2.totalAutres')}: <span className="text-emerald-600 dark:text-emerald-400">{formatAmount(totalAutresLive)}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* SECTION D: Project Relevance (always editable) */}
       <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-sm overflow-hidden">
@@ -280,10 +421,14 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
           <textarea
             id="pertinenceProjet"
             placeholder={readOnly ? '' : t('step2.pertinencePlaceholder')}
-            {...register('pertinenceProjet')}
-            rows={4}
+            rows={2}
+            onInput={handleTextareaInput}
             disabled={readOnly}
-            className={`w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none ${readOnly ? 'border-transparent cursor-default' : 'border border-surface-300 dark:border-surface-600'}`}
+            className={`w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 overflow-hidden ${readOnly ? 'border-transparent cursor-default' : 'border border-surface-300 dark:border-surface-600'}`}
+            ref={(el) => {
+              textareaRef.current = el;
+              register('pertinenceProjet').ref?.(el);
+            }}
           />
           {errors.pertinenceProjet && (
             <p className="text-xs text-rose-500 mt-1">{errors.pertinenceProjet.message}</p>

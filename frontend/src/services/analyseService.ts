@@ -1,5 +1,5 @@
 import api from './api';
-import type { AnalyseDossier, StepClientData, StepObjetCreditData, StepObjetCreditRequest, StepRisqueClientData, StepRisqueClientRequest, StepRisqueCommercialData, StepRisqueCommercialRequest } from '@/types/analyse';
+import type { AnalyseDossier, StepClientData, StepObjetCreditData, StepObjetCreditRequest, StepRisqueClientData, StepRisqueClientRequest, StepRisqueCommercialData, StepRisqueCommercialRequest, StepRisqueFinancierData, StepRisqueFinancierRequest, ScoringResult, ScoringRequestPayload } from '@/types/analyse';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ANALYSE_API_BASE_URL = (import.meta as any).env.VITE_ANALYSE_API_URL || 'http://localhost:8084';
@@ -153,6 +153,51 @@ export const analyseService = {
   getStep4: (dossierId: number) => {
     return api.get<StepRisqueCommercialData>(
       `/analyses/dossiers/${dossierId}/steps/4`,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  previewStep5: (dossierId: number) => {
+    return api.get<StepRisqueFinancierData>(
+      `/analyses/dossiers/${dossierId}/steps/5/preview`,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  saveStep5: (dossierId: number, data: StepRisqueFinancierRequest) => {
+    return api.post<StepRisqueFinancierData>(
+      `/analyses/dossiers/${dossierId}/steps/5/sauvegarder`,
+      data,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  confirmStep5: (dossierId: number, data: StepRisqueFinancierRequest) => {
+    return api.post<StepRisqueFinancierData>(
+      `/analyses/dossiers/${dossierId}/steps/5/confirmer`,
+      data,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  getStep5: (dossierId: number) => {
+    return api.get<StepRisqueFinancierData>(
+      `/analyses/dossiers/${dossierId}/steps/5`,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  computeScoring: (payload: ScoringRequestPayload) => {
+    return api.post<ScoringResult>(
+      `/api/scoring`,
+      payload,
+      { baseURL: ANALYSE_API_BASE_URL }
+    );
+  },
+
+  getScoring: (demandeId: number) => {
+    return api.get<ScoringResult>(
+      `/api/scoring/${demandeId}`,
       { baseURL: ANALYSE_API_BASE_URL }
     );
   },

@@ -30,6 +30,9 @@ public record StepCreditResponse(
     @JsonProperty("productName")
     String productName,
 
+    @JsonProperty("assetType")
+    String assetType,
+
     @JsonProperty("monthlyRepaymentCapacity")
     BigDecimal monthlyRepaymentCapacity,
 

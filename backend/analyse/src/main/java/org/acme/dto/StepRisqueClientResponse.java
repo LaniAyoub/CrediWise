@@ -85,6 +85,7 @@ public record StepRisqueClientResponse(
         @JsonProperty("lienAvecClient")  String lienAvecClient,
         @JsonProperty("contact")         String contact,
         @JsonProperty("nomComplet")      String nomComplet,
+        @JsonProperty("idAmplitude")     String idAmplitude,
         @JsonProperty("amplitude")       String amplitude,
         @JsonProperty("opinion")         String opinion,
         @JsonProperty("ordre")           Integer ordre

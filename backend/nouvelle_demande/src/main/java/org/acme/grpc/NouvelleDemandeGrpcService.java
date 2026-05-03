@@ -49,6 +49,7 @@ public class NouvelleDemandeGrpcService extends NouvelleDemandeServiceGrpc.Nouve
                 .setDurationMonths(demande.durationMonths != null ? demande.durationMonths : 0)
                 .setProductId(demande.productId != null ? demande.productId : "")
                 .setProductName(demande.productName != null ? demande.productName : "")
+                .setAssetType(demande.assetType != null ? demande.assetType : "")
                 .setMonthlyRepaymentCapacity(demande.monthlyRepaymentCapacity != null ? demande.monthlyRepaymentCapacity.toPlainString() : "0.00")
                 .setStatus(demande.status != null ? demande.status.toString() : "UNKNOWN");
 

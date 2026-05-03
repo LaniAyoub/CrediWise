@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { analyseService, handleAnalyseError } from '@/services/analyseService';
 import { administrationService } from '@/services/administrationService';
-import type { AnalyseDossier, StepClientData, StepObjetCreditData, StepRisqueClientData, StepRisqueCommercialData } from '@/types/analyse';
+import type { AnalyseDossier, StepClientData, StepObjetCreditData, StepRisqueClientData, StepRisqueCommercialData, StepRisqueFinancierData } from '@/types/analyse';
 import type { RegleAffichage } from '@/types/regleAffichage.types';
 import type { StepInfo } from '@/components/analyse/StepIndicator';
 import { getStatusKey, getStatusColor } from '@/utils/statusMapping';
@@ -12,6 +12,7 @@ import StepClientView from '@/components/analyse/steps/StepClientView';
 import StepObjetCreditView from '@/components/analyse/steps/StepObjetCreditView';
 import StepRisqueClientView from '@/components/analyse/steps/StepRisqueClientView';
 import { StepRisqueCommercialView } from '@/components/analyse/steps/StepRisqueCommercialView';
+import { StepRisqueFinancierView } from '@/components/analyse/steps/StepRisqueFinancierView';
 import StepPerimetreView from '@/components/analyse/steps/StepPerimetreView';
 import StepAnnexeView from '@/components/analyse/steps/StepAnnexeView';
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
@@ -100,6 +101,7 @@ const DossierAnalysePage = () => {
   const [step2Data, setStep2Data] = useState<StepObjetCreditData | null>(null);
   const [step3Data, setStep3Data] = useState<StepRisqueClientData | null>(null);
   const [step4Data, setStep4Data] = useState<StepRisqueCommercialData | null>(null);
+  const [step5Data, setStep5Data] = useState<StepRisqueFinancierData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -119,6 +121,7 @@ const DossierAnalysePage = () => {
   const step2SaveRef = useRef<(() => Promise<void>) | null>(null);
   const step3SaveRef = useRef<(() => Promise<void>) | null>(null);
   const step4SaveRef = useRef<(() => Promise<void>) | null>(null);
+  const step5SaveRef = useRef<(() => Promise<void>) | null>(null);
 
   const isGt5k = appliedRule?.navigation === '>5k';
 
@@ -250,6 +253,18 @@ const DossierAnalysePage = () => {
           }
         }
 
+        // ── 4c. Load step 5 if applicable ─────────────────────────────────
+        if (newDossier.currentStep >= 5) {
+          try {
+            const s5Res = await analyseService
+              .getStep5(id)
+              .catch(() => analyseService.previewStep5(id));
+            setStep5Data(s5Res.data);
+          } catch {
+            console.warn('Could not load step 5 data');
+          }
+        }
+
         // ── 5. Determine navigation rule ──────────────────────────────────
         const rules = rulesResponse.data;
         const productId = s2Data?.productId ?? null;
@@ -328,6 +343,7 @@ const DossierAnalysePage = () => {
       else if (serverStep === 2 && step2SaveRef.current) await step2SaveRef.current();
       else if (serverStep === 3 && step3SaveRef.current) await step3SaveRef.current();
       else if (serverStep === 4 && step4SaveRef.current) await step4SaveRef.current();
+      else if (serverStep === 5 && step5SaveRef.current) await step5SaveRef.current();
 
       if (pendingStep !== null) {
         setActiveVisualStep(pendingStep);
@@ -517,6 +533,32 @@ const DossierAnalysePage = () => {
           onBack={goBack}
           onDirtyChange={setIsDirty}
           saveRef={step4SaveRef}
+        />
+      );
+    }
+
+    // ── Visual 5 (<5k) or Visual 6 (>5k): Risque Financier (server step 5) ──
+    const isRisqueFinancier =
+      (!isGt5k && activeVisualStep === 5) || (isGt5k && activeVisualStep === 6);
+    if (isRisqueFinancier) {
+      if (!step5Data) {
+        analyseService.previewStep5(dossier.id).then((r) => setStep5Data(r.data)).catch(() => null);
+        return <div className="h-8 w-48 bg-surface-200 dark:bg-surface-700 rounded animate-pulse" />;
+      }
+      return (
+        <StepRisqueFinancierView
+          dossierId={dossier.id}
+          initialData={step5Data}
+          onSaved={(d) => setStep5Data(d)}
+          onConfirmed={(d) => {
+            setIsDirty(false);
+            setStep5Data(d);
+            setDossier((prev) => (prev ? { ...prev, currentStep: Math.max(prev.currentStep, 6) } : prev));
+            setActiveVisualStep((v) => v + 1);
+          }}
+          onBack={goBack}
+          onDirtyChange={setIsDirty}
+          saveRef={step5SaveRef}
         />
       );
     }

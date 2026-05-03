@@ -7,8 +7,11 @@ import { formatAmount } from '@/utils/formatAmount';
 interface DynamicListTableProps {
   title: string;
   showCategoryDropdown: boolean;
+  hideCategory?: boolean; // hide category visually but keep field for form
   descriptionPlaceholder: string;
+  descriptionLabel?: string; // optional custom label for description column
   amountLabel: string;
+  amountFieldName?: 'cout' | 'montant';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fields: FieldArrayWithId<any, any, 'id'>[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -28,8 +31,11 @@ interface DynamicListTableProps {
 const DynamicListTable: React.FC<DynamicListTableProps> = ({
   title,
   showCategoryDropdown,
+  hideCategory = false,
   descriptionPlaceholder,
+  descriptionLabel,
   amountLabel,
+  amountFieldName,
   fields,
   register,
   errors,
@@ -52,6 +58,8 @@ const DynamicListTable: React.FC<DynamicListTableProps> = ({
 
   const canDelete = !readOnly && fields.length > minRows;
 
+  const amountKey = amountFieldName ?? (showCategoryDropdown ? 'cout' : 'montant');
+
   return (
     <div className="bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 p-6 shadow-sm">
       {/* Title */}
@@ -64,13 +72,13 @@ const DynamicListTable: React.FC<DynamicListTableProps> = ({
         <table className="w-full">
           <thead>
             <tr className="border-b border-surface-200 dark:border-surface-700">
-              {showCategoryDropdown && (
+              {showCategoryDropdown && !hideCategory && (
                 <th className="text-left text-label text-surface-600 dark:text-surface-400 font-medium pb-3 px-3">
                   {t('fields.categorie')}*
                 </th>
               )}
               <th className="text-left text-label text-surface-600 dark:text-surface-400 font-medium pb-3 px-3">
-                {t('fields.description')}
+                {descriptionLabel ?? t('fields.description')}
               </th>
               <th className="text-right text-label text-surface-600 dark:text-surface-400 font-medium pb-3 px-3">
                 {amountLabel}
@@ -85,27 +93,34 @@ const DynamicListTable: React.FC<DynamicListTableProps> = ({
                   {/* Category Column */}
                   {showCategoryDropdown && (
                     <td className="px-3 py-4">
-                      <select
-                        {...register(`${fieldPrefix}.${index}.categorie`)}
-                        defaultValue=""
-                        disabled={readOnly}
-                        className={`w-full px-3 py-2 text-body border rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${readOnly ? 'border-transparent cursor-default' : 'border-surface-300 dark:border-surface-600'}`}
-                      >
-                        <option value="" disabled>
-                          -- Choisir une catégorie --
-                        </option>
-                        {(Object.entries(CATEGORIE_LABELS) as Array<
-                          [string, string]
-                        >).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
-                      {getFieldError(index, 'categorie') && (
-                        <p className="text-xs text-rose-500 mt-1">
-                          {getFieldError(index, 'categorie')}
-                        </p>
+                      {!hideCategory ? (
+                        <>
+                          <select
+                            {...register(`${fieldPrefix}.${index}.categorie`)}
+                            defaultValue=""
+                            disabled={readOnly}
+                            className={`w-full px-3 py-2 text-body border rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${readOnly ? 'border-transparent cursor-default' : 'border-surface-300 dark:border-surface-600'}`}
+                          >
+                            <option value="" disabled>
+                              -- Choisir une catégorie --
+                            </option>
+                            {(Object.entries(CATEGORIE_LABELS) as Array<
+                              [string, string]
+                            >).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                          {getFieldError(index, 'categorie') && (
+                            <p className="text-xs text-rose-500 mt-1">
+                              {getFieldError(index, 'categorie')}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        // keep a hidden input so form still contains categorie for backend
+                        <input type="hidden" defaultValue="AUTRE" {...register(`${fieldPrefix}.${index}.categorie`)} />
                       )}
                     </td>
                   )}
@@ -133,14 +148,14 @@ const DynamicListTable: React.FC<DynamicListTableProps> = ({
                       step="0.01"
                       min="0"
                       disabled={readOnly}
-                      {...register(`${fieldPrefix}.${index}.${showCategoryDropdown ? 'cout' : 'montant'}`, {
+                      {...register(`${fieldPrefix}.${index}.${amountKey}`, {
                         valueAsNumber: true,
                       })}
                       className={`w-full px-3 py-2 text-body border rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 text-right focus:outline-none focus:ring-2 focus:ring-emerald-500 ${readOnly ? 'border-transparent cursor-default' : 'border-surface-300 dark:border-surface-600'}`}
                     />
-                    {getFieldError(index, showCategoryDropdown ? 'cout' : 'montant') && (
+                    {getFieldError(index, amountKey) && (
                       <p className="text-xs text-rose-500 mt-1">
-                        {getFieldError(index, showCategoryDropdown ? 'cout' : 'montant')}
+                        {getFieldError(index, amountKey)}
                       </p>
                     )}
                   </td>

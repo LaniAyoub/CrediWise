@@ -140,6 +140,17 @@ public class StepRisqueCommercialService {
         step.autresActivites = req.autresActivites;
         step.venteACredit = req.venteACredit;
         step.descriptionActiviteAnalyse = req.descriptionActiviteAnalyse;
+        
+        step.listeExclusionAdvans = req.listeExclusionAdvans;
+        step.regleAlcoolTabac = req.regleAlcoolTabac;
+        step.regleMedicamentsNonReglementes = req.regleMedicamentsNonReglementes;
+        step.travailForceOuEnfants = req.travailForceOuEnfants;
+        step.risqueSanteSecuriteEmployes = req.risqueSanteSecuriteEmployes;
+        step.impactNegatifEnvironnement = req.impactNegatifEnvironnement;
+        step.activiteVulnerableClimat = req.activiteVulnerableClimat;
+        step.activiteZoneExposeeClimat = req.activiteZoneExposeeClimat;
+        step.exigencesLegalesSpecifiques = req.exigencesLegalesSpecifiques;
+        step.clientConformite = req.clientConformite;
 
         if (req.pointsDeVente != null) {
             replacePointsDeVente(step, req.pointsDeVente);
@@ -198,12 +209,19 @@ public class StepRisqueCommercialService {
     }
 
     private StepRisqueCommercialResponse buildResponse(StepRisqueCommercial step, AnalyseDossier dossier) {
+        String ifcLevelOfRisk = null;
+        StepClient stepClient = StepClient.findByDossierId(dossier.id).orElse(null);
+        if (stepClient != null) {
+            ifcLevelOfRisk = stepClient.ifcLevelOfRisk;
+        }
+
         if (step == null) {
             return new StepRisqueCommercialResponse(
                 dossier.id, dossier.demandeId, dossier.status.toString(),
                 null, null, null, null,
                 new ArrayList<>(),
                 null,
+                ifcLevelOfRisk, null, null, null, null, null, null, null, null, null, null,
                 false, "EMPTY",
                 null, null, null,
                 null, null, null, null
@@ -224,6 +242,17 @@ public class StepRisqueCommercialService {
             step.venteACredit,
             pdvItems,
             step.descriptionActiviteAnalyse,
+            ifcLevelOfRisk,
+            step.listeExclusionAdvans,
+            step.regleAlcoolTabac,
+            step.regleMedicamentsNonReglementes,
+            step.travailForceOuEnfants,
+            step.risqueSanteSecuriteEmployes,
+            step.impactNegatifEnvironnement,
+            step.activiteVulnerableClimat,
+            step.activiteZoneExposeeClimat,
+            step.exigencesLegalesSpecifiques,
+            step.clientConformite,
             step.isComplete, computeStepStatus(step),
             step.confirmedBy, step.confirmedByName, step.confirmedAt,
             step.lastEditedBy, step.lastEditedByName, step.lastEditedAt, step.createdAt
@@ -242,6 +271,17 @@ public class StepRisqueCommercialService {
         public Boolean venteACredit;
         public List<PointDeVenteItem> pointsDeVente = new ArrayList<>();
         public String descriptionActiviteAnalyse;
+        
+        public Boolean listeExclusionAdvans;
+        public String regleAlcoolTabac;
+        public String regleMedicamentsNonReglementes;
+        public Boolean travailForceOuEnfants;
+        public Boolean risqueSanteSecuriteEmployes;
+        public Boolean impactNegatifEnvironnement;
+        public Boolean activiteVulnerableClimat;
+        public Boolean activiteZoneExposeeClimat;
+        public String exigencesLegalesSpecifiques;
+        public Boolean clientConformite;
 
         public static class PointDeVenteItem {
             public String type;

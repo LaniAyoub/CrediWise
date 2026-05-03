@@ -106,7 +106,8 @@ public class StepCreditService {
                 var depenseReq = demandeData.depenses.get(i);
                 StepDépenseProjet depense = new StepDépenseProjet();
                 depense.stepObjetCredit = stepCredit;
-                depense.categorie = depenseReq.categorie;
+                // category no longer provided by frontend; default to AUTRE
+                depense.categorie = "AUTRE";
                 depense.description = depenseReq.description;
                 depense.cout = new BigDecimal(depenseReq.cout);
                 depense.ordre = i + 1;
@@ -213,7 +214,8 @@ public class StepCreditService {
                 var depenseReq = demandeData.depenses.get(i);
                 StepDépenseProjet depense = new StepDépenseProjet();
                 depense.stepObjetCredit = stepCredit;
-                depense.categorie = depenseReq.categorie;
+                // category no longer provided by frontend; default to AUTRE
+                depense.categorie = "AUTRE";
                 depense.description = depenseReq.description;
                 depense.cout = new BigDecimal(depenseReq.cout);
                 depense.ordre = i + 1;
@@ -362,6 +364,7 @@ public class StepCreditService {
             sectionAData.getDurationMonths(),
             sectionAData.getProductId(),
             sectionAData.getProductName(),
+            sectionAData.getAssetType(),
             new BigDecimal(sectionAData.getMonthlyRepaymentCapacity()),
             pertinenceProjet,
             totalExpenses,
@@ -408,6 +411,7 @@ public class StepCreditService {
             entity.durationMonths,
             entity.productId,
             entity.productName,
+            entity.assetType,
             entity.monthlyRepaymentCapacity,
             entity.pertinenceProjet,
             entity.totalCostExpenses,
@@ -445,7 +449,7 @@ public class StepCreditService {
         public String pertinenceProjet;
 
         public static class DepenseItem {
-            public String categorie;
+            // 'categorie' removed: frontend no longer sends category
             public String description;
             public String cout;
         }

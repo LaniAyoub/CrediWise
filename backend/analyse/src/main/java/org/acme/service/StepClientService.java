@@ -39,6 +39,9 @@ public class StepClientService {
     @Inject
     HistoriqueClient historiqueClient;
 
+    @Inject
+    NouvelleDemandeDataClient nouvelleDemandeDataClient;
+
     /**
      * Preview live client data before confirmation.
      * Fetches fresh data from gRPC services but does not save.
@@ -86,8 +89,11 @@ public class StepClientService {
             Log.warn("Failed to fetch manager data: " + e.getMessage());
         }
 
+        // Fetch demande data (OPTIONAL — for scoring fields)
+        Optional<DemandeDetail> demandeData = fetchDemandeOptionally(dossier.demandeId);
+
         // Build response
-        return buildResponse(clientData, agenceData, historique, warningMessage, false, null, null, null, managerData, dossier, Optional.empty(), null, null, null, null);
+        return buildResponse(clientData, agenceData, historique, warningMessage, false, null, null, null, managerData, dossier, Optional.empty(), null, null, null, null, demandeData);
     }
 
     /**
@@ -180,9 +186,11 @@ public class StepClientService {
             stepClient.persist();
         }
 
+        Optional<DemandeDetail> demandeData = fetchDemandeOptionally(dossier.demandeId);
+
         return buildResponse(clientData, agenceData, historique, warningMessage,
             stepClient.isComplete, stepClient.confirmedBy, stepClient.confirmedAt, now,
-            managerData, dossier, Optional.empty(), location, locationDomicile, dateVisite, dateFinalisation);
+            managerData, dossier, Optional.empty(), location, locationDomicile, dateVisite, dateFinalisation, demandeData);
     }
 
     /**
@@ -315,7 +323,9 @@ public class StepClientService {
         dossier.updatedAt = now;
         // Entity is managed, changes will be persisted automatically
 
-        return buildResponse(clientData, agenceData, historique, warningMessage, true, callerGestionnaireId, stepClient.confirmedAt, now, managerData, dossier, confirmingGestionnaireData, location, locationDomicile, dateVisite, dateFinalisation);
+        Optional<DemandeDetail> demandeData = fetchDemandeOptionally(dossier.demandeId);
+
+        return buildResponse(clientData, agenceData, historique, warningMessage, true, callerGestionnaireId, stepClient.confirmedAt, now, managerData, dossier, confirmingGestionnaireData, location, locationDomicile, dateVisite, dateFinalisation, demandeData);
     }
 
     /**
@@ -362,7 +372,11 @@ public class StepClientService {
             }
         }
 
-        return buildResponseFromEntity(stepClient, historique);
+        Optional<DemandeDetail> demandeData = stepClient.dossier != null
+            ? fetchDemandeOptionally(stepClient.dossier.demandeId)
+            : Optional.empty();
+
+        return buildResponseFromEntity(stepClient, historique, demandeData);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -441,13 +455,28 @@ public class StepClientService {
         try { return java.time.LocalDate.parse(s); } catch (Exception e) { return null; }
     }
 
+    private Optional<DemandeDetail> fetchDemandeOptionally(Long demandeId) {
+        try {
+            return Optional.ofNullable(nouvelleDemandeDataClient.fetchDemandeById(demandeId));
+        } catch (Exception e) {
+            Log.warn("Failed to fetch demande data for step1: " + e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private static java.math.BigDecimal parseAmount(String s) {
+        if (s == null || s.isBlank()) return null;
+        try { return new java.math.BigDecimal(s); } catch (Exception e) { return null; }
+    }
+
     private StepClientResponse buildResponse(ClientResponse clientData, Optional<AgenceResponse> agenceData,
                                               List<CreditHistoriqueItem> historique, String warningMessage,
                                               Boolean isComplete, UUID confirmedBy, LocalDateTime confirmedAt,
                                               LocalDateTime dataFetchedAt, Optional<GestionnaireResponse> managerData,
                                               AnalyseDossier dossier, Optional<GestionnaireResponse> confirmingGestionnaireData,
                                               String location, String locationDomicile,
-                                              java.time.LocalDate dateVisite, java.time.LocalDate dateFinalisation) {
+                                              java.time.LocalDate dateVisite, java.time.LocalDate dateFinalisation,
+                                              Optional<DemandeDetail> demandeData) {
         return new StepClientResponse(
             java.util.UUID.fromString(clientData.getId()),
             clientData.getClientType(),
@@ -516,13 +545,17 @@ public class StepClientService {
             dossier != null ? dossier.demandeCreatedAt : null, // demandeCreatedAt
             dossier != null ? dossier.status.toString() : null, // dossierStatus
             dossier != null ? dossier.demandeId : null, // demandeId
+            demandeData.map(d -> parseAmount(d.getRequestedAmount())).orElse(null), // requestedAmount
+            demandeData.map(d -> d.getDurationMonths() > 0 ? d.getDurationMonths() : null).orElse(null), // durationMonths
+            demandeData.map(DemandeDetail::getLoanPurpose).orElse(null), // loanPurpose
             buildManagerName(managerData),
             buildManagerEmail(managerData),
             buildManagerRole(managerData)
         );
     }
 
-    private StepClientResponse buildResponseFromEntity(StepClient entity, List<CreditHistoriqueItem> historique) {
+    private StepClientResponse buildResponseFromEntity(StepClient entity, List<CreditHistoriqueItem> historique,
+                                                        Optional<DemandeDetail> demandeData) {
         return new StepClientResponse(
             entity.clientId,
             entity.clientType,
@@ -591,6 +624,9 @@ public class StepClientService {
             entity.dossier != null ? entity.dossier.demandeCreatedAt : null,
             entity.dossier != null ? entity.dossier.status.toString() : null,
             entity.dossier != null ? entity.dossier.demandeId : null,
+            demandeData.map(d -> parseAmount(d.getRequestedAmount())).orElse(null), // requestedAmount
+            demandeData.map(d -> d.getDurationMonths() > 0 ? d.getDurationMonths() : null).orElse(null), // durationMonths
+            demandeData.map(DemandeDetail::getLoanPurpose).orElse(null), // loanPurpose
             entity.assignedManagerName,
             entity.assignedManagerEmail,
             entity.assignedManagerRole

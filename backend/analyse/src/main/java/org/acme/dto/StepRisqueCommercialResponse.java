@@ -25,6 +25,19 @@ public record StepRisqueCommercialResponse(
         // Section 2: Description
         String descriptionActiviteAnalyse,
 
+        // Section 3 & 4: Conformite PSE et Exigences Legales
+        String ifcLevelOfRisk, // Fetched from StepClient
+        Boolean listeExclusionAdvans,
+        String regleAlcoolTabac,
+        String regleMedicamentsNonReglementes,
+        Boolean travailForceOuEnfants,
+        Boolean risqueSanteSecuriteEmployes,
+        Boolean impactNegatifEnvironnement,
+        Boolean activiteVulnerableClimat,
+        Boolean activiteZoneExposeeClimat,
+        String exigencesLegalesSpecifiques,
+        Boolean clientConformite,
+
         // Metadata
         boolean isComplete,
         String stepStatus,

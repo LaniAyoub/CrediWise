@@ -43,6 +43,38 @@ public class StepRisqueCommercial extends PanacheEntity {
     @Column(name = "description_activite_analyse", columnDefinition = "TEXT")
     public String descriptionActiviteAnalyse;
 
+    // ── Section 3: Conformite Avec la PSE, Les taxes et la reglementation ─────
+    @Column(name = "liste_exclusion_advans")
+    public Boolean listeExclusionAdvans;
+
+    @Column(name = "regle_alcool_tabac")
+    public String regleAlcoolTabac; // OUI, NON, NA
+
+    @Column(name = "regle_medicaments")
+    public String regleMedicamentsNonReglementes; // OUI, NON, NA
+
+    @Column(name = "travail_force_enfants")
+    public Boolean travailForceOuEnfants;
+
+    @Column(name = "risque_sante_securite")
+    public Boolean risqueSanteSecuriteEmployes;
+
+    @Column(name = "impact_negatif_environnement")
+    public Boolean impactNegatifEnvironnement;
+
+    @Column(name = "activite_vulnerable_climat")
+    public Boolean activiteVulnerableClimat;
+
+    @Column(name = "activite_zone_exposee_climat")
+    public Boolean activiteZoneExposeeClimat;
+
+    // ── Section 4: Exigences Légales ──────────────────────────────────────────
+    @Column(name = "exigences_legales_specifiques", columnDefinition = "TEXT")
+    public String exigencesLegalesSpecifiques;
+
+    @Column(name = "client_conformite")
+    public Boolean clientConformite;
+
     // ── Audit ──────────────────────────────────────────────────────────────────
     @Column(name = "is_complete", nullable = false)
     public boolean isComplete = false;
