@@ -63,15 +63,11 @@ public class ScoringResource {
             // No caller ID available
         }
 
-        ScoringResult existing = ScoringResult.findByDemandeId(result.getDemandeId()).orElse(null);
-        ScoringResult entity;
-        if (existing != null) {
-            entity = existing;
-        } else {
-            entity = new ScoringResult();
-            entity.demandeId = result.getDemandeId();
-        }
+        // UPSERT on demande_id: delete existing, then persist new
+        ScoringResult.delete("demandeId", result.getDemandeId());
 
+        ScoringResult entity = new ScoringResult();
+        entity.demandeId = result.getDemandeId();
         entity.clientId = result.getClientId();
         entity.drgAge = result.getDrgAge();
         entity.drgAnciennete = result.getDrgAnciennete();
@@ -84,10 +80,7 @@ public class ScoringResource {
         entity.dssDecision = result.getDecisionDSS();
         entity.decisionSysteme = result.getDecisionSysteme();
         entity.createdBy = callerId;
-
-        if (entity.id == null) {
-            entity.persist();
-        }
+        entity.persist();
 
         // Update client service with final scoring decision
         try {
