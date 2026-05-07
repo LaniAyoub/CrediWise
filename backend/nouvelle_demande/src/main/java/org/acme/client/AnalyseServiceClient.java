@@ -18,8 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 /**
- * HTTP client to communicate with analyse service.
- * Creates analysis dossiers via REST API.
+ * HTTP client to communicate with the analyse service.
+ * JWT is injected directly — callers must not pass raw Authorization headers.
  */
 @ApplicationScoped
 public class AnalyseServiceClient {
@@ -38,17 +38,15 @@ public class AnalyseServiceClient {
     /**
      * Create an analysis dossier for a demande (atomic with status update).
      *
-     * @param demandeId ID of the demande
-     * @param clientId UUID of the client
-     * @param demandeStatus Status of the demande
+     * @param demandeId       ID of the demande
+     * @param clientId        UUID of the client
+     * @param demandeStatus   Status of the demande
      * @param demandeCreatedAt ISO8601 creation date of the demande
-     * @param authorizationHeader JWT authorization header from current request
      * @return dossierId of the created dossier
      * @throws BadRequestException if dossier creation fails
      */
-    public Long createDossier(Long demandeId, String clientId, String demandeStatus, String demandeCreatedAt, String authorizationHeader) {
+    public Long createDossier(Long demandeId, String clientId, String demandeStatus, String demandeCreatedAt) {
         try {
-            // Build URL with query parameters
             StringBuilder urlBuilder = new StringBuilder(analyseServiceUrl)
                     .append("/analyses/dossiers?demandeId=").append(demandeId)
                     .append("&clientId=").append(URLEncoder.encode(clientId, StandardCharsets.UTF_8));
@@ -56,41 +54,39 @@ public class AnalyseServiceClient {
             if (demandeStatus != null && !demandeStatus.isBlank()) {
                 urlBuilder.append("&demandeStatus=").append(URLEncoder.encode(demandeStatus, StandardCharsets.UTF_8));
             }
-
             if (demandeCreatedAt != null && !demandeCreatedAt.isBlank()) {
                 urlBuilder.append("&demandeCreatedAt=").append(URLEncoder.encode(demandeCreatedAt, StandardCharsets.UTF_8));
             }
 
-            // Build request with authentication
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(new URI(urlBuilder.toString()))
                     .POST(HttpRequest.BodyPublishers.noBody())
                     .header("Content-Type", "application/json")
                     .timeout(Duration.ofSeconds(10));
 
-            // Add authorization header if available
-            if (authorizationHeader != null && !authorizationHeader.isBlank()) {
-                requestBuilder.header("Authorization", authorizationHeader);
+            String rawToken = jwt.getRawToken();
+            if (rawToken != null && !rawToken.isBlank()) {
+                requestBuilder.header("Authorization", "Bearer " + rawToken);
             }
 
-            HttpRequest request = requestBuilder.build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(requestBuilder.build(),
+                    HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 201 && response.statusCode() != 200) {
-                Log.error("Analyse service returned status " + response.statusCode() + ": " + response.body());
+                Log.errorf("Analyse service returned status %d for demande %d", response.statusCode(), demandeId);
                 throw new BadRequestException("Failed to create dossier: " + response.statusCode());
             }
 
-            // Parse response to get dossier ID
             JsonNode json = mapper.readTree(response.body());
             Long dossierId = json.get("id").asLong();
-
-            Log.info("Analysis dossier created: " + dossierId + " for demande " + demandeId);
+            Log.infof("Analysis dossier created: dossierId=%d demandeId=%d sub=%s",
+                    dossierId, demandeId, jwt.getSubject());
             return dossierId;
+
         } catch (BadRequestException e) {
             throw e;
         } catch (Exception e) {
-            Log.error("Failed to create analysis dossier for demande " + demandeId + ": " + e.getMessage());
+            Log.errorf("Failed to create analysis dossier for demande %d: %s", demandeId, e.getMessage());
             throw new BadRequestException("Failed to create analysis dossier: " + e.getMessage());
         }
     }

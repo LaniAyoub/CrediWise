@@ -426,7 +426,7 @@ public class StepClientService {
         entity.addressCountry = data.getAddressCountry();
         entity.accountNumber = data.getAccountNumber();
         entity.agenceId = data.getBranchId();
-        entity.assignedManagerId = java.util.UUID.fromString(data.getAssignedManagerId());
+        entity.assignedManagerId = data.getAssignedManagerId().isBlank() ? null : java.util.UUID.fromString(data.getAssignedManagerId());
 
         entity.scoring = data.getScoring();
         entity.cycle = data.getCycle();
@@ -513,7 +513,7 @@ public class StepClientService {
             clientData.getBusinessActivityGroup(), // businessActivityGroupName
             clientData.getBusinessActivity(), // businessActivityName
             clientData.getBranchId(),
-            java.util.UUID.fromString(clientData.getAssignedManagerId()),
+            clientData.getAssignedManagerId().isBlank() ? null : java.util.UUID.fromString(clientData.getAssignedManagerId()),
             null, // relationAvecClient
             null, // relationAvecClientOther
             clientData.getAccountNumber(),

@@ -7,7 +7,6 @@ import RoleGuard from './components/layout/RoleGuard';
 import { Toaster } from 'react-hot-toast';
 
 // Lazy-loaded pages
-const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const AgencesPage = lazy(() => import('./pages/agences/AgencesPage'));
 const GestionnairesPage = lazy(() => import('./pages/gestionnaires/GestionnairesPage'));
@@ -20,6 +19,26 @@ const AdministrationPage = lazy(() => import('./pages/administration/Administrat
 
 // Roles allowed to manage agences & gestionnaires
 const ADMIN_ROLES = ['SUPER_ADMIN', 'TECH_USER'];
+
+// Roles allowed to access client records
+// Mirrors DemandeResource / ClientResource @RolesAllowed on the backend.
+const CLIENT_ROLES = [
+  'FRONT_OFFICE', 'CRO', 'BRANCH_DM', 'HEAD_OFFICE_DM',
+  'RISK_ANALYST', 'SUPER_ADMIN', 'READ_ONLY', 'TECH_USER',
+];
+
+// Roles allowed to access demandes (credit requests)
+const DEMANDE_ROLES = [
+  'FRONT_OFFICE', 'CRO', 'BRANCH_DM', 'HEAD_OFFICE_DM',
+  'RISK_ANALYST', 'SUPER_ADMIN', 'READ_ONLY', 'TECH_USER',
+];
+
+// Roles allowed to view the analysis dossier list and detail pages
+// Analysts, decision-makers, and admins only — not read-only or tech users
+// for the full dossier workflow.
+const ANALYSE_ROLES = [
+  'CRO', 'BRANCH_DM', 'HEAD_OFFICE_DM', 'RISK_ANALYST', 'SUPER_ADMIN', 'FRONT_OFFICE',
+];
 
 // Loading fallback
 const PageLoader = () => {
@@ -61,7 +80,6 @@ function App() {
       <Router>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route
@@ -88,13 +106,43 @@ function App() {
                   </RoleGuard>
                 }
               />
-              <Route path="/clients" element={<ClientsPage />} />
-              <Route path="/demandes" element={<DemandesPage />} />
-              <Route path="/analyse/dossiers" element={<DossierListPage />} />
-              <Route path="/analyse/dossiers/:dossierId" element={<DossierAnalysePage />} />
+              {/* G-018 fix: /clients, /demandes, /analyse/dossiers now require specific roles */}
+              <Route
+                path="/clients"
+                element={
+                  <RoleGuard allowedRoles={CLIENT_ROLES}>
+                    <ClientsPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/demandes"
+                element={
+                  <RoleGuard allowedRoles={DEMANDE_ROLES}>
+                    <DemandesPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/analyse/dossiers"
+                element={
+                  <RoleGuard allowedRoles={ANALYSE_ROLES}>
+                    <DossierListPage />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="/analyse/dossiers/:dossierId"
+                element={
+                  <RoleGuard allowedRoles={ANALYSE_ROLES}>
+                    <DossierAnalysePage />
+                  </RoleGuard>
+                }
+              />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>

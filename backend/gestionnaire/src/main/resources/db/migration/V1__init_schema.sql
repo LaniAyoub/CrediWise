@@ -103,7 +103,6 @@ CREATE TABLE IF NOT EXISTS gestionnaires (
     last_name       VARCHAR(100) NOT NULL,
     date_of_birth   DATE NOT NULL,
     address         VARCHAR(500),
-    password        VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL
         REFERENCES roles(code)
         ON UPDATE CASCADE
@@ -130,10 +129,11 @@ COMMENT ON TABLE gestionnaires IS 'User profile (authentication handled by Keycl
 -- =====================================================
 -- SYSTEM BOOTSTRAP USER
 -- =====================================================
--- Use pgcrypto's crypt function to hash passwords with bcrypt algorithm
+-- Password field removed; Keycloak manages authentication. No password hashes or legacy seed data needed.
+
 INSERT INTO gestionnaires (
     id, email, cin, num_telephone, first_name, last_name,
-    date_of_birth, address, password, role, is_active, created_by
+    date_of_birth, address, role, is_active, created_by
 ) VALUES (
     '00000000-0000-0000-0000-000000000001',
     'system@creditwise.com',
@@ -143,7 +143,6 @@ INSERT INTO gestionnaires (
     'Bootstrap',
     '2000-01-01',
     'Tunis, Tunisia',
-    crypt('ChangeMe123!', gen_salt('bf', 10)),
     'TECH_USER',
     true,
     NULL
@@ -151,7 +150,7 @@ INSERT INTO gestionnaires (
 
 INSERT INTO gestionnaires (
     id, email, cin, num_telephone, first_name, last_name,
-    date_of_birth, address, password, role, is_active, created_by
+    date_of_birth, address, role, is_active, created_by
 ) VALUES (
     '00000000-0000-0000-0000-000000000002',
     'admin@creditwise.com',
@@ -161,7 +160,6 @@ INSERT INTO gestionnaires (
     'admin',
     '2000-01-01',
     'Tunis, Tunisia',
-    crypt('ChangeMe123!', gen_salt('bf', 10)),
     'SUPER_ADMIN',
     true,
     NULL
@@ -172,15 +170,15 @@ INSERT INTO gestionnaires (
 -- =====================================================
 INSERT INTO gestionnaires (
     id, email, cin, num_telephone, first_name, last_name,
-    date_of_birth, address, password, role, agence_id, created_by
+    date_of_birth, address, role, agence_id, created_by
 ) VALUES
-    ('550e8400-e29b-41d4-a716-446655440001', 'ahmed.benali@creditwise.com', 'TN123456', '+21620000001', 'Ahmed', 'Ben Ali', '1985-03-15', 'Tunis', crypt('ChangeMe123!', gen_salt('bf', 10)), 'CRO', '100', '00000000-0000-0000-0000-000000000001'),
-    ('550e8400-e29b-41d4-a716-446655440002', 'fatma.hassine@creditwise.com', 'TN234567', '+21620000002', 'Fatma', 'Hassine', '1990-07-22', 'Ariana', crypt('ChangeMe123!', gen_salt('bf', 10)), 'BRANCH_DM', '130', '00000000-0000-0000-0000-000000000001'),
-    ('550e8400-e29b-41d4-a716-446655440003', 'mourad.trabelsi@creditwise.com', 'TN345678', '+21620000003', 'Mourad', 'Trabelsi', '1988-11-08', 'Sousse', crypt('ChangeMe123!', gen_salt('bf', 10)), 'SUPER_ADMIN', '210', '00000000-0000-0000-0000-000000000001'),
-    ('550e8400-e29b-41d4-a716-446655440004', 'leila.karoui@creditwise.com', 'TN456789', '+21620000004', 'Leila', 'Karoui', '1987-05-30', 'Monastir', crypt('ChangeMe123!', gen_salt('bf', 10)), 'HEAD_OFFICE_DM', '230', '00000000-0000-0000-0000-000000000001'),
-    ('550e8400-e29b-41d4-a716-446655440005', 'karim.mzoughi@creditwise.com', 'TN567890', '+21620000005', 'Karim', 'Mzoughi', '1992-09-12', 'Nabeul', crypt('ChangeMe123!', gen_salt('bf', 10)), 'RISK_ANALYST', '160', '00000000-0000-0000-0000-000000000001'),
-    ('550e8400-e29b-41d4-a716-446655440006', 'hassan.jaziri@creditwise.com', 'TN678901', '+21620000006', 'Hassan', 'Jaziri', '1980-02-18', 'Sfax', crypt('ChangeMe123!', gen_salt('bf', 10)), 'FRONT_OFFICE', '530', '00000000-0000-0000-0000-000000000001'),
-    ('550e8400-e29b-41d4-a716-446655440007', 'nadia.benahmed@creditwise.com', 'TN789012', '+21620000007', 'Nadia', 'Ben Ahmed', '1983-08-25', 'Gabes', crypt('ChangeMe123!', gen_salt('bf', 10)), 'READ_ONLY', '510', '00000000-0000-0000-0000-000000000001')
+    ('550e8400-e29b-41d4-a716-446655440001', 'ahmed.benali@creditwise.com', 'TN123456', '+21620000001', 'Ahmed', 'Ben Ali', '1985-03-15', 'Tunis', 'CRO', '100', '00000000-0000-0000-0000-000000000001'),
+    ('550e8400-e29b-41d4-a716-446655440002', 'fatma.hassine@creditwise.com', 'TN234567', '+21620000002', 'Fatma', 'Hassine', '1990-07-22', 'Ariana', 'BRANCH_DM', '130', '00000000-0000-0000-0000-000000000001'),
+    ('550e8400-e29b-41d4-a716-446655440003', 'mourad.trabelsi@creditwise.com', 'TN345678', '+21620000003', 'Mourad', 'Trabelsi', '1988-11-08', 'Sousse', 'SUPER_ADMIN', '210', '00000000-0000-0000-0000-000000000001'),
+    ('550e8400-e29b-41d4-a716-446655440004', 'leila.karoui@creditwise.com', 'TN456789', '+21620000004', 'Leila', 'Karoui', '1987-05-30', 'Monastir', 'HEAD_OFFICE_DM', '230', '00000000-0000-0000-0000-000000000001'),
+    ('550e8400-e29b-41d4-a716-446655440005', 'karim.mzoughi@creditwise.com', 'TN567890', '+21620000005', 'Karim', 'Mzoughi', '1992-09-12', 'Nabeul', 'RISK_ANALYST', '160', '00000000-0000-0000-0000-000000000001'),
+    ('550e8400-e29b-41d4-a716-446655440006', 'hassan.jaziri@creditwise.com', 'TN678901', '+21620000006', 'Hassan', 'Jaziri', '1980-02-18', 'Sfax', 'FRONT_OFFICE', '530', '00000000-0000-0000-0000-000000000001'),
+    ('550e8400-e29b-41d4-a716-446655440007', 'nadia.benahmed@creditwise.com', 'TN789012', '+21620000007', 'Nadia', 'Ben Ahmed', '1983-08-25', 'Gabes', 'READ_ONLY', '510', '00000000-0000-0000-0000-000000000001')
     ON CONFLICT (id) DO NOTHING;
 
 -- =====================================================

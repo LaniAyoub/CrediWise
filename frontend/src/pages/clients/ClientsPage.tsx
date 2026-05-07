@@ -193,8 +193,8 @@ const ClientsPage = () => {
         ...(data.sousActiviteId && {
           sousActiviteId: Number(data.sousActiviteId),
         }),
-        // Auto-assign the current manager as the client's assigned manager
-        ...(user?.id && { assignedManagerId: user.id }),
+        // assignedManagerId must be the gestionnaire DB UUID, not the Keycloak sub.
+        // Left unset here; manager can be assigned explicitly via the form field.
         ...(data.relationAvecClient && {
           relationAvecClient: data.relationAvecClient as
             | "CLIENT"

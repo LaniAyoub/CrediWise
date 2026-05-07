@@ -1,0 +1,49 @@
+<!doctype html>
+<!--
+  silent-check-sso.html — Keycloak silent SSO check page
+  ========================================================
+  This page is loaded by the keycloak-js adapter in a hidden <iframe>
+  to silently detect whether the Keycloak SSO session is still active
+  without triggering a full page redirect.
+
+  How it works:
+    1. keycloak-js creates a hidden <iframe src="/silent-check-sso.html">
+    2. Keycloak redirects the iframe to this page with an OAuth fragment (#)
+       or query parameter containing the authentication result
+    3. This page calls window.parent.postMessage() with the fragment back
+       to the parent window
+    4. The keycloak-js adapter in the parent reads the message and either
+       silently refreshes the token or redirects to login
+
+  Security requirements:
+    - This file MUST be served from the SAME ORIGIN as the React app.
+      Cross-origin iframes cannot postMessage to each other without
+      explicit allow-list, and keycloak-js only listens for messages
+      from the same origin.
+    - This page must contain NO JavaScript other than the postMessage call.
+      Any additional logic could be a target for XSS via the fragment.
+    - NO Content-Security-Policy should block postMessage or same-origin scripts.
+    - The file must NOT be served with X-Frame-Options: DENY — it needs to
+      be embeddable as an iframe from the same origin. All other pages should
+      keep X-Frame-Options: DENY.
+
+  Attack prevented:
+    Without silent SSO, we would need checkLoginIframe: false, meaning a
+    user who logs out in another tab would remain authenticated in this tab
+    until their access token expires (up to the token lifespan, typically
+    5–15 minutes). Silent SSO detects the session change within seconds.
+-->
+<html>
+  <head>
+    <title></title>
+  </head>
+  <body>
+    <script>
+      // This is the standard Keycloak silent-check-sso script.
+      // It passes the current URL (including any OAuth fragment/params
+      // that Keycloak appended) back to the parent frame via postMessage.
+      // The keycloak-js adapter is listening for this message.
+      parent.postMessage(location.href, location.origin);
+    </script>
+  </body>
+</html>

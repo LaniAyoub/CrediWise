@@ -271,7 +271,7 @@ class DemandeServiceTest {
         when(demandeRepository.findByIdOptional(DEMANDE_ID))
                 .thenReturn(Optional.of(draftDemande())); // productId = null
 
-        StartAnalysisResponse result = demandeService.submit(DEMANDE_ID, null);
+        StartAnalysisResponse result = demandeService.submit(DEMANDE_ID);
 
         assertThat(result.demandeStatus()).isEqualTo(DemandeStatut.CHECK_BEFORE_COMMITTEE.toString());
         assertThat(result.dossierId()).isNull();
@@ -283,9 +283,9 @@ class DemandeServiceTest {
         d.productId = "101";
         d.createdAt = java.time.LocalDateTime.now();
         when(demandeRepository.findByIdOptional(DEMANDE_ID)).thenReturn(Optional.of(d));
-        when(analyseServiceClient.createDossier(any(), any(), any(), any(), any())).thenReturn(42L);
+        when(analyseServiceClient.createDossier(any(), any(), any(), any())).thenReturn(42L);
 
-        StartAnalysisResponse result = demandeService.submit(DEMANDE_ID, null);
+        StartAnalysisResponse result = demandeService.submit(DEMANDE_ID);
 
         assertThat(result.demandeStatus()).isEqualTo(DemandeStatut.ANALYSE.toString());
         assertThat(result.dossierId()).isEqualTo(42L);
@@ -296,7 +296,7 @@ class DemandeServiceTest {
         when(demandeRepository.findByIdOptional(DEMANDE_ID))
                 .thenReturn(Optional.of(demandeWithStatus(DemandeStatut.ANALYSE)));
 
-        assertThatThrownBy(() -> demandeService.submit(DEMANDE_ID, null))
+        assertThatThrownBy(() -> demandeService.submit(DEMANDE_ID))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("Can only submit from DRAFT status");
     }

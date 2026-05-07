@@ -15,6 +15,10 @@ public class GestionnaireRepository implements PanacheRepositoryBase<Gestionnair
         return find("email", email).firstResultOptional();
     }
 
+    public Optional<Gestionnaire> findByKeycloakId(UUID keycloakId) {
+        return find("keycloakId", keycloakId).firstResultOptional();
+    }
+
     public Optional<Gestionnaire> findByCin(String cin) {
         return find("cin", cin).firstResultOptional();
     }

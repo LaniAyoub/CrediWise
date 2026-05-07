@@ -81,31 +81,24 @@
             <artifactId>quarkus-hibernate-validator</artifactId>
         </dependency>
 
-        <!-- Security -->
+        <!-- Security: Keycloak OIDC (replaces custom JWT) -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-security</artifactId>
+            <artifactId>quarkus-oidc</artifactId>
         </dependency>
+        <!-- SmallRye JWT: test-only — provides JsonWebToken CDI bean when OIDC is disabled in tests.
+             Must NOT be on the main classpath: it conflicts with quarkus-oidc for Bearer validation. -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-elytron-security-common</artifactId>
+            <artifactId>quarkus-smallrye-jwt</artifactId>
+            <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>provided</scope>
-        </dependency>
-
-
-        <!-- JWT -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-jwt</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-jwt-build</artifactId>
         </dependency>
 
         <!-- API Docs -->
@@ -126,22 +119,16 @@
             <artifactId>quarkus-mailer</artifactId>
         </dependency>
 
-        <!-- BCrypt -->
-        <dependency>
-            <groupId>org.mindrot</groupId>
-            <artifactId>jbcrypt</artifactId>
-            <version>0.4</version>
-        </dependency>
 
         <!-- TEST -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
+            <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-mockito</artifactId>
+            <artifactId>quarkus-junit-mockito</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -158,14 +145,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-http</artifactId>
-        </dependency>
-
-        <!-- Testcontainers -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>1.19.7</version>
-            <scope>test</scope>
         </dependency>
 
     </dependencies>
@@ -204,8 +183,8 @@
                 <version>10.12.0</version> <!-- Use a recent Flyway version -->
                 <configuration>
                     <url>jdbc:postgresql://localhost:5432/gestionnaire_db</url>
-                    <user>admin</user>
-                    <password>admin</password>
+                    <user>${env.DB_USERNAME}</user>
+                    <password>${env.DB_PASSWORD}</password>
                 </configuration>
 
             </plugin>

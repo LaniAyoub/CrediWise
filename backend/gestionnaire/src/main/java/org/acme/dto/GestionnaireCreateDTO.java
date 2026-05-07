@@ -37,8 +37,6 @@ public class GestionnaireCreateDTO {
 
     private String address;
 
-    private String password;
-
     @NotBlank
     private String role;
 

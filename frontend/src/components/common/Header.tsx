@@ -44,9 +44,14 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
   const segments = location.pathname.split('/').filter(Boolean);
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    logout(); // Redirects to Keycloak end-session, then back to app
   };
+
+  const displayName = user
+    ? (user.firstName || user.lastName)
+      ? `${user.firstName} ${user.lastName}`.trim()
+      : (user.email?.split('@')[0] || user.email || '')
+    : '';
 
   const initials = user
     ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase() || user.email.charAt(0).toUpperCase()
@@ -103,7 +108,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
             </div>
             <div className="hidden sm:block text-left">
               <p className="text-sm font-semibold text-surface-800 dark:text-surface-50 leading-tight">
-                {user?.firstName} {user?.lastName}
+                {displayName}
               </p>
               <p className="text-xs text-surface-400 dark:text-surface-500">{user?.role}</p>
             </div>
@@ -123,7 +128,7 @@ const Header = ({ onMenuToggle }: HeaderProps) => {
             <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 shadow-lg dark:shadow-xl py-1.5 animate-slide-up transition-colors">
               <div className="px-4 py-2.5 border-b border-surface-100 dark:border-surface-700">
                 <p className="text-sm font-semibold text-surface-800 dark:text-surface-50">
-                  {user?.firstName} {user?.lastName}
+                  {displayName}
                 </p>
                 <p className="text-xs text-surface-400 dark:text-surface-500 truncate">{user?.email}</p>
               </div>

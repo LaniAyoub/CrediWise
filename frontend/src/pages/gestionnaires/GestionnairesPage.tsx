@@ -65,7 +65,6 @@ const GestionnairesPage = () => {
         agenceId: data.agenceId,
         ...(data.dateOfBirth && { dateOfBirth: data.dateOfBirth }),
         ...(data.address && { address: data.address }),
-        ...(data.password && { password: data.password }),
       };
       await gestionnaireService.create(payload);
       toast.success(t('messages.created'));
@@ -79,7 +78,7 @@ const GestionnairesPage = () => {
     }
   };
 
-  const handleUpdate = async (data: GestionnaireUpdateRequest & { email?: string; cin?: string; agenceId?: string; password?: string }) => {
+  const handleUpdate = async (data: GestionnaireUpdateRequest & { email?: string; cin?: string; agenceId?: string }) => {
     if (!editingGestionnaire) return;
     setIsSubmitting(true);
     try {

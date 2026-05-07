@@ -24,12 +24,6 @@ export const isValidTunisianPhone = (phone: string): boolean => {
   return /^\d{8}$/.test(phone);
 };
 
-// ── Schemas ────────────────────────────────────────────────────────────────
-export const loginSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
-  password: z.string().min(1, { message: "Password is required" }),
-});
-
 export const agenceSchema = z.object({
   idBranch: z.string().min(1, "Branch ID is required").max(10),
   libelle: z.string().min(1, "Label is required").max(100),
@@ -45,7 +39,6 @@ export const gestionnaireSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   dateOfBirth: z.string().optional(),
   address: z.string().optional(),
-  password: z.string().optional(),
   role: z.string().min(1, "Role is required"),
   agenceId: z.string().min(1, "Agence is required"),
 });

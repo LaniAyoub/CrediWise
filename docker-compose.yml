@@ -1,6 +1,42 @@
-version: '3.8'
-
 services:
+
+  # ── Nginx reverse proxy / API gateway ──────────────────────
+  # Single entry point for all external traffic.
+  # Routes /api/* to Quarkus microservices, / to React SPA,
+  # /auth/* to Keycloak. Handles TLS, rate limiting, CORS,
+  # auth_request JWT validation, and security headers.
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+      # Bake the React SPA build into the image at build time.
+      # Run `npm run build` in frontend/ before `docker-compose build`.
+    container_name: crediwise-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - nginx/.env          # Copy from nginx/.env.example and fill in values
+    environment:
+      - NGINX_SERVER_NAME=${NGINX_SERVER_NAME:-localhost}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      - KEYCLOAK_PUBLIC_URL=${KEYCLOAK_PUBLIC_URL:-http://localhost:8180}
+    volumes:
+      # TLS certificates — mount real certs here; never bake into image
+      # (no :ro so entrypoint can auto-generate self-signed certs on first start)
+      - ./nginx/ssl:/etc/nginx/ssl
+      # Optional: mount frontend build at runtime instead of baking it in
+      # - ./frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - keycloak
+    networks:
+      - crediwise_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   # Gestionnaire DB
   postgres-gestionnaire:
     image: postgres:15
@@ -10,7 +46,7 @@ services:
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: gestionnaire_db
     ports:
-      - "5432:5432"  
+      - "5432:5432"
     volumes:
       - pgdata_gestionnaire:/var/lib/postgresql/data
 
@@ -23,19 +59,19 @@ services:
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: client_db
     ports:
-      - "5433:5432"  
+      - "5433:5432"
     volumes:
       - pgdata_client:/var/lib/postgresql/data
   # nouvelle_demande DB
   postgres-nouvelle_demande:
     image: postgres:15
-    container_name: nouvelle_demande-postgres 
+    container_name: nouvelle_demande-postgres
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: nouvelle_demande_db
     ports:
-      - "5434:5432"  
+      - "5434:5432"
     volumes:
       - pgdata_nouvelle_demande:/var/lib/postgresql/data
   # analyse DB
@@ -47,11 +83,61 @@ services:
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: analyse_db
     ports:
-      - "5435:5432"  
+      - "5435:5432"
     volumes:
       - pgdata_analyse:/var/lib/postgresql/data
 
-  
+  # Keycloak DB (separate PostgreSQL instance)
+  postgres-keycloak:
+    image: postgres:15
+    container_name: keycloak-postgres
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+      POSTGRES_DB: keycloak_db
+    ports:
+      - "5436:5432"
+    volumes:
+      - pgdata_keycloak:/var/lib/postgresql/data
+    networks:
+      - crediwise_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # Keycloak Identity Provider
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: crediwise-keycloak
+    # Run Keycloak with the proper command so the image's ENTRYPOINT (kc.sh)
+    # receives the correct arguments. Add a restart policy to retry until
+    # Postgres becomes available.
+    command: ["start-dev", "--import-realm"]
+    restart: unless-stopped
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak_db
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8180
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: 8080
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./keycloak/crediwise-realm.json:/opt/keycloak/data/import/crediwise-realm.json:ro
+      - ./keycloak/themes/crediwise:/opt/keycloak/themes/crediwise:ro
+    depends_on:
+      - postgres-keycloak
+    networks:
+      - crediwise_net
+
   # pgAdmin
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -65,10 +151,19 @@ services:
       - postgres-gestionnaire
       - postgres-client
       - postgres-nouvelle_demande
-      - postgres-analyse  
+      - postgres-analyse
 
 volumes:
   pgdata_gestionnaire:
   pgdata_client:
   pgdata_nouvelle_demande:
   pgdata_analyse:
+  pgdata_keycloak:
+
+# Internal network — service names resolve via Docker DNS.
+# Nginx and all microservices must be on this network so Nginx
+# can route to 'gestionnaire:8080', 'keycloak:8080', etc.
+# Never use 'localhost' or host-mapped ports inside this network.
+networks:
+  crediwise_net:
+    driver: bridge

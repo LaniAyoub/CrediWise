@@ -41,7 +41,7 @@ public class ClientService {
     @Transactional
     public ClientResponseDTO create(ClientCreateDTO dto, UUID actorId) {
         validateUniqueness(dto.getEmail(), dto.getNationalId(), dto.getCbsId(), null);
-
+        System.out.println("ClientService.create() dto.getClientType() = " + dto.getClientType());
         // Validate external references via gRPC
         String agenceLibelle = null;
         if (dto.getAgenceId() != null && !dto.getAgenceId().isBlank()) {
@@ -62,6 +62,7 @@ public class ClientService {
         }
 
         Client client = new Client();
+        client.setId(UUID.randomUUID());
         client.setClientType(dto.getClientType());
         client.setStatus(ClientStatus.PROSPECT);
         applyFields(client, dto);
@@ -410,7 +411,7 @@ public class ClientService {
     }
 
     private void validateExtraBusinessRules(Client client) {
-        if (client.getAccountNumber() == null || !client.getAccountNumber().matches("\\d{20}")) {
+        if (client.getAccountNumber() != null && !client.getAccountNumber().matches("\\d{20}")) {
             throw new BadRequestException("Account number must contain exactly 20 numeric digits");
         }
 

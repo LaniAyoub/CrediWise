@@ -69,7 +69,15 @@
             <artifactId>quarkus-flyway</artifactId>
         </dependency>
 
-        <!-- Security & JWT -->
+        <!-- Security: Keycloak OIDC (replaces custom JWT) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
+        </dependency>
+
+        <!-- SmallRye JWT: needed on main classpath for GrpcSecurityInterceptor (JWTParser injection).
+             Coexists with quarkus-oidc: OIDC handles HTTP Bearer auth, smallrye-jwt provides
+             JWTParser/JsonWebToken CDI beans for programmatic gRPC token parsing. -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-jwt</artifactId>
@@ -98,7 +106,7 @@
         <!-- Testing -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
+            <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -108,7 +116,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-mockito</artifactId>
+            <artifactId>quarkus-junit-mockito</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

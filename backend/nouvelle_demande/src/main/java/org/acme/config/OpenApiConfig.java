@@ -20,7 +20,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityScheme;
         type = SecuritySchemeType.HTTP,
         scheme = "bearer",
         bearerFormat = "JWT",
-        description = "JWT token obtained from POST /api/auth/login"
+        description = "JWT token obtained from Keycloak OIDC (realm: crediwise)"
 )
 public class OpenApiConfig extends Application {
 }

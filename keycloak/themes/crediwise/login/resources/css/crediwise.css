@@ -1,0 +1,424 @@
+/* ============================================================
+   CrediWise Keycloak Login Theme
+   Mirrors the CrediWise React frontend dark design system.
+
+   Brand:    #16a34a (brand-600)  /  #22c55e (brand-500)
+   Surface:  #030712 (bg)  /  #1f2937 (card)  /  #374151 (border)
+   Text:     #f9fafb (primary)  /  #9ca3af (secondary)  /  #6b7280 (muted)
+   Font:     Inter → system-ui fallback chain
+   ============================================================ */
+
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --brand-400:  #4ade80;
+  --brand-500:  #22c55e;
+  --brand-600:  #16a34a;
+  --brand-700:  #15803d;
+  --brand-800:  #166534;
+
+  --surface-700: #374151;
+  --surface-800: #1f2937;
+  --surface-900: #111827;
+  --surface-950: #030712;
+
+  --text-primary:   #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-muted:     #6b7280;
+
+  --error:        #f43f5e;
+  --error-bg:     #450a0a;
+  --error-border: #7f1d1d;
+  --error-text:   #fca5a5;
+
+  --warn-bg:     #422006;
+  --warn-border: #78350f;
+  --warn-text:   #fde68a;
+
+  --info-bg:     #1e3a5f;
+  --info-border: #1e40af;
+  --info-text:   #bfdbfe;
+
+  --success-bg:     #14532d;
+  --success-border: #166534;
+  --success-text:   #bbf7d0;
+}
+
+/* ── Page ─────────────────────────────────────────────────── */
+html {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont,
+               'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  background-color: var(--surface-950);
+  /* Subtle green aurora top + right-bottom glow — same effect as the app */
+  background-image:
+    radial-gradient(ellipse 80% 55% at 50% -8%,
+      rgba(22, 163, 74, 0.14) 0%, transparent 62%),
+    radial-gradient(ellipse 55% 35% at 85% 105%,
+      rgba(22, 163, 74, 0.07) 0%, transparent 50%);
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+/* ── Layout container ─────────────────────────────────────── */
+.cw-page {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  animation: cw-appear 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Brand / Logo ─────────────────────────────────────────── */
+.cw-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cw-brand-badge {
+  width: 46px;
+  height: 46px;
+  background: linear-gradient(135deg, #16a34a 0%, #14532d 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  box-shadow:
+    0 0 0 1px rgba(22, 163, 74, 0.3),
+    0 0 24px rgba(22, 163, 74, 0.35),
+    0 4px 12px rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+
+.cw-brand-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+/* ── Card ─────────────────────────────────────────────────── */
+.cw-card {
+  width: 100%;
+  background: var(--surface-800);
+  border: 1px solid var(--surface-700);
+  border-radius: 16px;
+  padding: 36px 32px 32px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.03) inset,
+    0 32px 64px rgba(0, 0, 0, 0.55),
+    0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Card header ──────────────────────────────────────────── */
+.cw-heading {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.cw-subheading {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 28px;
+}
+
+/* ── Alert banner ─────────────────────────────────────────── */
+.cw-alert {
+  border-radius: 8px;
+  padding: 11px 14px;
+  margin-bottom: 22px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.cw-alert-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  width: 16px;
+  height: 16px;
+}
+
+.cw-alert-error   { background: var(--error-bg);   border: 1px solid var(--error-border);   color: var(--error-text);   }
+.cw-alert-warning { background: var(--warn-bg);    border: 1px solid var(--warn-border);    color: var(--warn-text);    }
+.cw-alert-success { background: var(--success-bg); border: 1px solid var(--success-border); color: var(--success-text); }
+.cw-alert-info    { background: var(--info-bg);    border: 1px solid var(--info-border);    color: var(--info-text);    }
+
+/* ── Form ─────────────────────────────────────────────────── */
+.cw-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Label row: label left, forgot-password link right */
+.cw-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cw-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+  user-select: none;
+}
+
+/* ── Inputs ───────────────────────────────────────────────── */
+.cw-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cw-input {
+  width: 100%;
+  height: 42px;
+  background: var(--surface-900);
+  border: 1px solid var(--surface-700);
+  border-radius: 8px;
+  /* right padding only for password field (leaves room for toggle btn) */
+  padding: 0 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+  /* prevent browser autofill yellow overlay */
+  -webkit-text-fill-color: var(--text-primary);
+}
+
+/* Chrome autofill override */
+.cw-input:-webkit-autofill,
+.cw-input:-webkit-autofill:hover,
+.cw-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface-900) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  border-color: var(--surface-700) !important;
+}
+
+.cw-input::placeholder {
+  color: var(--text-muted);
+}
+
+.cw-input:hover {
+  border-color: #4b5563;
+}
+
+.cw-input:focus {
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+}
+
+.cw-input--error,
+.cw-input--error:focus {
+  border-color: var(--error) !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.12) !important;
+}
+
+/* Password field: reserve space for the eye toggle */
+.cw-input--pwd {
+  padding-right: 42px;
+}
+
+/* Field-level error text */
+.cw-field-error {
+  font-size: 12px;
+  color: #f87171;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 1px;
+}
+
+/* ── Password toggle ──────────────────────────────────────── */
+.cw-pwd-toggle {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 140ms ease, background-color 140ms ease;
+  flex-shrink: 0;
+}
+
+.cw-pwd-toggle:hover {
+  color: var(--text-secondary);
+  background-color: rgba(255,255,255,0.06);
+}
+
+.cw-pwd-toggle svg {
+  width: 17px;
+  height: 17px;
+  pointer-events: none;
+}
+
+/* ── Forgot password ──────────────────────────────────────── */
+.cw-forgot {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--brand-500);
+  text-decoration: none;
+  transition: color 140ms ease;
+  white-space: nowrap;
+}
+
+.cw-forgot:hover {
+  color: var(--brand-400);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Remember me checkbox ─────────────────────────────────── */
+.cw-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cw-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand-600);
+  cursor: pointer;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.cw-remember-label {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
+
+/* ── Submit button ────────────────────────────────────────── */
+.cw-submit {
+  width: 100%;
+  height: 43px;
+  margin-top: 4px;
+  background: var(--brand-600);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: background-color 140ms ease, box-shadow 140ms ease, transform 80ms ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15), 0 0 0 1px rgba(22,163,74,0.2);
+}
+
+.cw-submit:hover {
+  background: var(--brand-700);
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.28), 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.cw-submit:active {
+  background: var(--brand-800);
+  transform: translateY(1px);
+  box-shadow: 0 1px 4px rgba(22, 163, 74, 0.2);
+}
+
+.cw-submit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+}
+
+/* ── Divider ──────────────────────────────────────────────── */
+.cw-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.cw-divider::before,
+.cw-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--surface-700);
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+.cw-footer {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 8px; height: 8px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--surface-700); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+/* ── Animations ───────────────────────────────────────────── */
+@keyframes cw-appear {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Responsive: small phones ─────────────────────────────── */
+@media (max-width: 480px) {
+  .cw-card {
+    padding: 28px 20px 24px;
+  }
+}

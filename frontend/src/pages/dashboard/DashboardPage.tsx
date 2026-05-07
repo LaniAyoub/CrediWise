@@ -108,7 +108,7 @@ const DashboardPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-page-title">
-            {t('welcome', { name: user?.firstName || 'User' })}
+            {t('welcome', { name: user?.firstName || user?.email?.split('@')[0] || 'User' })}
           </h1>
           <p className="text-caption mt-2">
             {isAdmin ? t('adminOverview') : t('userOverview')}

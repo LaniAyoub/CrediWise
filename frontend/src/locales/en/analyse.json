@@ -97,7 +97,8 @@
         "duree_pret_group": "Loan Duration",
         "isepa": "Savings Account",
         "salaire_group": "Income Bracket"
-      }
+      },
+      "detailsNotAvailable": "Details not available (score loaded from database)"
     }
   },
   "step3": {

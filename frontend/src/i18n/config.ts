@@ -2,9 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-// Import translations with assertions
 import enCommon from '../locales/en/common.json' assert { type: 'json' };
-import enAuth from '../locales/en/auth.json' assert { type: 'json' };
 import enDashboard from '../locales/en/dashboard.json' assert { type: 'json' };
 import enAgences from '../locales/en/agences.json' assert { type: 'json' };
 import enGestionnaires from '../locales/en/gestionnaires.json' assert { type: 'json' };
@@ -14,7 +12,6 @@ import enAnalyse from '../locales/en/analyse.json' assert { type: 'json' };
 import enAdministration from '../locales/en/administration.json' assert { type: 'json' };
 
 import frCommon from '../locales/fr/common.json' assert { type: 'json' };
-import frAuth from '../locales/fr/auth.json' assert { type: 'json' };
 import frDashboard from '../locales/fr/dashboard.json' assert { type: 'json' };
 import frAgences from '../locales/fr/agences.json' assert { type: 'json' };
 import frGestionnaires from '../locales/fr/gestionnaires.json' assert { type: 'json' };
@@ -26,7 +23,6 @@ import frAdministration from '../locales/fr/administration.json' assert { type: 
 const resources = {
   en: {
     common: enCommon,
-    auth: enAuth,
     dashboard: enDashboard,
     agences: enAgences,
     gestionnaires: enGestionnaires,
@@ -37,7 +33,6 @@ const resources = {
   },
   fr: {
     common: frCommon,
-    auth: frAuth,
     dashboard: frDashboard,
     agences: frAgences,
     gestionnaires: frGestionnaires,
@@ -56,7 +51,7 @@ i18n
     resources,
     fallbackLng: 'en',
     defaultNS: 'common',
-    ns: ['common', 'auth', 'dashboard', 'agences', 'gestionnaires', 'clients', 'demandes', 'analyse', 'administration'],
+    ns: ['common', 'dashboard', 'agences', 'gestionnaires', 'clients', 'demandes', 'analyse', 'administration'],
     interpolation: {
       escapeValue: false, // React already protects from XSS
     },

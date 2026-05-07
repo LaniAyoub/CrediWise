@@ -20,7 +20,7 @@ public class HistoriqueClient {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    @GrpcClient("nouvelle-demande")
+    @GrpcClient("nouvelle-demande-service")
     HistoriqueServiceGrpc.HistoriqueServiceBlockingStub historiqueStub;
 
     /**

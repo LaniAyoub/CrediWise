@@ -1,6 +1,5 @@
 package org.acme.resource;
 
-import io.quarkus.elytron.security.common.BcryptUtil;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -13,11 +12,9 @@ import org.acme.entity.Gestionnaire;
 import org.acme.exception.GestionnaireNotFoundException;
 import org.acme.repository.GestionnaireRepository;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import java.util.UUID;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
-
-import java.time.Instant;
-import java.util.UUID;
 
 @Path("/api/profile")
 @Produces(MediaType.APPLICATION_JSON)
@@ -33,20 +30,57 @@ public class ProfileResource {
     @Inject
     JsonWebToken jwt;
 
-    private Gestionnaire getCurrentUser() {
-        String subject = jwt.getSubject();
-        if (subject == null) throw new WebApplicationException("Unauthorized", 401);
-        UUID id;
+    /**
+     * Look up the current user from the Keycloak JWT.
+     *
+     * Strategy (in order):
+     *  1. email claim  → find by email
+     *  2. preferred_username claim → find by email (Keycloak sets this to the username/email)
+     *  3. sub claim (always present) → find by keycloak_id (UUID set on first successful lookup)
+     *
+     * When a gestionnaire is found via email/preferred_username, their keycloak_id is
+     * saved opportunistically so that future requests can fall through to strategy 3 even
+     * when email/preferred_username are absent (e.g. protocol mapper not configured).
+     */
+    @Transactional
+    Gestionnaire getCurrentUser() {
+        String sub = jwt.getSubject();
+        UUID keycloakUUID = null;
         try {
-            id = UUID.fromString(subject);
-        } catch (IllegalArgumentException e) {
-            throw new WebApplicationException("Unauthorized", 401);
+            if (sub != null && !sub.isBlank()) keycloakUUID = UUID.fromString(sub);
+        } catch (IllegalArgumentException ignored) { }
+
+        // Strategy 1 & 2 — look up by email / preferred_username
+        String email = jwt.getClaim("email");
+        if (email == null || email.isBlank()) {
+            email = jwt.getClaim("preferred_username");
         }
-        return gestionnaireRepository.findByIdOptional(id)
-                .orElseThrow(() -> new GestionnaireNotFoundException("User not found"));
+        if (email != null && !email.isBlank()) {
+            final String resolvedEmail = email;
+            Gestionnaire g = gestionnaireRepository.findByEmail(resolvedEmail)
+                    .orElseThrow(() -> new GestionnaireNotFoundException("User not found: " + resolvedEmail));
+            // Opportunistically persist keycloak_id so sub-based lookup works next time
+            if (g.getKeycloakId() == null && keycloakUUID != null) {
+                g.setKeycloakId(keycloakUUID);
+            }
+            return g;
+        }
+
+        // Strategy 3 — email/preferred_username absent; try sub UUID as keycloak_id
+        if (keycloakUUID != null) {
+            final UUID fkId = keycloakUUID;
+            return gestionnaireRepository.findByKeycloakId(fkId)
+                    .orElseThrow(() -> new GestionnaireNotFoundException(
+                            "User not found (keycloak_id=" + fkId + "). " +
+                            "Configure the Keycloak 'username' protocol mapper or " +
+                            "populate keycloak_id manually for this gestionnaire."));
+        }
+
+        throw new WebApplicationException("Cannot identify user from token", 401);
     }
 
     @GET
+    @Transactional
     public Response getProfile() {
         Gestionnaire user = getCurrentUser();
         AgenceResponseDTO agence = null;
@@ -101,26 +135,6 @@ public class ProfileResource {
         return Response.ok().entity(java.util.Map.of("message", "Profile updated successfully")).build();
     }
 
-    @PUT
-    @Path("/password")
-    @Transactional
-    public Response changePassword(@Valid PasswordChangeDTO dto) {
-        Gestionnaire user = getCurrentUser();
-
-        if (!BcryptUtil.matches(dto.getCurrentPassword(), user.getPassword())) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(ApiErrorResponse.builder()
-                            .timestamp(Instant.now())
-                            .status(400)
-                            .error("Bad Request")
-                            .message("Current password is incorrect")
-                            .build())
-                    .build();
-        }
-
-        user.setPassword(BcryptUtil.bcryptHash(dto.getNewPassword()));
-        user.setUpdatedBy(user.getId());
-
-        return Response.ok().entity(java.util.Map.of("message", "Password changed successfully")).build();
-    }
+    // Password change is now handled by Keycloak Account Management UI.
+    // Users can change passwords at: {keycloak-url}/realms/crediwise/account
 }

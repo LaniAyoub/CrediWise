@@ -28,7 +28,7 @@ public class ReferenceDataResource {
 
     @GET
     @Path("/segments")
-    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @RolesAllowed({"SUPER_ADMIN", "FRONT_OFFICE"})
     @Operation(summary = "List all client segments")
     public List<ReferenceItemDTO> getSegments() {
         return Segment.<Segment>listAll(Sort.by("libelle")).stream()
@@ -38,7 +38,7 @@ public class ReferenceDataResource {
 
     @GET
     @Path("/account-types")
-    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @RolesAllowed({"SUPER_ADMIN", "FRONT_OFFICE"})
     @Operation(summary = "List all account types")
     public List<ReferenceItemDTO> getAccountTypes() {
         return AccountType.<AccountType>listAll(Sort.by("libelle")).stream()
@@ -48,7 +48,7 @@ public class ReferenceDataResource {
 
     @GET
     @Path("/secteur-activites")
-    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @RolesAllowed({"SUPER_ADMIN", "FRONT_OFFICE"})
     @Operation(summary = "List all secteur activites")
     public List<ReferenceItemDTO> getSecteurActivites() {
         return SecteurActivite.<SecteurActivite>listAll(Sort.by("libelle")).stream()
@@ -58,7 +58,7 @@ public class ReferenceDataResource {
 
     @GET
     @Path("/activites")
-    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @RolesAllowed({"SUPER_ADMIN", "FRONT_OFFICE"})
     @Operation(summary = "List activites, optionally filtered by secteurActiviteId")
     public List<ReferenceItemDTO> getActivites(@QueryParam("secteurActiviteId") Long secteurActiviteId) {
         PanacheQuery<Activite> query = (secteurActiviteId == null)
@@ -72,7 +72,7 @@ public class ReferenceDataResource {
 
     @GET
     @Path("/sous-activites")
-    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @RolesAllowed({"SUPER_ADMIN", "FRONT_OFFICE"})
     @Operation(summary = "List sous activites, optionally filtered by secteurActiviteId or activiteId")
     public List<ReferenceItemDTO> getSousActivites(
             @QueryParam("secteurActiviteId") Long secteurActiviteId,

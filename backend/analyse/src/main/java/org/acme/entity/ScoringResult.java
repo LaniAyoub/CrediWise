@@ -6,9 +6,11 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.acme.entity.enums.DecisionType;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -97,6 +99,20 @@ public class ScoringResult extends PanacheEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "decision_systeme", length = 20, nullable = false)
     public DecisionType decisionSysteme;
+
+    // ─────────────────────────────────────────────────────────────
+    // Score Details Breakdown
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Contribution breakdown of each variable to the score (JSON format).
+     * Keys: constante, age_group, cat_mat, cred_amt_group,
+     *       cred_taux_group, duree_pret_group, isepa, salaire_group
+     * Values: numeric contribution to the raw score
+     */
+    @Column(name = "score_details", columnDefinition = "jsonb")
+    @org.hibernate.annotations.JdbcTypeCode(SqlTypes.JSON)
+    public String scoreDetails;
 
     // ─────────────────────────────────────────────────────────────
     // AUDIT

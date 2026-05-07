@@ -1,0 +1,764 @@
+{
+  "realm": "crediwise",
+  "enabled": true,
+  "sslRequired": "external",
+  "displayName": "CrediWise Credit Management Platform",
+  "displayNameHtml": "<h1>CrediWise</h1><p>Secure Credit Management</p>",
+  "loginTheme": "crediwise",
+
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "accessCodeLifespan": 60,
+  "accessCodeLifespanUserAction": 300,
+  "accessCodeLifespanLogin": 1800,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 28800,
+  "actionTokenGeneratedByAdminLifespan": 43200,
+  "actionTokenGeneratedByUserLifespan": 300,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "offlineSessionIdleTimeout": 2592000,
+  "offlineSessionMaxLifespan": 5184000,
+
+  "requiredCredentials": ["password"],
+
+  "passwordPolicy": "length(8) and upperCase(1) and digits(1)",
+
+  "eventsEnabled": true,
+  "eventsListeners": ["jboss-logging"],
+  "enabledEventTypes": [
+    "LOGIN", "LOGIN_ERROR", "LOGOUT", "LOGOUT_ERROR",
+    "REGISTER", "REGISTER_ERROR",
+    "UPDATE_PROFILE", "UPDATE_PASSWORD",
+    "SEND_RESET_PASSWORD", "REFRESH_TOKEN", "REFRESH_TOKEN_ERROR",
+    "USER_DISABLED", "USER_ENABLED",
+    "TOKEN_EXCHANGE", "TOKEN_EXCHANGE_ERROR",
+    "PERMISSION_TOKEN_ERROR"
+  ],
+  "eventsExpiration": 2592000,
+
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true,
+
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 4,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "permanentLockout": false,
+
+  "defaultRoles": ["offline_access", "uma_authorization"],
+
+  "roles": {
+    "realm": [
+      {
+        "name": "SUPER_ADMIN",
+        "description": "Full system access - manages all platform features",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "FRONT_OFFICE",
+        "description": "Front office - handles client interactions and demandes",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "CRO",
+        "description": "Client Relationship Officer - manages client relationships",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "BRANCH_DM",
+        "description": "Branch Decision Maker - approves branch-level decisions",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "HEAD_OFFICE_DM",
+        "description": "Head Office Decision Maker - approves head office decisions",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "RISK_ANALYST",
+        "description": "Credit Risk Analyst - performs credit analysis and scoring",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "READ_ONLY",
+        "description": "Read-only access - can view data but not modify",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "TECH_USER",
+        "description": "Technical/UAT user - system administration and testing",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "default-roles-crediwise",
+        "description": "${role_default-roles}",
+        "composite": true,
+        "composites": {
+          "realm": ["offline_access", "uma_authorization"]
+        },
+        "clientRole": false
+      },
+      {
+        "name": "offline_access",
+        "description": "${role_offline-access}",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "uma_authorization",
+        "description": "${role_uma_authorization}",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "app-user",
+        "description": "Composite: base read access across all services",
+        "composite": true,
+        "composites": {
+          "client": {
+            "crediwise-backend": [
+              "gestionnaire:read",
+              "client:read",
+              "demande:read",
+              "analyse:read"
+            ]
+          }
+        },
+        "clientRole": false
+      },
+      {
+        "name": "app-admin",
+        "description": "Composite: full admin access across all services",
+        "composite": true,
+        "composites": {
+          "client": {
+            "crediwise-backend": [
+              "gestionnaire:admin",
+              "client:admin",
+              "demande:admin",
+              "analyse:admin"
+            ]
+          }
+        },
+        "clientRole": false
+      }
+    ],
+    "client": {
+      "crediwise-backend": [
+        {
+          "name": "gestionnaire:read",
+          "description": "Read gestionnaire and agence data",
+          "composite": false,
+          "clientRole": true
+        },
+        {
+          "name": "gestionnaire:write",
+          "description": "Create and update gestionnaires and agences",
+          "composite": false,
+          "clientRole": true
+        },
+        {
+          "name": "gestionnaire:admin",
+          "description": "Full gestionnaire management including delete and reassign",
+          "composite": true,
+          "composites": {
+            "client": {
+              "crediwise-backend": ["gestionnaire:read", "gestionnaire:write"]
+            }
+          },
+          "clientRole": true
+        },
+        {
+          "name": "client:read",
+          "description": "Read client data, search clients, reference data",
+          "composite": false,
+          "clientRole": true
+        },
+        {
+          "name": "client:write",
+          "description": "Create and update clients",
+          "composite": false,
+          "clientRole": true
+        },
+        {
+          "name": "client:admin",
+          "description": "Full client management including delete",
+          "composite": true,
+          "composites": {
+            "client": {
+              "crediwise-backend": ["client:read", "client:write"]
+            }
+          },
+          "clientRole": true
+        },
+        {
+          "name": "demande:read",
+          "description": "Read demandes and products",
+          "composite": false,
+          "clientRole": true
+        },
+        {
+          "name": "demande:create",
+          "description": "Create, update, submit, and delete demandes",
+          "composite": false,
+          "clientRole": true
+        },
+        {
+          "name": "demande:admin",
+          "description": "Full demande management including status changes",
+          "composite": true,
+          "composites": {
+            "client": {
+              "crediwise-backend": ["demande:read", "demande:create"]
+            }
+          },
+          "clientRole": true
+        },
+        {
+          "name": "analyse:read",
+          "description": "Read dossiers, steps, regles, scoring results",
+          "composite": false,
+          "clientRole": true
+        },
+        {
+          "name": "analyse:write",
+          "description": "Create dossiers, save/confirm steps, execute scoring",
+          "composite": false,
+          "clientRole": true
+        },
+        {
+          "name": "analyse:admin",
+          "description": "Full analyse management including regles CRUD",
+          "composite": true,
+          "composites": {
+            "client": {
+              "crediwise-backend": ["analyse:read", "analyse:write"]
+            }
+          },
+          "clientRole": true
+        }
+      ]
+    }
+  },
+
+  "clientScopes": [
+    {
+      "name": "crediwise-roles",
+      "description": "Maps realm and client roles to the access token for CrediWise RBAC",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm_roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "single-role-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "false",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "role",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "client-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "resource_access.crediwise-backend.roles",
+            "jsonType.label": "String",
+            "usermodel.clientRoleMapping.clientId": "crediwise-backend"
+          }
+        },
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "crediwise-backend",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "agenceId-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "agenceId",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "agenceId",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "sub-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "sub",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "given-name-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "firstName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "given_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "family-name-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "lastName",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "family_name",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "email-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "username-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ],
+
+  "clients": [
+    {
+      "clientId": "crediwise-frontend",
+      "name": "CrediWise React Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "crediwise-roles"
+      ],
+
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "access.token.lifespan": "300",
+        "post.logout.redirect.uris": "http://localhost:3000/*"
+      }
+    },
+
+    {
+      "clientId": "crediwise-backend",
+      "name": "CrediWise Backend Services",
+      "enabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "bearerOnly": true,
+
+      "clientAuthenticatorType": "client-secret",
+      "secret": "crediwise-backend-secret",
+
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles",
+        "crediwise-roles"
+      ],
+
+      "protocolMappers": [
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "crediwise-backend",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "client-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "resource_access.crediwise-backend.roles",
+            "jsonType.label": "String",
+            "usermodel.clientRoleMapping.clientId": "crediwise-backend"
+          }
+        }
+      ]
+    }
+  ],
+
+  "users": [
+    {
+      "id": "00000000-0000-0000-0000-000000000010",
+      "username": "admin@creditwise.com",
+      "email": "admin@creditwise.com",
+      "firstName": "Admin",
+      "lastName": "CrediWise",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "agenceId": ["100"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "SUPER_ADMIN",
+        "app-admin",
+        "default-roles-crediwise"
+      ],
+      "clientRoles": {
+        "crediwise-backend": [
+          "gestionnaire:admin",
+          "client:admin",
+          "demande:admin",
+          "analyse:admin"
+        ]
+      }
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "username": "ahmed.benali@creditwise.com",
+      "email": "ahmed.benali@creditwise.com",
+      "firstName": "Ahmed",
+      "lastName": "Ben Ali",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "agenceId": ["100"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Password123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "CRO",
+        "app-user",
+        "default-roles-crediwise"
+      ],
+      "clientRoles": {
+        "crediwise-backend": [
+          "gestionnaire:read",
+          "client:read",
+          "client:write",
+          "demande:read",
+          "demande:create"
+        ]
+      }
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "username": "fatma.hassine@creditwise.com",
+      "email": "fatma.hassine@creditwise.com",
+      "firstName": "Fatma",
+      "lastName": "Hassine",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "agenceId": ["130"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Password123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "BRANCH_DM",
+        "app-user",
+        "default-roles-crediwise"
+      ],
+      "clientRoles": {
+        "crediwise-backend": [
+          "gestionnaire:read",
+          "client:read",
+          "demande:read",
+          "analyse:read"
+        ]
+      }
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "username": "mourad.trabelsi@creditwise.com",
+      "email": "mourad.trabelsi@creditwise.com",
+      "firstName": "Mourad",
+      "lastName": "Trabelsi",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "agenceId": ["210"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "SUPER_ADMIN",
+        "app-admin",
+        "default-roles-crediwise"
+      ],
+      "clientRoles": {
+        "crediwise-backend": [
+          "gestionnaire:admin",
+          "client:admin",
+          "demande:admin",
+          "analyse:admin"
+        ]
+      }
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440004",
+      "username": "leila.karoui@creditwise.com",
+      "email": "leila.karoui@creditwise.com",
+      "firstName": "Leila",
+      "lastName": "Karoui",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "agenceId": ["230"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Password123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "HEAD_OFFICE_DM",
+        "app-user",
+        "default-roles-crediwise"
+      ],
+      "clientRoles": {
+        "crediwise-backend": [
+          "gestionnaire:read",
+          "client:read",
+          "demande:read",
+          "analyse:read"
+        ]
+      }
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440005",
+      "username": "karim.mzoughi@creditwise.com",
+      "email": "karim.mzoughi@creditwise.com",
+      "firstName": "Karim",
+      "lastName": "Mzoughi",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "agenceId": ["160"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Password123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "RISK_ANALYST",
+        "app-user",
+        "default-roles-crediwise"
+      ],
+      "clientRoles": {
+        "crediwise-backend": [
+          "gestionnaire:read",
+          "client:read",
+          "demande:read",
+          "analyse:read",
+          "analyse:write"
+        ]
+      }
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440006",
+      "username": "hassan.jaziri@creditwise.com",
+      "email": "hassan.jaziri@creditwise.com",
+      "firstName": "Hassan",
+      "lastName": "Jaziri",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "agenceId": ["530"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Password123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "FRONT_OFFICE",
+        "app-user",
+        "default-roles-crediwise"
+      ],
+      "clientRoles": {
+        "crediwise-backend": [
+          "gestionnaire:read",
+          "client:read",
+          "client:write",
+          "demande:read",
+          "demande:create",
+          "analyse:read",
+          "analyse:write"
+        ]
+      }
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440007",
+      "username": "nadia.benahmed@creditwise.com",
+      "email": "nadia.benahmed@creditwise.com",
+      "firstName": "Nadia",
+      "lastName": "Ben Ahmed",
+      "enabled": true,
+      "emailVerified": true,
+      "attributes": {
+        "agenceId": ["510"]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Password123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "READ_ONLY",
+        "app-user",
+        "default-roles-crediwise"
+      ],
+      "clientRoles": {
+        "crediwise-backend": [
+          "gestionnaire:read",
+          "client:read",
+          "demande:read",
+          "analyse:read"
+        ]
+      }
+    }
+  ],
+
+  "groups": [],
+  "scopeMappings": [],
+  "clientScopeMappings": {}
+}

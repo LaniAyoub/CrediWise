@@ -1,6 +1,5 @@
 package org.acme.entity;
 
-import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -23,7 +22,6 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = "password")
 @EqualsAndHashCode(of = "id", callSuper = false)
 public class Gestionnaire extends PanacheEntityBase {
 
@@ -58,9 +56,6 @@ public class Gestionnaire extends PanacheEntityBase {
 
     private String address;
 
-    @Column(nullable = false)
-    private String password;
-
     @NotBlank(message = "Role is mandatory")
     @Column(nullable = false, length = 50)
     private String role;
@@ -86,21 +81,16 @@ public class Gestionnaire extends PanacheEntityBase {
     @Column(name = "updated_by", columnDefinition = "uuid")
     private UUID updatedBy;
 
+    /** Keycloak user UUID ("sub" claim). Populated on first profile access.
+     *  Used as fallback when email/preferred_username are absent from the token. */
+    @Column(name = "keycloak_id", columnDefinition = "uuid", unique = true)
+    private UUID keycloakId;
+
     @Version
     private Long version;
 
     @PrePersist
     public void prePersist() {
         if (id == null) id = UUID.randomUUID();
-        if (password != null && !password.startsWith("$2a$")) {
-            password = BcryptUtil.bcryptHash(password);
-        }
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        if (password != null && !password.startsWith("$2a$")) {
-            password = BcryptUtil.bcryptHash(password);
-        }
     }
 }

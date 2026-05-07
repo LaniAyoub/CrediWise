@@ -209,7 +209,8 @@ const StepRisqueCommercialView: React.FC<Props> = ({
     if (!saveRef) return;
     const dirty = JSON.stringify(form) !== initialFormRef.current;
     saveRef.current = dirty ? handleSave : null;
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, saveRef]);
 
   // ── Shared input class ──────────────────────────────────────────────────────
   const inputCls = 'w-full px-3 py-2 text-sm rounded-lg border border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800 text-surface-900 dark:text-surface-50 focus:outline-none focus:ring-2 focus:ring-primary-500';

@@ -41,10 +41,16 @@ public class ClientResource {
     // ─────────────────────────────────────────────────────────────────────────
 
     @POST
-    @RolesAllowed({"SUPER_ADMIN", "CRO", "FRONT_OFFICE"})
+    @RolesAllowed({"SUPER_ADMIN", "FRONT_OFFICE"})
     @Operation(summary = "Create a new client")
     public Response create(@Valid ClientCreateDTO dto) {
-        UUID actorId = UUID.fromString(jwt.getSubject());
+        String subject = jwt.getSubject();
+        if (subject == null) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("{\"error\":\"Token missing sub claim\"}")
+                    .build();
+        }
+        UUID actorId = UUID.fromString(subject);
         ClientResponseDTO created = clientService.create(dto, actorId);
         return Response.status(Response.Status.CREATED).entity(created).build();
     }
@@ -54,7 +60,7 @@ public class ClientResource {
     // ─────────────────────────────────────────────────────────────────────────
 
     @GET
-    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @RolesAllowed({"SUPER_ADMIN", "FRONT_OFFICE"})
     @Operation(summary = "List all clients (paginated, optional filters)")
     public List<ClientResponseDTO> list(
             @QueryParam("page") @DefaultValue("0") int page,
@@ -73,7 +79,7 @@ public class ClientResource {
 
     @GET
     @Path("/{id}")
-    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @RolesAllowed({"SUPER_ADMIN", "FRONT_OFFICE"})
     @Operation(summary = "Get client by ID")
     public ClientResponseDTO get(@PathParam("id") UUID id) {
         return clientService.getById(id);
@@ -91,7 +97,7 @@ public class ClientResource {
      */
     @GET
     @Path("/search")
-    @RolesAllowed({"SUPER_ADMIN", "CRO", "BRANCH_DM", "HEAD_OFFICE_DM", "RISK_ANALYST", "FRONT_OFFICE", "READ_ONLY", "TECH_USER"})
+    @RolesAllowed({"SUPER_ADMIN", "FRONT_OFFICE"})
     @Operation(summary = "Smart fuzzy search for clients")
     public Response searchClients(
             @QueryParam("q")            String q,
@@ -132,11 +138,17 @@ public class ClientResource {
 
     @PUT
     @Path("/{id}")
-    @RolesAllowed({"SUPER_ADMIN", "CRO", "FRONT_OFFICE"})
+    @RolesAllowed({"SUPER_ADMIN", "FRONT_OFFICE"})
     @Operation(summary = "Update a client")
-    public ClientResponseDTO update(@PathParam("id") UUID id, @Valid ClientUpdateDTO dto) {
-        UUID actorId = UUID.fromString(jwt.getSubject());
-        return clientService.update(id, dto, actorId);
+    public Response update(@PathParam("id") UUID id, @Valid ClientUpdateDTO dto) {
+        String subject = jwt.getSubject();
+        if (subject == null) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity("{\"error\":\"Token missing sub claim\"}")
+                    .build();
+        }
+        UUID actorId = UUID.fromString(subject);
+        return Response.ok(clientService.update(id, dto, actorId)).build();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

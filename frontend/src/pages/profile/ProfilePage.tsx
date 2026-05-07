@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context';
-import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,25 +19,15 @@ const profileSchema = z.object({
   dateOfBirth: z.string().optional().or(z.literal('')),
 });
 
-const passwordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
-  confirmPassword: z.string().min(1, 'Please confirm your new password'),
-}).refine((d) => d.newPassword === d.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
-
 type ProfileFormData = z.infer<typeof profileSchema>;
-type PasswordFormData = z.infer<typeof passwordSchema>;
+
+const KEYCLOAK_ACCOUNT_URL = `${import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8180'}/realms/${import.meta.env.VITE_KEYCLOAK_REALM || 'crediwise'}/account`;
 
 const ProfilePage = () => {
   const { t } = useTranslation('common');
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [profile, setProfile] = useState<Gestionnaire | null>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const {
     register: registerProfile,
@@ -46,13 +35,6 @@ const ProfilePage = () => {
     reset: resetProfile,
     formState: { errors: profileErrors },
   } = useForm<ProfileFormData>({ resolver: zodResolver(profileSchema) });
-
-  const {
-    register: registerPassword,
-    handleSubmit: handlePasswordSubmit,
-    reset: resetPassword,
-    formState: { errors: passwordErrors },
-  } = useForm<PasswordFormData>({ resolver: zodResolver(passwordSchema) });
 
   useEffect(() => {
     profileService.getProfile().then((res) => {
@@ -64,12 +46,21 @@ const ProfilePage = () => {
         address: res.data.address || '',
         dateOfBirth: res.data.dateOfBirth?.split('T')[0] || '',
       });
-    }).catch(() => {});
-  }, [resetProfile]);
+    }).catch(() => {
+      // Profile not in DB yet — pre-populate from Keycloak JWT data so the
+      // form is not left completely blank.
+      resetProfile({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        numTelephone: '',
+        address: '',
+        dateOfBirth: '',
+      });
+    });
+  }, [resetProfile, user]);
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    logout(); // Redirects to Keycloak end-session endpoint
   };
 
   const onUpdateProfile = async (data: ProfileFormData) => {
@@ -91,23 +82,6 @@ const ProfilePage = () => {
     }
   };
 
-  const onChangePassword = async (data: PasswordFormData) => {
-    setIsChangingPassword(true);
-    try {
-      await profileService.changePassword({
-        currentPassword: data.currentPassword,
-        newPassword: data.newPassword,
-      });
-      toast.success(t('common.passwordChanged'));
-      resetPassword();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || t('common.passwordChangeFailed'));
-    } finally {
-      setIsChangingPassword(false);
-    }
-  };
-
   const initials = user
     ? `${user.firstName?.charAt(0) || ''}${user.lastName?.charAt(0) || ''}`.toUpperCase()
     : '?';
@@ -120,10 +94,9 @@ const ProfilePage = () => {
         <p className="text-body text-surface-600 dark:text-surface-400">{t('common.manageAccount')}</p>
       </div>
 
-      {/* Profile card header - Enhanced */}
+      {/* Profile card header */}
       <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-md dark:shadow-lg overflow-hidden transition-all hover:shadow-lg dark:hover:shadow-xl">
         <div className="h-40 bg-gradient-to-r from-brand-600 via-brand-500 to-violet-500 relative">
-          {/* Decorative elements */}
           <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl -mr-20 -mt-20" />
           <div className="absolute -bottom-16 left-8">
             <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center border-4 border-white shadow-2xl">
@@ -212,48 +185,30 @@ const ProfilePage = () => {
         </form>
       </div>
 
-      {/* Change password form */}
+      {/* Security — managed by Keycloak */}
       <div className="bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 shadow-lg dark:shadow-lg p-8 transition-shadow hover:shadow-xl dark:hover:shadow-xl">
         <div className="flex items-center gap-3 mb-2">
           <svg className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
-          <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('common.changePassword')}</h3>
+          <h3 className="text-2xl font-bold text-surface-900 dark:text-surface-50">{t('common.security') || 'Security'}</h3>
         </div>
-        <p className="text-base text-surface-600 dark:text-surface-400 mb-7 ml-9">{t('common.passwordInstructions')}</p>
-        <form onSubmit={handlePasswordSubmit(onChangePassword)} className="space-y-6">
-          <Input
-            label={t('common.currentPassword')}
-            type="password"
-            {...registerPassword('currentPassword')}
-            error={passwordErrors.currentPassword?.message}
-            placeholder={t('placeholders.password')}
-            className="focus:ring-2 focus:ring-amber-500"
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <Input
-              label={t('common.newPassword')}
-              type="password"
-              {...registerPassword('newPassword')}
-              error={passwordErrors.newPassword?.message}
-              placeholder={t('placeholders.password')}
-              className="focus:ring-2 focus:ring-amber-500"
-            />
-            <Input
-              label={t('common.confirmPassword')}
-              type="password"
-              {...registerPassword('confirmPassword')}
-              error={passwordErrors.confirmPassword?.message}
-              placeholder={t('placeholders.password')}
-              className="focus:ring-2 focus:ring-amber-500"
-            />
-          </div>
-          <div className="flex justify-end pt-4">
-            <Button type="submit" isLoading={isChangingPassword}>
-              {t('common.changePassword')}
-            </Button>
-          </div>
-        </form>
+        <p className="text-base text-surface-600 dark:text-surface-400 mb-6 ml-9">
+          Password and security settings are managed through Keycloak.
+        </p>
+        <div className="ml-9">
+          <a
+            href={KEYCLOAK_ACCOUNT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded-lg font-medium text-sm hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            Manage Security Settings
+          </a>
+        </div>
       </div>
 
       {/* Sign out */}

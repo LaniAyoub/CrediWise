@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context';
@@ -5,7 +6,14 @@ import MainLayout from '@/components/layout/MainLayout';
 
 const ProtectedRoute = () => {
   const { t } = useTranslation('common');
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, login } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      // Trigger OIDC login when unauthenticated.
+      login();
+    }
+  }, [isLoading, isAuthenticated, login]);
 
   if (isLoading) {
     return (
@@ -20,11 +28,15 @@ const ProtectedRoute = () => {
     );
   }
 
-  return isAuthenticated ? (
-    <MainLayout>
-      <Outlet />
-    </MainLayout>
-  ) : (
+  if (isAuthenticated) {
+    return (
+      <MainLayout>
+        <Outlet />
+      </MainLayout>
+    );
+  }
+
+  return (
     <Navigate to="/login" replace />
   );
 };

@@ -157,6 +157,9 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
   // Cancel reverts form to last confirmed state (defaultValues)
   const handleCancel = () => reset();
 
+  // Extracted once so name/onChange/onBlur are all wired to RHF (fixes isDirty tracking)
+  const pertinenceRegistration = register('pertinenceProjet');
+
   // Auto-resize textarea behavior for pertinenceProjet
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   useEffect(() => {
@@ -276,6 +279,13 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
                               {...register(`depenses.${index}.description`)}
                               className={`w-full px-3 py-2 text-body border rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${readOnly ? 'border-transparent cursor-default' : 'border-surface-300 dark:border-surface-600'}`}
                             />
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            {(errors.depenses as any)?.[index]?.description?.message && (
+                              <p className="text-xs text-rose-500 mt-1">
+                                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                {(errors.depenses as any)[index].description.message}
+                              </p>
+                            )}
                           </td>
                           <td className="px-3 py-4 text-right">
                             <input
@@ -320,6 +330,12 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
                   {t('step2.coutTotal')}: <span className="text-emerald-600 dark:text-emerald-400">{formatAmount(coutTotalLive)}</span>
                 </p>
               </div>
+              {/* Array-level depenses error (e.g. "at least 1 required") */}
+              {(errors.depenses as { message?: string } | undefined)?.message && (
+                <p className="text-xs text-rose-500 mt-2">
+                  {(errors.depenses as { message?: string }).message}
+                </p>
+              )}
             </div>
 
             {/* Right column: Other Financing */}
@@ -425,9 +441,12 @@ const StepObjetCreditView: React.FC<StepObjetCreditViewProps> = ({
             onInput={handleTextareaInput}
             disabled={readOnly}
             className={`w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-50 placeholder:text-surface-400 dark:placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 overflow-hidden ${readOnly ? 'border-transparent cursor-default' : 'border border-surface-300 dark:border-surface-600'}`}
+            name={pertinenceRegistration.name}
+            onChange={pertinenceRegistration.onChange}
+            onBlur={pertinenceRegistration.onBlur}
             ref={(el) => {
               textareaRef.current = el;
-              register('pertinenceProjet').ref?.(el);
+              pertinenceRegistration.ref(el);
             }}
           />
           {errors.pertinenceProjet && (

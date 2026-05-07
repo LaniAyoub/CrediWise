@@ -26,7 +26,6 @@ export interface GestionnaireCreateRequest {
   lastName: string;
   dateOfBirth?: string;
   address?: string;
-  password?: string;
   role: string;
   agenceId: string;
 }

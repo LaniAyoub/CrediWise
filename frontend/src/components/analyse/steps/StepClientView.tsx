@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { analyseService, handleAnalyseError } from '@/services/analyseService';
@@ -239,9 +239,15 @@ const StepClientView: React.FC<StepClientViewProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canScore, data, effectiveDemandeId, t]);
 
+  // Guard against React StrictMode double-invocation of the scoring effect.
+  // Without this, two concurrent GET→404→POST requests race on the backend UPSERT.
+  const scoringRequestedRef = useRef(false);
+
   // Load saved scoring from DB on mount; fallback to compute if not found
   useEffect(() => {
     if (!canScore || !effectiveDemandeId) return;
+    if (scoringRequestedRef.current) return;
+    scoringRequestedRef.current = true;
 
     const loadScoring = async () => {
       setScoringLoading(true);
@@ -249,15 +255,19 @@ const StepClientView: React.FC<StepClientViewProps> = ({
       try {
         const res = await analyseService.getScoring(effectiveDemandeId);
         setScoring(res.data);
+        setScoringLoading(false);
       } catch (err: any) {
-        // 404 means scoring hasn't been calculated yet — compute it
+        // 404 means scoring hasn't been calculated yet — compute it.
+        // Stop the GET loading first so computeScore's setScoringLoading(true)
+        // is the last synchronous update React batches (avoids the race where
+        // a finally block would override computeScore's own loading state).
         if (err.response?.status === 404) {
+          setScoringLoading(false);
           computeScore();
         } else {
+          setScoringLoading(false);
           setScoringError(t('step1.scoring.error'));
         }
-      } finally {
-        setScoringLoading(false);
       }
     };
 
@@ -584,17 +594,18 @@ const StepClientView: React.FC<StepClientViewProps> = ({
                     {t('step1.scoring.dssTitle')} — {t('step1.scoring.scoreDetails.title')}
                   </p>
                   <div className="rounded-lg border border-surface-200 dark:border-surface-700 overflow-hidden">
-                    {scoring.scoreDetails && Object.entries(scoring.scoreDetails).map(([key, val], i) => (
-                      <div key={key} className={`flex items-center justify-between px-3 py-2 gap-2 ${i > 0 ? 'border-t border-surface-100 dark:border-surface-700' : ''}`}>
-                        <p className="text-xs text-surface-700 dark:text-surface-300 truncate">
-                          {t(`step1.scoring.scoreDetails.${key}`, key)}
-                        </p>
-                        <span className={`flex-shrink-0 text-xs font-mono font-semibold ${val > 0 ? 'text-emerald-600 dark:text-emerald-400' : val < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-surface-400 dark:text-surface-500'}`}>
-                          {val > 0 ? '+' : ''}{val.toFixed(5)}
-                        </span>
-                      </div>
-                    ))}
-                    {!scoring.scoreDetails && (
+                    {scoring.scoreDetails && Object.keys(scoring.scoreDetails).length > 0 ? (
+                      Object.entries(scoring.scoreDetails).map(([key, val], i) => (
+                        <div key={key} className={`flex items-center justify-between px-3 py-2 gap-2 ${i > 0 ? 'border-t border-surface-100 dark:border-surface-700' : ''}`}>
+                          <p className="text-xs text-surface-700 dark:text-surface-300 truncate">
+                            {t(`step1.scoring.scoreDetails.${key}`, key)}
+                          </p>
+                          <span className={`flex-shrink-0 text-xs font-mono font-semibold ${val > 0 ? 'text-emerald-600 dark:text-emerald-400' : val < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-surface-400 dark:text-surface-500'}`}>
+                            {val > 0 ? '+' : ''}{val.toFixed(5)}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
                       <div className="px-3 py-6 text-center">
                         <p className="text-xs text-surface-500 dark:text-surface-400 italic">
                           {t('step1.scoring.detailsNotAvailable', 'Détails non disponibles (score chargé depuis la base)')}

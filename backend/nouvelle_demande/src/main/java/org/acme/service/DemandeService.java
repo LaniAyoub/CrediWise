@@ -4,8 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
 import org.acme.client.AnalyseServiceClient;
 import org.acme.dto.*;
 import org.acme.entity.Demande;
@@ -195,7 +193,7 @@ public class DemandeService {
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional
-    public StartAnalysisResponse submit(Long id, String authorizationHeader) {
+    public StartAnalysisResponse submit(Long id) {
         Demande demande = demandeRepository.findByIdOptional(id)
                 .orElseThrow(() -> new DemandeNotFoundException("Demande not found: " + id));
 
@@ -213,8 +211,7 @@ public class DemandeService {
                     id,
                     demande.clientId.toString(),
                     targetStatus.toString(),
-                    createdAtStr,
-                    authorizationHeader
+                    createdAtStr
             );
             Log.infof("Submitted demande %d: dossier %d created, status → ANALYSE (product: %s)",
                     id, dossierId, demande.productId);

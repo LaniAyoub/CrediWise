@@ -4,8 +4,6 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.acme.dto.*;
@@ -91,9 +89,8 @@ public class DemandeResource {
     @Path("/{id}/submit")
     @RolesAllowed({"SUPER_ADMIN", "CRO", "FRONT_OFFICE"})
     @Operation(summary = "Submit a DRAFT demande — creates analysis dossier and routes by product")
-    public Response submit(@PathParam("id") Long id, @Context HttpHeaders headers) {
-        String authorizationHeader = headers.getHeaderString(HttpHeaders.AUTHORIZATION);
-        StartAnalysisResponse result = demandeService.submit(id, authorizationHeader);
+    public Response submit(@PathParam("id") Long id) {
+        StartAnalysisResponse result = demandeService.submit(id);
         return Response.ok(result).build();
     }
 

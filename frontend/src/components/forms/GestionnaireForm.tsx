@@ -22,7 +22,6 @@ const gestionnaireSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   dateOfBirth: z.string().optional().or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
-  password: z.string().optional().or(z.literal('')),
   role: z.string().min(1, 'Role is required'),
   agenceId: z.string().min(1, 'Agence is required'),
   active: z.boolean().optional(),
@@ -200,16 +199,6 @@ const GestionnaireForm = ({
           placeholder={t('form.streetAddress')}
         />
       </div>
-
-      {!isEdit && (
-        <Input
-          label={t('form.password')}
-          type="password"
-          {...register('password')}
-          error={errors.password?.message}
-          placeholder={t('form.initialPassword')}
-        />
-      )}
 
       <div className="mb-6">
         <label htmlFor="role" className="block text-label text-surface-600 dark:text-surface-400 mb-2">

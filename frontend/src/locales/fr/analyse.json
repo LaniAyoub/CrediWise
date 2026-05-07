@@ -97,7 +97,8 @@
         "duree_pret_group": "Durée du prêt",
         "isepa": "Compte épargne",
         "salaire_group": "Tranche de revenu"
-      }
+      },
+      "detailsNotAvailable": "Détails non disponibles (score chargé depuis la base)"
     }
   },
   "step3": {

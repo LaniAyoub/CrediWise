@@ -61,9 +61,7 @@ public class GestionnaireService {
         gestionnaire.setLastName(dto.getLastName());
         gestionnaire.setDateOfBirth(dto.getDateOfBirth());
         gestionnaire.setAddress(dto.getAddress());
-        gestionnaire.setPassword((dto.getPassword() == null || dto.getPassword().isBlank())
-                ? UUID.randomUUID().toString().substring(0, 12)
-                : dto.getPassword());
+        // Password field removed (Keycloak is the sole identity provider)
         gestionnaire.setRole(dto.getRole());
         gestionnaire.setAgence(agence);
         gestionnaire.setIsActive(Boolean.TRUE);

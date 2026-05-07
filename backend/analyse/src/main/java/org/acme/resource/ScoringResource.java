@@ -1,5 +1,6 @@
 package org.acme.resource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -18,6 +19,7 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 @Path("/api/scoring")
@@ -35,6 +37,9 @@ public class ScoringResource {
 
     @Inject
     JsonWebToken jwt;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     /**
      * Calcule et persiste le score d'une demande de crédit.
@@ -79,6 +84,15 @@ public class ScoringResource {
         entity.scoreAjuste = result.getScoreAjuste() != 0 ? BigDecimal.valueOf(result.getScoreAjuste()) : null;
         entity.dssDecision = result.getDecisionDSS();
         entity.decisionSysteme = result.getDecisionSysteme();
+        // Serialize scoreDetails to JSON string for storage
+        try {
+            if (result.getScoreDetails() != null) {
+                entity.scoreDetails = objectMapper.writeValueAsString(result.getScoreDetails());
+            }
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(ScoringResource.class)
+                .warn("Failed to serialize scoreDetails: " + e.getMessage());
+        }
         entity.createdBy = callerId;
         entity.persist();
 
@@ -97,6 +111,9 @@ public class ScoringResource {
     /**
      * Retrieve saved scoring result for a demand.
      * GET /api/scoring/{demandeId}
+     *
+     * Maps the JPA entity to ScoringResponse DTO to ensure correct field names
+     * for frontend consumption (decisionDRG vs drgDecision, etc).
      */
     @GET
     @Path("/{demandeId}")
@@ -109,6 +126,38 @@ public class ScoringResource {
                 .entity(java.util.Map.of("erreur", "Scoring non trouvé", "code", "SCORING_NOT_FOUND"))
                 .build();
         }
-        return Response.ok(result).build();
+
+        // Deserialize scoreDetails from JSON if available
+        Map<String, Double> scoreDetailsMap = null;
+        if (result.scoreDetails != null) {
+            try {
+                scoreDetailsMap = objectMapper.readValue(result.scoreDetails,
+                    objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Double.class));
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(ScoringResource.class)
+                    .warn("Failed to deserialize scoreDetails: " + e.getMessage());
+            }
+        }
+
+        // Map JPA entity to ScoringResponse DTO with correct field names
+        ScoringResponse response = ScoringResponse.builder()
+            .demandeId(result.demandeId)
+            .clientId(result.clientId)
+            .scoredAt(result.scoredAt)
+            .drgAge(result.drgAge)
+            .drgAnciennete(result.drgAnciennete)
+            .drgBudget(result.drgBudget)
+            .drgFichage(result.drgFichage)
+            .drgOffre(result.drgOffre)
+            .decisionDRG(result.drgDecision)
+            .scoreBrut(result.scoreBrut != null ? result.scoreBrut.doubleValue() : 0)
+            .scoreAjuste(result.scoreAjuste != null ? result.scoreAjuste.doubleValue() : 0)
+            .decisionDSS(result.dssDecision)
+            .decisionSysteme(result.decisionSysteme)
+            // Return scoreDetails from database if available
+            .scoreDetails(scoreDetailsMap)
+            .build();
+
+        return Response.ok(response).build();
     }
 }
